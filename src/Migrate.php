@@ -68,7 +68,7 @@ class Migrate
                 'configData' => [
                     'parameters' => [
                         'backupUri' => $restoreCredentials['backupUri'],
-                        'accessKeyId' => $restoreCredentials['credentials']['accesssKeyId'],
+                        'accessKeyId' => $restoreCredentials['credentials']['accessKeyId'],
                         '#secretAccessKey' => $restoreCredentials['credentials']['secretAccessKey'],
                         '#sessionToken' => $restoreCredentials['credentials']['sessionToken'],
                         'useDefaultBackend' => true,

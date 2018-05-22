@@ -33,7 +33,7 @@ class MigrateTest extends TestCase
                 'backupUri' => 'https://kbc-project-migration-s3filesbucket-q91dwj6cdnoz.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
                 'region' => 'us-east-1',
                 'credentials' => [
-                    'accesssKeyId' => 'xxx',
+                    'accessKeyId' => 'xxx',
                     'secretAccessKey' => 'yyy',
                     'sessionToken' => 'zzz',
                     'expiration' => '2018-05-23T10:49:02+00:00',
