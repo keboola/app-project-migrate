@@ -6,6 +6,7 @@ namespace Keboola\AppProjectMigrate\Tests;
 
 use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Syrup\Client as SyrupClient;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class MigrateTest extends TestCase
@@ -13,7 +14,10 @@ class MigrateTest extends TestCase
 
     public function testMigrate(): void
     {
+        /** @var SyrupClient|MockObject $sourceClientMock */
         $sourceClientMock = $this->createMock(SyrupClient::class);
+
+        /** @var SyrupClient|MockObject $destClientMock */
         $destClientMock = $this->createMock(SyrupClient::class);
 
         // generate credentials
@@ -76,8 +80,8 @@ class MigrateTest extends TestCase
                 ]
             );
 
-        $migrate = new Migrate($sourceClientMock, $destClientMock);
 
+        $migrate = new Migrate($sourceClientMock, $destClientMock);
         $migrate->run();
     }
 }
