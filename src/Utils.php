@@ -22,7 +22,7 @@ class Utils
         return $foundServices[0]['url'];
     }
 
-    public static function createDockerRunnerClientFromStorageClient(StorageClient $sapiClient)
+    public static function createDockerRunnerClientFromStorageClient(StorageClient $sapiClient): SyrupClient
     {
         $baseUrl = self::getKeboolaServiceUrl(
             $sapiClient->indexAction()['services'],

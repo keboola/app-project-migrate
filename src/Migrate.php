@@ -60,7 +60,7 @@ class Migrate
         );
     }
 
-    private function restoreDestinationProject(array $restoreCredentials)
+    private function restoreDestinationProject(array $restoreCredentials): void
     {
         $this->destProjectClient->runJob(
             self::PROJECT_RESTORE_COMPONENT,

@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 class MigrateTest extends TestCase
 {
 
-    public function testMigrate()
+    public function testMigrate(): void
     {
         $sourceClientMock = $this->createMock(SyrupClient::class);
         $destClientMock = $this->createMock(SyrupClient::class);
@@ -71,8 +71,8 @@ class MigrateTest extends TestCase
                             '#secretAccessKey' => 'yyy',
                             '#sessionToken' => 'zzz',
                             'useDefaultBackend' => true,
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             );
 
