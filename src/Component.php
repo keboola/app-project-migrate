@@ -35,6 +35,7 @@ class Component extends BaseComponent
             Utils::createDockerRunnerClientFromStorageClient($sourceProjectClient),
             Utils::createDockerRunnerClientFromStorageClient($destProjectClient)
         );
+        $migrate->run();
     }
 
     private function createStorageClient(array $params): StorageClient
