@@ -71,7 +71,7 @@ class MigrateTest extends TestCase
         $destClientMock->expects($this->exactly(3))
             ->method('runJob')
             ->withConsecutive(
-            // restore data
+                // restore data
                 [
                     Migrate::PROJECT_RESTORE_COMPONENT,
                     [
@@ -110,7 +110,10 @@ class MigrateTest extends TestCase
                         ],
                     ],
                 ]
-            );
+            )->willReturn([
+                'id' => '222',
+                'status' => 'success',
+            ]);
 
 
         $migrate = new Migrate(
@@ -180,6 +183,77 @@ class MigrateTest extends TestCase
 
         $this->expectException(UserException::class);
         $this->expectExceptionMessageRegExp('/Cannot snapshot project/');
+        $migrate = new Migrate(
+            $sourceClientMock,
+            $destClientMock,
+            'xxx',
+            'yyy',
+            new NullLogger()
+        );
+        $migrate->run();
+    }
+
+    public function testShouldFailOnRestoreError()
+    {
+        /** @var SyrupClient|MockObject $sourceClientMock */
+        $sourceClientMock = $this->createMock(SyrupClient::class);
+
+        /** @var SyrupClient|MockObject $destClientMock */
+        $destClientMock = $this->createMock(SyrupClient::class);
+
+        // generate credentials
+        $sourceClientMock->expects($this->once())
+            ->method('runSyncAction')
+            ->with(
+                Migrate::PROJECT_BACKUP_COMPONENT,
+                'generate-read-credentials',
+                [
+                    'parameters' => [
+                        'backupId' => null,
+                    ],
+                ]
+            )
+            ->willReturn([
+                'backupId' => '123',
+                'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
+                'region' => 'us-east-1',
+                'credentials' => [
+                    'accessKeyId' => 'xxx',
+                    'secretAccessKey' => 'yyy',
+                    'sessionToken' => 'zzz',
+                    'expiration' => '2018-05-23T10:49:02+00:00',
+                ],
+            ]);
+
+        $sourceClientMock->expects($this->once())
+            ->method('runJob')
+            ->with(
+                Migrate::PROJECT_BACKUP_COMPONENT,
+                [
+                    'configData' => [
+                        'parameters' => [
+                            'backupId' => '123',
+                        ],
+                    ],
+                ]
+            )
+            ->willReturn([
+                'id' => '222',
+                'status' => 'success',
+            ]);
+
+        $destClientMock->expects($this->any())
+            ->method('runJob')
+            ->willReturn([
+                'id' => '222',
+                'status' => 'error',
+                'result' => [
+                    'message' => 'Cannot restore project',
+                ],
+            ]);
+
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessageRegExp('/Cannot restore project/');
         $migrate = new Migrate(
             $sourceClientMock,
             $destClientMock,

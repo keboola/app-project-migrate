@@ -90,7 +90,7 @@ class Migrate
     private function restoreDestinationProject(array $restoreCredentials): void
     {
         $this->logger->info('Restoring current project from snapshot');
-        $this->destProjectClient->runJob(
+        $job = $this->destProjectClient->runJob(
             self::PROJECT_RESTORE_COMPONENT,
             [
                 'configData' => [
@@ -104,6 +104,9 @@ class Migrate
                 ],
             ]
         );
+        if ($job['status'] !== 'success') {
+            throw new UserException('Project restore error: ' . $job['result']['message']);
+        }
         $this->logger->info('Current project restored');
     }
 
