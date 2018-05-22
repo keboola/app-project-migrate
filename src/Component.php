@@ -15,6 +15,7 @@ class Component extends BaseComponent
     {
         /** @var Config $config */
         $config = $this->getConfig();
+        $logger = $this->getLogger();
 
         $sourceProjectClient = $this->createStorageClient([
             'url' => $config->getSourceProjectUrl(),
@@ -30,6 +31,13 @@ class Component extends BaseComponent
             'url' => getenv('KBC_URL'),
             'token' => getenv('KBC_TOKEN'),
         ]);
+
+        $logger->info(sprintf(
+            'Restoring current project from project %s (%d) at %s',
+            $sourceTokenInfo['owner']['name'],
+            $sourceTokenInfo['owner']['id'],
+            $config->getSourceProjectUrl()
+        ));
 
         $migrate = new Migrate(
             Utils::createDockerRunnerClientFromStorageClient($sourceProjectClient),
