@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate;
 
+use Keboola\Component\UserException;
 use Keboola\Syrup\Client as SyrupClient;
 use Psr\Log\LoggerInterface;
 
@@ -70,7 +71,7 @@ class Migrate
     private function backupSourceProject(string $backupId): void
     {
         $this->logger->info('Creating source project snapshot');
-        $this->sourceProjectClient->runJob(
+        $job = $this->sourceProjectClient->runJob(
             self::PROJECT_BACKUP_COMPONENT,
             [
                 'configData' => [
@@ -80,6 +81,9 @@ class Migrate
                 ],
             ]
         );
+        if ($job['status'] !== 'success') {
+            throw new UserException('Project snapshot create error: ' . $job['result']['message']);
+        }
         $this->logger->info('Source project snapshot created');
     }
 
