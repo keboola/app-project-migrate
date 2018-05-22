@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate;
 
 use Keboola\Syrup\Client as SyrupClient;
+use Psr\Log\LoggerInterface;
 
 class Migrate
 {
@@ -17,12 +18,17 @@ class Migrate
     /** @var SyrupClient */
     private $destProjectClient;
 
+    /** @var LoggerInterface  */
+    private $logger;
+
     public function __construct(
         SyrupClient $sourceProjectClient,
-        SyrupClient $destProjectClient
+        SyrupClient $destProjectClient,
+        LoggerInterface $logger
     ) {
         $this->sourceProjectClient = $sourceProjectClient;
         $this->destProjectClient = $destProjectClient;
+        $this->logger = $logger;
     }
 
     public function run(): void
@@ -35,6 +41,7 @@ class Migrate
 
     private function generateBackupCredentials(): array
     {
+        $this->logger->info('Creating backup credentials');
         return $this->sourceProjectClient->runSyncAction(
             self::PROJECT_BACKUP_COMPONENT,
             'generate-read-credentials',
@@ -48,6 +55,7 @@ class Migrate
 
     private function backupSourceProject(string $backupId): void
     {
+        $this->logger->info('Creating source project snapshot');
         $this->sourceProjectClient->runJob(
             self::PROJECT_BACKUP_COMPONENT,
             [
@@ -58,10 +66,12 @@ class Migrate
                 ],
             ]
         );
+        $this->logger->info('Source project snapshot created');
     }
 
     private function restoreDestinationProject(array $restoreCredentials): void
     {
+        $this->logger->info('Restoring current project from snapshot');
         $this->destProjectClient->runJob(
             self::PROJECT_RESTORE_COMPONENT,
             [
@@ -76,5 +86,6 @@ class Migrate
                 ],
             ]
         );
+        $this->logger->info('Current project restored');
     }
 }
