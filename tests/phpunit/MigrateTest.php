@@ -63,26 +63,50 @@ class MigrateTest extends TestCase
                 'status' => 'waiting',
             ]);
 
+        $sourceProjectUrl = 'https://connection.keboola.com';
+        $sourceProjectToken = 'xyz';
+
         // run restore with credentials from step 1
-        $destClientMock->expects($this->once())
+        $destClientMock->expects($this->exactly(2))
             ->method('runJob')
-            ->with(
-                Migrate::PROJECT_RESTORE_COMPONENT,
+            ->withConsecutive(
+                // restore data
                 [
-                    'configData' => [
-                        'parameters' => [
-                            'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
-                            'accessKeyId' => 'xxx',
-                            '#secretAccessKey' => 'yyy',
-                            '#sessionToken' => 'zzz',
-                            'useDefaultBackend' => true,
+                    Migrate::PROJECT_RESTORE_COMPONENT,
+                    [
+                        'configData' => [
+                            'parameters' => [
+                                'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
+                                'accessKeyId' => 'xxx',
+                                '#secretAccessKey' => 'yyy',
+                                '#sessionToken' => 'zzz',
+                                'useDefaultBackend' => true,
+                            ],
+                        ],
+                    ],
+                ],
+                // restore orchestrations
+                [
+                    Migrate::ORCHESTRATOR_MIGRATE_COMPONENT,
+                    [
+                        'configData' => [
+                            'parameters' => [
+                                'sourceKbcUrl' => $sourceProjectUrl,
+                                '#sourceKbcToken' => $sourceProjectToken,
+                            ],
                         ],
                     ],
                 ]
             );
 
 
-        $migrate = new Migrate($sourceClientMock, $destClientMock, new NullLogger());
+        $migrate = new Migrate(
+            $sourceClientMock,
+            $destClientMock,
+            $sourceProjectUrl,
+            $sourceProjectToken,
+            new NullLogger()
+        );
         $migrate->run();
     }
 }

@@ -11,6 +11,7 @@ class Migrate
 {
     public const PROJECT_BACKUP_COMPONENT = 'keboola.project-backup';
     public const PROJECT_RESTORE_COMPONENT = 'keboola.project-restore';
+    public const ORCHESTRATOR_MIGRATE_COMPONENT = 'keboola.app-orchestrator-migrate';
 
     /** @var SyrupClient */
     private $sourceProjectClient;
@@ -18,16 +19,26 @@ class Migrate
     /** @var SyrupClient */
     private $destProjectClient;
 
+    /** @var string */
+    private $sourceProjectUrl;
+
+    /** @var string */
+    private $sourceProjectToken;
+
     /** @var LoggerInterface  */
     private $logger;
 
     public function __construct(
         SyrupClient $sourceProjectClient,
         SyrupClient $destProjectClient,
+        string $sourceProjectUrl,
+        string $sourceProjectToken,
         LoggerInterface $logger
     ) {
         $this->sourceProjectClient = $sourceProjectClient;
         $this->destProjectClient = $destProjectClient;
+        $this->sourceProjectUrl = $sourceProjectUrl;
+        $this->sourceProjectToken = $sourceProjectToken;
         $this->logger = $logger;
     }
 
@@ -37,6 +48,7 @@ class Migrate
 
         $this->backupSourceProject($restoreCredentials['backupId']);
         $this->restoreDestinationProject($restoreCredentials);
+        $this->migrateOrchestrations();
     }
 
     private function generateBackupCredentials(): array
@@ -87,5 +99,22 @@ class Migrate
             ]
         );
         $this->logger->info('Current project restored');
+    }
+
+    private function migrateOrchestrations(): void
+    {
+        $this->logger->info('Migrating orchestrations');
+        $this->destProjectClient->runJob(
+            self::ORCHESTRATOR_MIGRATE_COMPONENT,
+            [
+                'configData' => [
+                    'parameters' => [
+                        'sourceKbcUrl' => $this->sourceProjectUrl,
+                        '#sourceKbcToken' => $this->sourceProjectToken,
+                    ],
+                ],
+            ]
+        );
+        $this->logger->info('Orchestrations migrated');
     }
 }
