@@ -12,6 +12,7 @@ class Migrate
     public const PROJECT_BACKUP_COMPONENT = 'keboola.project-backup';
     public const PROJECT_RESTORE_COMPONENT = 'keboola.project-restore';
     public const ORCHESTRATOR_MIGRATE_COMPONENT = 'keboola.app-orchestrator-migrate';
+    public const GOOD_DATA_WRITER_MIGRATE_COMPONENT = 'keboola.app-gooddata-writer-migrate';
 
     /** @var SyrupClient */
     private $sourceProjectClient;
@@ -49,6 +50,7 @@ class Migrate
         $this->backupSourceProject($restoreCredentials['backupId']);
         $this->restoreDestinationProject($restoreCredentials);
         $this->migrateOrchestrations();
+        $this->migrateGoodDataWriters();
     }
 
     private function generateBackupCredentials(): array
@@ -116,5 +118,22 @@ class Migrate
             ]
         );
         $this->logger->info('Orchestrations migrated');
+    }
+
+    private function migrateGoodDataWriters(): void
+    {
+        $this->logger->info('Migrating GoodData writers');
+        $this->destProjectClient->runJob(
+            self::GOOD_DATA_WRITER_MIGRATE_COMPONENT,
+            [
+                'configData' => [
+                    'parameters' => [
+                        'sourceKbcUrl' => $this->sourceProjectUrl,
+                        '#sourceKbcToken' => $this->sourceProjectToken,
+                    ],
+                ],
+            ]
+        );
+        $this->logger->info('GoodData writers migrated');
     }
 }
