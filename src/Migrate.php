@@ -49,8 +49,8 @@ class Migrate
 
         $this->backupSourceProject($restoreCredentials['backupId']);
         $this->restoreDestinationProject($restoreCredentials);
-        $this->migrateOrchestrations();
         $this->migrateGoodDataWriters();
+        $this->migrateOrchestrations();
     }
 
     private function generateBackupCredentials(): array

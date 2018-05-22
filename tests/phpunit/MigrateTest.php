@@ -70,7 +70,7 @@ class MigrateTest extends TestCase
         $destClientMock->expects($this->exactly(3))
             ->method('runJob')
             ->withConsecutive(
-                // restore data
+            // restore data
                 [
                     Migrate::PROJECT_RESTORE_COMPONENT,
                     [
@@ -85,9 +85,9 @@ class MigrateTest extends TestCase
                         ],
                     ],
                 ],
-                // restore orchestrations
+                // restore good data writers
                 [
-                    Migrate::ORCHESTRATOR_MIGRATE_COMPONENT,
+                    Migrate::GOOD_DATA_WRITER_MIGRATE_COMPONENT,
                     [
                         'configData' => [
                             'parameters' => [
@@ -97,9 +97,9 @@ class MigrateTest extends TestCase
                         ],
                     ],
                 ],
-                // restore good data writers
+                // restore orchestrations
                 [
-                    Migrate::GOOD_DATA_WRITER_MIGRATE_COMPONENT,
+                    Migrate::ORCHESTRATOR_MIGRATE_COMPONENT,
                     [
                         'configData' => [
                             'parameters' => [
