@@ -42,6 +42,8 @@ class Component extends BaseComponent
         $migrate = new Migrate(
             Utils::createDockerRunnerClientFromStorageClient($sourceProjectClient),
             Utils::createDockerRunnerClientFromStorageClient($destProjectClient),
+            $config->getSourceProjectUrl(),
+            $config->getSourceProjectToken(),
             $logger
         );
         $migrate->run();
