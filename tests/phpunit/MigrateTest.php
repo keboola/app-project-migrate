@@ -34,7 +34,7 @@ class MigrateTest extends TestCase
             )
             ->willReturn([
                 'backupId' => '123',
-                'backupUri' => 'https://kbc-project-migration-s3filesbucket-q91dwj6cdnoz.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
+                'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
                 'region' => 'us-east-1',
                 'credentials' => [
                     'accessKeyId' => 'xxx',
@@ -70,7 +70,7 @@ class MigrateTest extends TestCase
                 [
                     'configData' => [
                         'parameters' => [
-                            'backupUri' => 'https://kbc-project-migration-s3filesbucket-q91dwj6cdnoz.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
+                            'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
                             'accessKeyId' => 'xxx',
                             '#secretAccessKey' => 'yyy',
                             '#sessionToken' => 'zzz',
