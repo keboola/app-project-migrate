@@ -3,7 +3,7 @@
         "PHP": "^7.1",
         "keboola/php-component": "^4.2",
         "keboola/storage-api-client": "^10.1",
-        "keboola/syrup-php-client": "dev-martin-sync-action-run"
+        "keboola/syrup-php-client": "^5.1"
     },
     "require-dev": {
         "jakub-onderka/php-parallel-lint": "^1.0",

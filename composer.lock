@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "782b10e5548757f5da8405af2d2e5510",
+    "content-hash": "0f8ca978473b734cdb89b063a258fb11",
     "packages": [
         {
             "name": "aws/aws-sdk-php",
@@ -401,16 +401,16 @@
         },
         {
             "name": "keboola/syrup-php-client",
-            "version": "dev-martin-sync-action-run",
+            "version": "5.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/keboola/syrup-php-client.git",
-                "reference": "3f58b05a6f0b46e65486f7f1938887488a24ea81"
+                "reference": "108e04948388f43ebdc78b40f70c04b60dd6b78b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/keboola/syrup-php-client/zipball/3f58b05a6f0b46e65486f7f1938887488a24ea81",
-                "reference": "3f58b05a6f0b46e65486f7f1938887488a24ea81",
+                "url": "https://api.github.com/repos/keboola/syrup-php-client/zipball/108e04948388f43ebdc78b40f70c04b60dd6b78b",
+                "reference": "108e04948388f43ebdc78b40f70c04b60dd6b78b",
                 "shasum": ""
             },
             "require": {
@@ -438,7 +438,7 @@
                 }
             ],
             "description": "Keboola Syrup PHP Client",
-            "time": "2018-05-22T14:37:28+00:00"
+            "time": "2018-05-22T15:29:07+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -2762,9 +2762,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "keboola/syrup-php-client": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
