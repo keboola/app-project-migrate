@@ -405,12 +405,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/keboola/syrup-php-client.git",
-                "reference": "aaee5ecf069ebf8a9388d90a8cf56cfe26a7d6ff"
+                "reference": "3f58b05a6f0b46e65486f7f1938887488a24ea81"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/keboola/syrup-php-client/zipball/aaee5ecf069ebf8a9388d90a8cf56cfe26a7d6ff",
-                "reference": "aaee5ecf069ebf8a9388d90a8cf56cfe26a7d6ff",
+                "url": "https://api.github.com/repos/keboola/syrup-php-client/zipball/3f58b05a6f0b46e65486f7f1938887488a24ea81",
+                "reference": "3f58b05a6f0b46e65486f7f1938887488a24ea81",
                 "shasum": ""
             },
             "require": {
@@ -438,7 +438,7 @@
                 }
             ],
             "description": "Keboola Syrup PHP Client",
-            "time": "2018-05-22T10:36:20+00:00"
+            "time": "2018-05-22T14:37:28+00:00"
         },
         {
             "name": "monolog/monolog",

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate\Tests;
 
+use Keboola\AppProjectMigrate\DockerRunnerClient;
 use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Component\UserException;
-use Keboola\Syrup\Client as SyrupClient;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -16,11 +16,11 @@ class MigrateTest extends TestCase
 
     public function testMigrateSuccess(): void
     {
-        /** @var SyrupClient|MockObject $sourceClientMock */
-        $sourceClientMock = $this->createMock(SyrupClient::class);
+        /** @var DockerRunnerClient|MockObject $sourceClientMock */
+        $sourceClientMock = $this->createMock(DockerRunnerClient::class);
 
-        /** @var SyrupClient|MockObject $destClientMock */
-        $destClientMock = $this->createMock(SyrupClient::class);
+        /** @var DockerRunnerClient|MockObject $destClientMock */
+        $destClientMock = $this->createMock(DockerRunnerClient::class);
 
         // generate credentials
         $sourceClientMock->expects($this->once())
@@ -128,11 +128,11 @@ class MigrateTest extends TestCase
 
     public function testShouldFailOnSnapshotError(): void
     {
-        /** @var SyrupClient|MockObject $sourceClientMock */
-        $sourceClientMock = $this->createMock(SyrupClient::class);
+        /** @var DockerRunnerClient|MockObject $sourceClientMock */
+        $sourceClientMock = $this->createMock(DockerRunnerClient::class);
 
-        /** @var SyrupClient|MockObject $destClientMock */
-        $destClientMock = $this->createMock(SyrupClient::class);
+        /** @var DockerRunnerClient|MockObject $destClientMock */
+        $destClientMock = $this->createMock(DockerRunnerClient::class);
 
         // generate credentials
         $sourceClientMock->expects($this->once())
@@ -195,11 +195,11 @@ class MigrateTest extends TestCase
 
     public function testShouldFailOnRestoreError(): void
     {
-        /** @var SyrupClient|MockObject $sourceClientMock */
-        $sourceClientMock = $this->createMock(SyrupClient::class);
+        /** @var DockerRunnerClient|MockObject $sourceClientMock */
+        $sourceClientMock = $this->createMock(DockerRunnerClient::class);
 
-        /** @var SyrupClient|MockObject $destClientMock */
-        $destClientMock = $this->createMock(SyrupClient::class);
+        /** @var DockerRunnerClient|MockObject $destClientMock */
+        $destClientMock = $this->createMock(DockerRunnerClient::class);
 
         // generate credentials
         $sourceClientMock->expects($this->once())

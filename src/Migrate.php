@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate;
 
 use Keboola\Component\UserException;
-use Keboola\Syrup\Client as SyrupClient;
 use Psr\Log\LoggerInterface;
 
 class Migrate
@@ -17,10 +16,10 @@ class Migrate
 
     private const JOB_STATUS_SUCCESS = 'success';
 
-    /** @var SyrupClient */
+    /** @var DockerRunnerClient */
     private $sourceProjectClient;
 
-    /** @var SyrupClient */
+    /** @var DockerRunnerClient */
     private $destProjectClient;
 
     /** @var string */
@@ -33,8 +32,8 @@ class Migrate
     private $logger;
 
     public function __construct(
-        SyrupClient $sourceProjectClient,
-        SyrupClient $destProjectClient,
+        DockerRunnerClient $sourceProjectClient,
+        DockerRunnerClient $destProjectClient,
         string $sourceProjectUrl,
         string $sourceProjectToken,
         LoggerInterface $logger

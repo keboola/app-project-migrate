@@ -17,22 +17,24 @@ class Utils
             return $service['id'] === $serviceId;
         }));
         if (empty($foundServices)) {
-            throw new \Exception('syrup service not found');
+            throw new \Exception(sprintf('%s service not found', $serviceId));
         }
         return $foundServices[0]['url'];
     }
 
-    public static function createDockerRunnerClientFromStorageClient(StorageClient $sapiClient): SyrupClient
+    public static function createDockerRunnerClientFromStorageClient(StorageClient $sapiClient): DockerRunnerClient
     {
+        $services =  $sapiClient->indexAction()['services'];
         $baseUrl = self::getKeboolaServiceUrl(
-            $sapiClient->indexAction()['services'],
+            $services,
             self::DOCKER_RUNNER_SERVICE_ID
         );
-        return new SyrupClient([
+        $syrupClient = new SyrupClient([
             'url' => $baseUrl,
             'token' => $sapiClient->getTokenString(),
             'super' => 'docker',
             'runId' => $sapiClient->getRunId(),
         ]);
+        return new DockerRunnerClient($syrupClient, $baseUrl);
     }
 }
