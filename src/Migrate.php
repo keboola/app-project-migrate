@@ -15,6 +15,8 @@ class Migrate
     public const ORCHESTRATOR_MIGRATE_COMPONENT = 'keboola.app-orchestrator-migrate';
     public const GOOD_DATA_WRITER_MIGRATE_COMPONENT = 'keboola.app-gooddata-writer-migrate';
 
+    private const JOB_STATUS_SUCCESS = 'success';
+
     /** @var SyrupClient */
     private $sourceProjectClient;
 
@@ -81,7 +83,7 @@ class Migrate
                 ],
             ]
         );
-        if ($job['status'] !== 'success') {
+        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
             throw new UserException('Project snapshot create error: ' . $job['result']['message']);
         }
         $this->logger->info('Source project snapshot created');
@@ -104,7 +106,7 @@ class Migrate
                 ],
             ]
         );
-        if ($job['status'] !== 'success') {
+        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
             throw new UserException('Project restore error: ' . $job['result']['message']);
         }
         $this->logger->info('Current project restored');
@@ -113,7 +115,7 @@ class Migrate
     private function migrateOrchestrations(): void
     {
         $this->logger->info('Migrating orchestrations');
-        $this->destProjectClient->runJob(
+        $job = $this->destProjectClient->runJob(
             self::ORCHESTRATOR_MIGRATE_COMPONENT,
             [
                 'configData' => [
@@ -124,13 +126,16 @@ class Migrate
                 ],
             ]
         );
+        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
+            throw new UserException('Orchestrations migration error: ' . $job['result']['message']);
+        }
         $this->logger->info('Orchestrations migrated');
     }
 
     private function migrateGoodDataWriters(): void
     {
         $this->logger->info('Migrating GoodData writers');
-        $this->destProjectClient->runJob(
+        $job = $this->destProjectClient->runJob(
             self::GOOD_DATA_WRITER_MIGRATE_COMPONENT,
             [
                 'configData' => [
@@ -141,6 +146,9 @@ class Migrate
                 ],
             ]
         );
+        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
+            throw new UserException('GoodData writers migration error: ' . $job['result']['message']);
+        }
         $this->logger->info('GoodData writers migrated');
     }
 }

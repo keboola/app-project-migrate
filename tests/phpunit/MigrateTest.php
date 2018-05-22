@@ -126,7 +126,7 @@ class MigrateTest extends TestCase
         $migrate->run();
     }
 
-    public function testShouldFailOnSnapshotError()
+    public function testShouldFailOnSnapshotError(): void
     {
         /** @var SyrupClient|MockObject $sourceClientMock */
         $sourceClientMock = $this->createMock(SyrupClient::class);
@@ -193,7 +193,7 @@ class MigrateTest extends TestCase
         $migrate->run();
     }
 
-    public function testShouldFailOnRestoreError()
+    public function testShouldFailOnRestoreError(): void
     {
         /** @var SyrupClient|MockObject $sourceClientMock */
         $sourceClientMock = $this->createMock(SyrupClient::class);
