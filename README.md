@@ -1,12 +1,25 @@
-# my-component
+# Project Migrate
 
-[![Build Status](https://travis-ci.org/keboola/my-component.svg?branch=master)](https://travis-ci.org/keboola/my-component)
+[![Build Status](https://travis-ci.com/keboola/app-project-migrate.svg?branch=master)](https://travis-ci.com/keboola/app-project-migrate)
 
-> Fill in description
+Application which orchestrates whole process of KBC project migration from one KBC stack to Another.
 
-# Usage
+Prerequisites:
+ - Source project which will be migrated
+ - Destination project - empty project where the source project will be cloned
+ 
+Application is executed in *destination* projects and requires Storage API token and KBC url of *source* project.
+Admin token of source project is required for GoodData writers migration.
+Source project is left without any changes.
 
-> fill in usage instructions
+Migration steps performed by the application:
+
+- Create snapshot of source project https://github.com/keboola/app-project-backup
+- Restore project from snapshot https://github.com/keboola/app-project-restore
+- Migrate GoodData writers https://github.com/keboola/app-gooddata-writer-migrate
+- `TODO` Migrate Snowflake writers
+- Migrate Orchestrators https://github.com/keboola/app-orchestrator-migrate
+
 
 ## Development
  
