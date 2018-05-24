@@ -2,15 +2,19 @@
 
 declare(strict_types=1);
 
-namespace MyComponent;
+namespace Keboola\AppProjectMigrate;
 
 use Keboola\Component\Config\BaseConfig;
 
 class Config extends BaseConfig
 {
-    // @todo implement your custom getters
-    public function getFoo() : string
+    public function getSourceProjectUrl(): string
     {
-        return $this->getValue(['parameters', 'foo']);
+        return $this->getValue(['parameters', 'sourceKbcUrl']);
+    }
+
+    public function getSourceProjectToken(): string
+    {
+        return $this->getValue(['parameters', '#sourceKbcToken']);
     }
 }

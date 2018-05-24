@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "title": "Parameters",
+  "required": [
+    "#sourceKbcToken",
+    "sourceKbcUrl"
+  ],
+  "properties": {
+    "#sourceKbcToken": {
+      "type": "string",
+      "title": "KBC Storage API token",
+      "format": "password",
+      "default": "",
+      "minLength": 1,
+      "propertyOrder": 1
+    },
+    "sourceKbcUrl": {
+      "title": "KBC Stack",
+      "type": "string",
+      "enum": [
+        "https://connection.keboola.com",
+        "https://connection.eu-central-1.keboola.com"
+      ],
+      "options": {
+        "enum_titles": [
+          "US",
+          "EU"
+        ]
+      },
+      "propertyOrder": 2
+    }
+  }
+}
