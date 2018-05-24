@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.com/keboola/app-project-migrate.svg?branch=master)](https://travis-ci.com/keboola/app-project-migrate)
 
-Application which orchestrates whole process of KBC project migration from one KBC stack to Another.
+Application which orchestrates whole process of KBC project migration from one KBC stack to another.
 
 Prerequisites:
  - Source project which will be migrated
