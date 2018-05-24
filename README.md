@@ -17,11 +17,13 @@ Migration steps performed by the application:
 - Create snapshot of source project https://github.com/keboola/app-project-backup
 - Restore project from snapshot https://github.com/keboola/app-project-restore
 - Migrate GoodData writers https://github.com/keboola/app-gooddata-writer-migrate
-- `TODO` Migrate Snowflake writers
+- Migrate Snowflake writers https://github.com/keboola/app-snowflake-writer-migrate
 - Migrate Orchestrators https://github.com/keboola/app-orchestrator-migrate
 
 
 ## Usage
+
+It is recommended to run firs [migration validation application](https://github.com/keboola/app-project-migrate-validation) in source project before migration.
 
 Run the migration in destination project wil the following command.
 This is example of project migration from US to EU, please replace these parameters:
