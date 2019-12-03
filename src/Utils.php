@@ -11,6 +11,8 @@ class Utils
 {
     private const DOCKER_RUNNER_SERVICE_ID = 'docker-runner';
 
+    private const SYRUP_SERVICE_ID = 'syrup';
+
     public static function getKeboolaServiceUrl(array $services, string $serviceId): string
     {
         $foundServices = array_values(array_filter($services, function ($service) use ($serviceId) {
@@ -27,6 +29,10 @@ class Utils
         $services =  $sapiClient->indexAction()['services'];
         $baseUrl = self::getKeboolaServiceUrl(
             $services,
+            self::SYRUP_SERVICE_ID
+        );
+        $syncUrl = self::getKeboolaServiceUrl(
+            $services,
             self::DOCKER_RUNNER_SERVICE_ID
         );
         $syrupClient = new SyrupClient([
@@ -35,6 +41,6 @@ class Utils
             'super' => 'docker',
             'runId' => $sapiClient->getRunId(),
         ]);
-        return new DockerRunnerClient($syrupClient, $baseUrl);
+        return new DockerRunnerClient($syrupClient, $syncUrl);
     }
 }
