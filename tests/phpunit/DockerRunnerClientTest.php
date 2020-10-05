@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate\Tests;
 
 use Keboola\AppProjectMigrate\DockerRunnerClient;
+use Keboola\Syrup\Client;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Keboola\Syrup\Client as SyrupClient;
@@ -14,7 +15,6 @@ class DockerRunnerClientTest extends TestCase
 
     public function testRunJob(): void
     {
-        /** @var SyrupClient|MockObject $syrupClientMock */
         $syrupClientMock = $this->createMock(SyrupClient::class);
 
         $syrupClientMock->expects($this->once())
@@ -42,7 +42,6 @@ class DockerRunnerClientTest extends TestCase
 
     public function testRunSyncAction(): void
     {
-        /** @var SyrupClient|MockObject $syrupClientMock */
         $syrupClientMock = $this->createMock(SyrupClient::class);
 
         $syrupClientMock->expects($this->once())
