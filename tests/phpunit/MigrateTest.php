@@ -16,10 +16,7 @@ class MigrateTest extends TestCase
 
     public function testMigrateSuccess(): void
     {
-        /** @var DockerRunnerClient|MockObject $sourceClientMock */
         $sourceClientMock = $this->createMock(DockerRunnerClient::class);
-
-        /** @var DockerRunnerClient|MockObject $destClientMock */
         $destClientMock = $this->createMock(DockerRunnerClient::class);
 
         // generate credentials
@@ -139,10 +136,7 @@ class MigrateTest extends TestCase
 
     public function testShouldFailOnSnapshotError(): void
     {
-        /** @var DockerRunnerClient|MockObject $sourceClientMock */
         $sourceClientMock = $this->createMock(DockerRunnerClient::class);
-
-        /** @var DockerRunnerClient|MockObject $destClientMock */
         $destClientMock = $this->createMock(DockerRunnerClient::class);
 
         // generate credentials
@@ -206,10 +200,7 @@ class MigrateTest extends TestCase
 
     public function testShouldFailOnRestoreError(): void
     {
-        /** @var DockerRunnerClient|MockObject $sourceClientMock */
         $sourceClientMock = $this->createMock(DockerRunnerClient::class);
-
-        /** @var DockerRunnerClient|MockObject $destClientMock */
         $destClientMock = $this->createMock(DockerRunnerClient::class);
 
         // generate credentials
