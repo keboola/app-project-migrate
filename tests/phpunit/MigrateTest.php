@@ -127,7 +127,6 @@ class MigrateTest extends TestCase
                 'status' => 'success',
             ]);
 
-
         $migrate = new Migrate(
             $sourceClientMock,
             $destClientMock,
