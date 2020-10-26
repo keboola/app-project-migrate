@@ -65,7 +65,7 @@ class MigrateTest extends TestCase
         $sourceProjectToken = 'xyz';
 
         // run restore with credentials from step 1
-        $destClientMock->expects($this->exactly(4))
+        $destClientMock->expects($this->exactly(3))
             ->method('runJob')
             ->withConsecutive(
                 // restore data
