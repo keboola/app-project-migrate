@@ -95,18 +95,6 @@ class MigrateTest extends TestCase
                         ],
                     ],
                 ],
-                // restore good data writers
-                [
-                    Migrate::GOOD_DATA_WRITER_MIGRATE_COMPONENT,
-                    [
-                        'configData' => [
-                            'parameters' => [
-                                'sourceKbcUrl' => $sourceProjectUrl,
-                                '#sourceKbcToken' => $sourceProjectToken,
-                            ],
-                        ],
-                    ],
-                ],
                 // restore orchestrations
                 [
                     Migrate::ORCHESTRATOR_MIGRATE_COMPONENT,

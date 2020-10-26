@@ -12,7 +12,6 @@ class Migrate
     public const PROJECT_BACKUP_COMPONENT = 'keboola.project-backup';
     public const PROJECT_RESTORE_COMPONENT = 'keboola.project-restore';
     public const ORCHESTRATOR_MIGRATE_COMPONENT = 'keboola.app-orchestrator-migrate';
-    public const GOOD_DATA_WRITER_MIGRATE_COMPONENT = 'keboola.app-gooddata-writer-migrate';
     public const SNOWFLAKE_WRITER_MIGRATE_COMPONENT = 'keboola.app-snowflake-writer-migrate';
 
     private const JOB_STATUS_SUCCESS = 'success';
@@ -53,7 +52,6 @@ class Migrate
         $this->backupSourceProject($restoreCredentials['backupId']);
         $this->restoreDestinationProject($restoreCredentials);
         $this->migrateSnowflakeWriters();
-        $this->migrateGoodDataWriters();
         $this->migrateOrchestrations();
     }
 
@@ -131,26 +129,6 @@ class Migrate
             throw new UserException('Orchestrations migration error: ' . $job['result']['message']);
         }
         $this->logger->info('Orchestrations migrated');
-    }
-
-    private function migrateGoodDataWriters(): void
-    {
-        $this->logger->info('Migrating GoodData writers');
-        $job = $this->destProjectClient->runJob(
-            self::GOOD_DATA_WRITER_MIGRATE_COMPONENT,
-            [
-                'configData' => [
-                    'parameters' => [
-                        'sourceKbcUrl' => $this->sourceProjectUrl,
-                        '#sourceKbcToken' => $this->sourceProjectToken,
-                    ],
-                ],
-            ]
-        );
-        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
-            throw new UserException('GoodData writers migration error: ' . $job['result']['message']);
-        }
-        $this->logger->info('GoodData writers migrated');
     }
 
     private function migrateSnowflakeWriters(): void
