@@ -65,7 +65,7 @@ class MigrateTest extends TestCase
         $sourceProjectToken = 'xyz';
 
         // run restore with credentials from step 1
-        $destClientMock->expects($this->exactly(4))
+        $destClientMock->expects($this->exactly(3))
             ->method('runJob')
             ->withConsecutive(
                 // restore data
@@ -86,18 +86,6 @@ class MigrateTest extends TestCase
                 // restore snowflake writers
                 [
                     Migrate::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
-                    [
-                        'configData' => [
-                            'parameters' => [
-                                'sourceKbcUrl' => $sourceProjectUrl,
-                                '#sourceKbcToken' => $sourceProjectToken,
-                            ],
-                        ],
-                    ],
-                ],
-                // restore good data writers
-                [
-                    Migrate::GOOD_DATA_WRITER_MIGRATE_COMPONENT,
                     [
                         'configData' => [
                             'parameters' => [
