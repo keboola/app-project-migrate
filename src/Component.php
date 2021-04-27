@@ -33,8 +33,23 @@ class Component extends BaseComponent
             'token' => getenv('KBC_TOKEN'),
         ]);
 
-        if (!Utils::checkIfProjectEmpty($destProjectClient, new Components($destProjectClient))) {
+        try {
             $destinationTokenInfo = $sourceProjectClient->verifyToken();
+        } catch (StorageClientException $e) {
+            throw new UserException('Cannot authorize destination project: ' . $e->getMessage(), $e->getCode(), $e);
+        }
+
+        if (!$destinationTokenInfo['isMasterToken']) {
+            throw new UserException(
+                sprintf(
+                    'The token "%s" in the destination project "%s" hasn\'t master permissions.',
+                    $destinationTokenInfo['description'],
+                    $destinationTokenInfo['owner']['name']
+                )
+            );
+        }
+
+        if (!Utils::checkIfProjectEmpty($destProjectClient, new Components($destProjectClient))) {
             throw new UserException(
                 sprintf(
                     'Destination project "%s" is not empty.',
