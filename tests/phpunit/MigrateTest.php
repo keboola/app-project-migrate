@@ -20,46 +20,14 @@ class MigrateTest extends TestCase
         $destClientMock = $this->createMock(DockerRunnerClient::class);
 
         // generate credentials
-        $sourceClientMock->expects($this->once())
-            ->method('runSyncAction')
-            ->with(
-                Migrate::PROJECT_BACKUP_COMPONENT,
-                'generate-read-credentials',
-                [
-                    'parameters' => [
-                        'backupId' => null,
-                    ],
-                ]
-            )
-            ->willReturn([
-                'backupId' => '123',
-                'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
-                'region' => 'us-east-1',
-                'credentials' => [
-                    'accessKeyId' => 'xxx',
-                    'secretAccessKey' => 'yyy',
-                    'sessionToken' => 'zzz',
-                    'expiration' => '2018-05-23T10:49:02+00:00',
-                ],
-            ]);
-
-        // run backup
-        $sourceClientMock->expects($this->once())
-            ->method('runJob')
-            ->with(
-                Migrate::PROJECT_BACKUP_COMPONENT,
-                [
-                    'configData' => [
-                        'parameters' => [
-                            'backupId' => '123',
-                        ],
-                    ],
-                ]
-            )
-            ->willReturn([
+        $this->mockAddMethodGenerateReadCredentials($sourceClientMock);
+        $this->mockAddMethodBackupProject(
+            $sourceClientMock,
+            [
                 'id' => '222',
                 'status' => 'success',
-            ]);
+            ]
+        );
 
         $sourceProjectUrl = 'https://connection.keboola.com';
         $sourceProjectToken = 'xyz';
@@ -128,48 +96,17 @@ class MigrateTest extends TestCase
         $destClientMock = $this->createMock(DockerRunnerClient::class);
 
         // generate credentials
-        $sourceClientMock->expects($this->once())
-            ->method('runSyncAction')
-            ->with(
-                Migrate::PROJECT_BACKUP_COMPONENT,
-                'generate-read-credentials',
-                [
-                    'parameters' => [
-                        'backupId' => null,
-                    ],
-                ]
-            )
-            ->willReturn([
-                'backupId' => '123',
-                'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
-                'region' => 'us-east-1',
-                'credentials' => [
-                    'accessKeyId' => 'xxx',
-                    'secretAccessKey' => 'yyy',
-                    'sessionToken' => 'zzz',
-                    'expiration' => '2018-05-23T10:49:02+00:00',
-                ],
-            ]);
-
-        $sourceClientMock->expects($this->once())
-            ->method('runJob')
-            ->with(
-                Migrate::PROJECT_BACKUP_COMPONENT,
-                [
-                    'configData' => [
-                        'parameters' => [
-                            'backupId' => '123',
-                        ],
-                    ],
-                ]
-            )
-            ->willReturn([
+        $this->mockAddMethodGenerateReadCredentials($sourceClientMock);
+        $this->mockAddMethodBackupProject(
+            $sourceClientMock,
+            [
                 'id' => '222',
                 'status' => 'error',
                 'result' => [
                     'message' => 'Cannot snapshot project',
                 ],
-            ]);
+            ]
+        );
 
         $destClientMock->expects($this->never())
             ->method('runJob');
@@ -191,46 +128,14 @@ class MigrateTest extends TestCase
         $sourceClientMock = $this->createMock(DockerRunnerClient::class);
         $destClientMock = $this->createMock(DockerRunnerClient::class);
 
-        // generate credentials
-        $sourceClientMock->expects($this->once())
-            ->method('runSyncAction')
-            ->with(
-                Migrate::PROJECT_BACKUP_COMPONENT,
-                'generate-read-credentials',
-                [
-                    'parameters' => [
-                        'backupId' => null,
-                    ],
-                ]
-            )
-            ->willReturn([
-                'backupId' => '123',
-                'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
-                'region' => 'us-east-1',
-                'credentials' => [
-                    'accessKeyId' => 'xxx',
-                    'secretAccessKey' => 'yyy',
-                    'sessionToken' => 'zzz',
-                    'expiration' => '2018-05-23T10:49:02+00:00',
-                ],
-            ]);
-
-        $sourceClientMock->expects($this->once())
-            ->method('runJob')
-            ->with(
-                Migrate::PROJECT_BACKUP_COMPONENT,
-                [
-                    'configData' => [
-                        'parameters' => [
-                            'backupId' => '123',
-                        ],
-                    ],
-                ]
-            )
-            ->willReturn([
-                'id' => '222',
+        $this->mockAddMethodGenerateReadCredentials($sourceClientMock);
+        $this->mockAddMethodBackupProject(
+            $sourceClientMock,
+            [
+            'id' => '222',
                 'status' => 'success',
-            ]);
+            ]
+        );
 
         $destClientMock->expects($this->any())
             ->method('runJob')
@@ -252,5 +157,52 @@ class MigrateTest extends TestCase
             new NullLogger()
         );
         $migrate->run();
+    }
+
+    private function mockAddMethodGenerateReadCredentials(MockObject $mockObject): void
+    {
+        $mockObject->expects($this->once())
+            ->method('runSyncAction')
+            ->with(
+                Migrate::PROJECT_BACKUP_COMPONENT,
+                'generate-read-credentials',
+                [
+                    'parameters' => [
+                        'backupId' => null,
+                    ],
+                ]
+            )
+            ->willReturn(
+                [
+                    'backupId' => '123',
+                    'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
+                    'region' => 'us-east-1',
+                    'credentials' => [
+                        'accessKeyId' => 'xxx',
+                        'secretAccessKey' => 'yyy',
+                        'sessionToken' => 'zzz',
+                        'expiration' => '2018-05-23T10:49:02+00:00',
+                    ],
+                ]
+            )
+        ;
+    }
+
+    private function mockAddMethodBackupProject(MockObject $mockObject, array $return): void
+    {
+        $mockObject
+            ->method('runJob')
+            ->with(
+                Migrate::PROJECT_BACKUP_COMPONENT,
+                [
+                    'configData' => [
+                        'parameters' => [
+                            'backupId' => '123',
+                        ],
+                    ],
+                ]
+            )
+            ->willReturn($return)
+        ;
     }
 }
