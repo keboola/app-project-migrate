@@ -8,6 +8,7 @@ use Keboola\Component\BaseComponent;
 use Keboola\Component\UserException;
 use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\ClientException as StorageClientException;
+use Keboola\StorageApi\Components;
 
 class Component extends BaseComponent
 {
@@ -31,6 +32,16 @@ class Component extends BaseComponent
             'url' => getenv('KBC_URL'),
             'token' => getenv('KBC_TOKEN'),
         ]);
+
+        if (!Utils::checkIfProjectEmpty($destProjectClient, new Components($destProjectClient))) {
+            $destinationTokenInfo = $sourceProjectClient->verifyToken();
+            throw new UserException(
+                sprintf(
+                    'Destination project "%s" is not empty.',
+                    $destinationTokenInfo['owner']['name']
+                )
+            );
+        }
 
         $logger->info(sprintf(
             'Restoring current project from project %s (%d) at %s',

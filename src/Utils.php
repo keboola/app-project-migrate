@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate;
 
+use Keboola\StorageApi\Client;
 use Keboola\StorageApi\Client as StorageClient;
+use Keboola\StorageApi\Components;
 use Keboola\Syrup\Client as SyrupClient;
 
 class Utils
@@ -42,5 +44,20 @@ class Utils
             'runId' => $sapiClient->getRunId(),
         ]);
         return new DockerRunnerClient($syrupClient, $syncUrl);
+    }
+
+    public static function checkIfProjectEmpty(Client $client, Components $componentsClient): bool
+    {
+        $listOfComponents = $componentsClient->listComponents();
+        if (!empty($listOfComponents)) {
+            return false;
+        }
+
+        $listOfBuckets = $client->listBuckets();
+        if (!empty($listOfBuckets)) {
+            return false;
+        }
+
+        return true;
     }
 }
