@@ -7,6 +7,7 @@ namespace Keboola\AppProjectMigrate\Tests;
 use Keboola\AppProjectMigrate\DockerRunnerClient;
 use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Component\UserException;
+use Keboola\Syrup\ClientException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -156,6 +157,41 @@ class MigrateTest extends TestCase
             'yyy',
             new NullLogger()
         );
+        $migrate->run();
+    }
+
+    public function testCatchSyrupClientException(): void
+    {
+        $sourceClientMock = $this->createMock(DockerRunnerClient::class);
+        $destinationClientMock = $this->createMock(DockerRunnerClient::class);
+
+        $this->mockAddMethodGenerateReadCredentials($sourceClientMock);
+        $this->mockAddMethodBackupProject(
+            $sourceClientMock,
+            [
+                'id' => '222',
+                'status' => 'success',
+            ]
+        );
+
+        $destinationClientMock
+            ->method('runJob')
+            ->willThrowException(
+                new ClientException('Test ClientException', 401)
+            )
+        ;
+
+        $migrate = new Migrate(
+            $sourceClientMock,
+            $destinationClientMock,
+            'xxx',
+            'yyy',
+            new NullLogger()
+        );
+
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessage('Test ClientException');
+        $this->expectExceptionCode(401);
         $migrate->run();
     }
 
