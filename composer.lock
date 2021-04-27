@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d68963b859e4778e0216809d2ee1b84e",
+    "content-hash": "52861740b7271394262428ea37b523b4",
     "packages": [
         {
             "name": "aws/aws-sdk-php",
@@ -1954,6 +1954,51 @@
                 "source": "https://github.com/keboola/phpcs-standard/tree/11.0.0"
             },
             "time": "2021-04-09T11:29:16+00:00"
+        },
+        {
+            "name": "keboola/datadir-tests",
+            "version": "5.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/keboola/datadir-tests.git",
+                "reference": "be02e9dc7869c4224cff6dd1b0cdc7937753b234"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/keboola/datadir-tests/zipball/be02e9dc7869c4224cff6dd1b0cdc7937753b234",
+                "reference": "be02e9dc7869c4224cff6dd1b0cdc7937753b234",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "keboola/php-temp": "^2.0",
+                "php": "^7.3",
+                "phpunit/phpunit": "^9.0",
+                "symfony/filesystem": "^5.0",
+                "symfony/finder": "^5.0",
+                "symfony/process": "^5.0"
+            },
+            "require-dev": {
+                "jakub-onderka/php-parallel-lint": "^1.0",
+                "keboola/coding-standard": "^9.0",
+                "phpstan/phpstan": "^0.12.14"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Keboola\\DatadirTests\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Tool for functional testing of Keboola Connection components",
+            "support": {
+                "issues": "https://github.com/keboola/datadir-tests/issues",
+                "source": "https://github.com/keboola/datadir-tests/tree/5.2.1"
+            },
+            "time": "2020-11-30T19:23:38+00:00"
         },
         {
             "name": "keboola/php-temp",
