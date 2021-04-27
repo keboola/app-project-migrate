@@ -113,7 +113,7 @@ class MigrateTest extends TestCase
             ->method('runJob');
 
         $this->expectException(UserException::class);
-        $this->expectExceptionMessageRegExp('/Cannot snapshot project/');
+        $this->expectExceptionMessageMatches('/Cannot snapshot project/');
         $migrate = new Migrate(
             $sourceClientMock,
             $destClientMock,
@@ -149,7 +149,7 @@ class MigrateTest extends TestCase
             ]);
 
         $this->expectException(UserException::class);
-        $this->expectExceptionMessageRegExp('/Cannot restore project/');
+        $this->expectExceptionMessageMatches('/Cannot restore project/');
         $migrate = new Migrate(
             $sourceClientMock,
             $destClientMock,

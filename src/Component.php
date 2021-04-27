@@ -12,7 +12,7 @@ use Keboola\StorageApi\Components;
 
 class Component extends BaseComponent
 {
-    public function run(): void
+    protected function run(): void
     {
         /** @var Config $config */
         $config = $this->getConfig();

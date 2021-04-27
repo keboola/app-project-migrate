@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Keboola\Component\UserException;
+use Keboola\CommonExceptions\UserExceptionInterface;
 use Keboola\Component\Logger;
 use Keboola\AppProjectMigrate\Component;
 
@@ -11,12 +11,12 @@ require __DIR__ . '/../vendor/autoload.php';
 $logger = new Logger();
 try {
     $app = new Component($logger);
-    $app->run();
+    $app->execute();
     exit(0);
-} catch (\Keboola\Component\UserException $e) {
+} catch (UserExceptionInterface $e) {
     $logger->error($e->getMessage());
     exit(1);
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     $logger->critical(
         get_class($e) . ':' . $e->getMessage(),
         [
