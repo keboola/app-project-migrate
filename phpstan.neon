@@ -3,5 +3,3 @@ parameters:
     ignoreErrors:
         - '#Parameter \#1 \$object of function get_class expects object, Throwable\|null given.#'
         - '#Cannot call method scalarNode\(\) on Symfony\\Component\\Config\\Definition\\Builder\\NodeParentInterface\|null.#'
-        - '#Parameter \#1 \$syrupClient of class Keboola\\AppProjectMigrate\\DockerRunnerClient constructor expects Keboola\\Syrup\\Client, PHPUnit\\Framework\\MockObject\\MockObject given.#'
-        - '#Parameter \#[0-9] \$(dest|source)ProjectClient of class Keboola\\AppProjectMigrate\\Migrate constructor expects Keboola\\AppProjectMigrate\\DockerRunnerClient, PHPUnit\\Framework\\MockObject\\MockObject given.#'
