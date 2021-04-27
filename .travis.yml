@@ -8,6 +8,7 @@ services:
 before_script:
   - export APP_IMAGE=keboola-component
   - docker -v
+  - docker login --username "$DOCKERHUB_USER" --password "$DOCKERHUB_TOKEN"
   - docker build -t $APP_IMAGE .
   - docker run $APP_IMAGE composer ci
 
