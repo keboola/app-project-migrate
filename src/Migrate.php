@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate;
 
 use Keboola\Component\UserException;
+use Keboola\Syrup\ClientException;
 use Psr\Log\LoggerInterface;
 
 class Migrate
@@ -48,11 +49,16 @@ class Migrate
     public function run(): void
     {
         $restoreCredentials = $this->generateBackupCredentials();
-
-        $this->backupSourceProject($restoreCredentials['backupId']);
-        $this->restoreDestinationProject($restoreCredentials);
-        $this->migrateSnowflakeWriters();
-        $this->migrateOrchestrations();
+        try {
+            $this->backupSourceProject($restoreCredentials['backupId']);
+            $this->restoreDestinationProject($restoreCredentials);
+            $this->migrateSnowflakeWriters();
+            $this->migrateOrchestrations();
+        } catch (ClientException $e) {
+            if ($e->getCode() >= 400 && $e->getCode() < 500) {
+                throw new UserException($e->getMessage(), $e->getCode(), $e);
+            }
+        }
     }
 
     private function generateBackupCredentials(): array
