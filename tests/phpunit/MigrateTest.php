@@ -50,6 +50,7 @@ class MigrateTest extends TestCase
                                 'useDefaultBackend' => true,
                             ],
                         ],
+                        'tag' => '1.3.3',
                     ],
                 ],
                 // restore snowflake writers
@@ -236,6 +237,7 @@ class MigrateTest extends TestCase
                             'backupId' => '123',
                         ],
                     ],
+                    'tag' => '1.3.0',
                 ]
             )
             ->willReturn($return)
