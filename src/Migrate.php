@@ -86,6 +86,7 @@ class Migrate
                         'backupId' => $backupId,
                     ],
                 ],
+                'tag' => '1.3.0',
             ]
         );
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
@@ -109,6 +110,7 @@ class Migrate
                         'useDefaultBackend' => true,
                     ],
                 ],
+                'tag' => '1.3.3',
             ]
         );
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
