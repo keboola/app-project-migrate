@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate\Tests;
 
 use Generator;
+use Keboola\AppProjectMigrate\Config;
 use Keboola\AppProjectMigrate\DockerRunnerClient;
 use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Component\UserException;
@@ -47,7 +48,7 @@ class MigrateTest extends TestCase
             ->withConsecutive(
                 // restore data
                 [
-                    Migrate::PROJECT_RESTORE_COMPONENT,
+                    Config::PROJECT_RESTORE_COMPONENT,
                     [
                         'configData' => [
                             'parameters' => array_merge($expectedCredentialsData, ['useDefaultBackend' => true]),
@@ -56,7 +57,7 @@ class MigrateTest extends TestCase
                 ],
                 // restore snowflake writers
                 [
-                    Migrate::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
+                    Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
                     [
                         'configData' => [
                             'parameters' => [
@@ -68,7 +69,7 @@ class MigrateTest extends TestCase
                 ],
                 // restore orchestrations
                 [
-                    Migrate::ORCHESTRATOR_MIGRATE_COMPONENT,
+                    Config::ORCHESTRATOR_MIGRATE_COMPONENT,
                     [
                         'configData' => [
                             'parameters' => [
@@ -202,7 +203,7 @@ class MigrateTest extends TestCase
         $mockObject->expects($this->once())
             ->method('runSyncAction')
             ->with(
-                Migrate::PROJECT_BACKUP_COMPONENT,
+                Config::PROJECT_BACKUP_COMPONENT,
                 'generate-read-credentials',
                 [
                     'parameters' => [
@@ -231,7 +232,7 @@ class MigrateTest extends TestCase
         $mockObject->expects($this->once())
             ->method('runSyncAction')
             ->with(
-                Migrate::PROJECT_BACKUP_COMPONENT,
+                Config::PROJECT_BACKUP_COMPONENT,
                 'generate-read-credentials',
                 [
                     'parameters' => [
@@ -256,7 +257,7 @@ class MigrateTest extends TestCase
         $mockObject
             ->method('runJob')
             ->with(
-                Migrate::PROJECT_BACKUP_COMPONENT,
+                Config::PROJECT_BACKUP_COMPONENT,
                 [
                     'configData' => [
                         'parameters' => [
