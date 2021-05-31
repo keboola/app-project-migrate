@@ -6,6 +6,7 @@ namespace Keboola\AppProjectMigrate\Tests;
 
 use Generator;
 use Keboola\AppProjectMigrate\Utils;
+use Keboola\Component\UserException;
 use Keboola\StorageApi\Client;
 use Keboola\StorageApi\Components;
 use PHPUnit\Framework\Assert;
@@ -97,5 +98,49 @@ class UtilsTest extends TestCase
             ],
             false,
         ];
+    }
+
+
+    public function testMissingSourceApp(): void
+    {
+        $sourceClientMock = $this->createMock(Client::class);
+        $destClientMock = $this->createMock(Client::class);
+
+        $sourceClientMock->method('apiGet')->willReturn(['components' => []]);
+
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessage('Missing "keboola.project-backup" application in the source project.');
+        Utils::checkMigrationApps($sourceClientMock, $destClientMock);
+    }
+
+    public function testMissingDestinationApp(): void
+    {
+        $sourceClientMock = $this->createMock(Client::class);
+        $destClientMock = $this->createMock(Client::class);
+
+        $sourceClientMock
+            ->method('apiGet')
+            ->willReturn(
+                [
+                    'components' => [
+                        ['id' => 'keboola.project-backup'],
+                    ],
+                ]
+            );
+
+        $destClientMock
+            ->method('apiGet')
+            ->willReturn(
+                [
+                    'components' => [
+                        ['id' => 'keboola.app-orchestrator-migrate'],
+                        ['id' => 'keboola.app-snowflake-writer-migrate'],
+                    ],
+                ]
+            );
+
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessage('Missing "keboola.project-restore" application in the destination project.');
+        Utils::checkMigrationApps($sourceClientMock, $destClientMock);
     }
 }
