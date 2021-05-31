@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate\Tests;
 
+use Generator;
 use Keboola\AppProjectMigrate\DockerRunnerClient;
 use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Component\UserException;
@@ -15,13 +16,20 @@ use Psr\Log\NullLogger;
 class MigrateTest extends TestCase
 {
 
-    public function testMigrateSuccess(): void
+    /**
+     * @dataProvider successMigrateDataProvider
+     */
+    public function testMigrateSuccess(array $expectedCredentialsData): void
     {
         $sourceClientMock = $this->createMock(DockerRunnerClient::class);
         $destClientMock = $this->createMock(DockerRunnerClient::class);
 
         // generate credentials
-        $this->mockAddMethodGenerateReadCredentials($sourceClientMock);
+        if (array_key_exists('abs', $expectedCredentialsData)) {
+            $this->mockAddMethodGenerateAbsReadCredentials($sourceClientMock);
+        } else {
+            $this->mockAddMethodGenerateS3ReadCredentials($sourceClientMock);
+        }
         $this->mockAddMethodBackupProject(
             $sourceClientMock,
             [
@@ -42,15 +50,8 @@ class MigrateTest extends TestCase
                     Migrate::PROJECT_RESTORE_COMPONENT,
                     [
                         'configData' => [
-                            'parameters' => [
-                                'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
-                                'accessKeyId' => 'xxx',
-                                '#secretAccessKey' => 'yyy',
-                                '#sessionToken' => 'zzz',
-                                'useDefaultBackend' => true,
-                            ],
+                            'parameters' => array_merge($expectedCredentialsData, ['useDefaultBackend' => true]),
                         ],
-                        'tag' => '1.3.3',
                     ],
                 ],
                 // restore snowflake writers
@@ -98,7 +99,7 @@ class MigrateTest extends TestCase
         $destClientMock = $this->createMock(DockerRunnerClient::class);
 
         // generate credentials
-        $this->mockAddMethodGenerateReadCredentials($sourceClientMock);
+        $this->mockAddMethodGenerateS3ReadCredentials($sourceClientMock);
         $this->mockAddMethodBackupProject(
             $sourceClientMock,
             [
@@ -130,7 +131,7 @@ class MigrateTest extends TestCase
         $sourceClientMock = $this->createMock(DockerRunnerClient::class);
         $destClientMock = $this->createMock(DockerRunnerClient::class);
 
-        $this->mockAddMethodGenerateReadCredentials($sourceClientMock);
+        $this->mockAddMethodGenerateS3ReadCredentials($sourceClientMock);
         $this->mockAddMethodBackupProject(
             $sourceClientMock,
             [
@@ -166,7 +167,7 @@ class MigrateTest extends TestCase
         $sourceClientMock = $this->createMock(DockerRunnerClient::class);
         $destinationClientMock = $this->createMock(DockerRunnerClient::class);
 
-        $this->mockAddMethodGenerateReadCredentials($sourceClientMock);
+        $this->mockAddMethodGenerateS3ReadCredentials($sourceClientMock);
         $this->mockAddMethodBackupProject(
             $sourceClientMock,
             [
@@ -196,7 +197,7 @@ class MigrateTest extends TestCase
         $migrate->run();
     }
 
-    private function mockAddMethodGenerateReadCredentials(MockObject $mockObject): void
+    private function mockAddMethodGenerateS3ReadCredentials(MockObject $mockObject): void
     {
         $mockObject->expects($this->once())
             ->method('runSyncAction')
@@ -225,6 +226,31 @@ class MigrateTest extends TestCase
         ;
     }
 
+    private function mockAddMethodGenerateAbsReadCredentials(MockObject $mockObject): void
+    {
+        $mockObject->expects($this->once())
+            ->method('runSyncAction')
+            ->with(
+                Migrate::PROJECT_BACKUP_COMPONENT,
+                'generate-read-credentials',
+                [
+                    'parameters' => [
+                        'backupId' => null,
+                    ],
+                ]
+            )
+            ->willReturn(
+                [
+                    'backupId' => '123',
+                    'container' => 'abcdefgh',
+                    'credentials' => [
+                        'connectionString' => 'https://testConnectionString',
+                    ],
+                ]
+            )
+        ;
+    }
+
     private function mockAddMethodBackupProject(MockObject $mockObject, array $return): void
     {
         $mockObject
@@ -237,10 +263,32 @@ class MigrateTest extends TestCase
                             'backupId' => '123',
                         ],
                     ],
-                    'tag' => '1.3.0',
                 ]
             )
             ->willReturn($return)
         ;
+    }
+
+    public function successMigrateDataProvider(): Generator
+    {
+        yield 'migrate S3' => [
+            [
+                's3' => [
+                    'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
+                    'accessKeyId' => 'xxx',
+                    '#secretAccessKey' => 'yyy',
+                    '#sessionToken' => 'zzz',
+                ],
+            ],
+        ];
+
+        yield 'migrate ABS' => [
+            [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+        ];
     }
 }

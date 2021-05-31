@@ -86,7 +86,6 @@ class Migrate
                         'backupId' => $backupId,
                     ],
                 ],
-                'tag' => '1.3.0',
             ]
         );
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
@@ -101,16 +100,7 @@ class Migrate
         $job = $this->destProjectClient->runJob(
             self::PROJECT_RESTORE_COMPONENT,
             [
-                'configData' => [
-                    'parameters' => [
-                        'backupUri' => $restoreCredentials['backupUri'],
-                        'accessKeyId' => $restoreCredentials['credentials']['accessKeyId'],
-                        '#secretAccessKey' => $restoreCredentials['credentials']['secretAccessKey'],
-                        '#sessionToken' => $restoreCredentials['credentials']['sessionToken'],
-                        'useDefaultBackend' => true,
-                    ],
-                ],
-                'tag' => '1.3.3',
+                'configData' => $this->getRestoreConfigData($restoreCredentials),
             ]
         );
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
@@ -157,5 +147,34 @@ class Migrate
             throw new UserException('Snowflake writers migration error: ' . $job['result']['message']);
         }
         $this->logger->info('Snowflake writers migrated');
+    }
+
+    private function getRestoreConfigData(array $restoreCredentials): array
+    {
+        if (isset($restoreCredentials['credentials']['secretAccessKey'])) {
+            return [
+                'parameters' => [
+                    's3' => [
+                        'backupUri' => $restoreCredentials['backupUri'],
+                        'accessKeyId' => $restoreCredentials['credentials']['accessKeyId'],
+                        '#secretAccessKey' => $restoreCredentials['credentials']['secretAccessKey'],
+                        '#sessionToken' => $restoreCredentials['credentials']['sessionToken'],
+                    ],
+                    'useDefaultBackend' => true,
+                ],
+            ];
+        } elseif (isset($restoreCredentials['credentials']['connectionString'])) {
+            return [
+                'parameters' => [
+                    'abs' => [
+                        'container' => $restoreCredentials['container'],
+                        '#connectionString' => $restoreCredentials['credentials']['connectionString'],
+                    ],
+                    'useDefaultBackend' => true,
+                ],
+            ];
+        } else {
+            throw new UserException('Unrecognized restore credentials.');
+        }
     }
 }
