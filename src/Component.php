@@ -49,6 +49,8 @@ class Component extends BaseComponent
             );
         }
 
+        Utils::checkMigrationApps($sourceProjectClient, $destProjectClient);
+
         if (!Utils::checkIfProjectEmpty($destProjectClient, new Components($destProjectClient))) {
             throw new UserException(
                 sprintf(

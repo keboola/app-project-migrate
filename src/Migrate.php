@@ -10,11 +10,6 @@ use Psr\Log\LoggerInterface;
 
 class Migrate
 {
-    public const PROJECT_BACKUP_COMPONENT = 'keboola.project-backup';
-    public const PROJECT_RESTORE_COMPONENT = 'keboola.project-restore';
-    public const ORCHESTRATOR_MIGRATE_COMPONENT = 'keboola.app-orchestrator-migrate';
-    public const SNOWFLAKE_WRITER_MIGRATE_COMPONENT = 'keboola.app-snowflake-writer-migrate';
-
     private const JOB_STATUS_SUCCESS = 'success';
 
     /** @var DockerRunnerClient */
@@ -65,7 +60,7 @@ class Migrate
     {
         $this->logger->info('Creating backup credentials');
         return $this->sourceProjectClient->runSyncAction(
-            self::PROJECT_BACKUP_COMPONENT,
+            Config::PROJECT_BACKUP_COMPONENT,
             'generate-read-credentials',
             [
                 'parameters' => [
@@ -79,7 +74,7 @@ class Migrate
     {
         $this->logger->info('Creating source project snapshot');
         $job = $this->sourceProjectClient->runJob(
-            self::PROJECT_BACKUP_COMPONENT,
+            Config::PROJECT_BACKUP_COMPONENT,
             [
                 'configData' => [
                     'parameters' => [
@@ -98,7 +93,7 @@ class Migrate
     {
         $this->logger->info('Restoring current project from snapshot');
         $job = $this->destProjectClient->runJob(
-            self::PROJECT_RESTORE_COMPONENT,
+            Config::PROJECT_RESTORE_COMPONENT,
             [
                 'configData' => $this->getRestoreConfigData($restoreCredentials),
             ]
@@ -113,7 +108,7 @@ class Migrate
     {
         $this->logger->info('Migrating orchestrations');
         $job = $this->destProjectClient->runJob(
-            self::ORCHESTRATOR_MIGRATE_COMPONENT,
+            Config::ORCHESTRATOR_MIGRATE_COMPONENT,
             [
                 'configData' => [
                     'parameters' => [
@@ -133,7 +128,7 @@ class Migrate
     {
         $this->logger->info('Migrating Snowflake writers');
         $job = $this->destProjectClient->runJob(
-            self::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
+            Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
             [
                 'configData' => [
                     'parameters' => [
