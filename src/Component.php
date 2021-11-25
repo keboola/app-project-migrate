@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate;
 
+use Keboola\AppProjectMigrate\JobRunner\JobRunnerFactory;
 use Keboola\Component\BaseComponent;
 use Keboola\Component\UserException;
 use Keboola\StorageApi\Client as StorageClient;
@@ -68,8 +69,8 @@ class Component extends BaseComponent
         ));
 
         $migrate = new Migrate(
-            Utils::createDockerRunnerClientFromStorageClient($sourceProjectClient),
-            Utils::createDockerRunnerClientFromStorageClient($destProjectClient),
+            JobRunnerFactory::create($sourceProjectClient, $logger),
+            JobRunnerFactory::create($destProjectClient, $logger),
             $config->getSourceProjectUrl(),
             $config->getSourceProjectToken(),
             $logger

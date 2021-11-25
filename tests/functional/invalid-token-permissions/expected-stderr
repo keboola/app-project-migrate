@@ -1,1 +1,1 @@
-The token "non-master permissions" in the destination project "[tests] migrate project" hasn't master permissions.
+The token "%s" in the destination project "%s" hasn't master permissions.
