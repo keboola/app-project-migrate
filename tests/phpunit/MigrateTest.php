@@ -6,9 +6,10 @@ namespace Keboola\AppProjectMigrate\Tests;
 
 use Generator;
 use Keboola\AppProjectMigrate\Config;
-use Keboola\AppProjectMigrate\DockerRunnerClient;
+use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Component\UserException;
+use Keboola\StorageApi\Client;
 use Keboola\Syrup\ClientException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -22,8 +23,8 @@ class MigrateTest extends TestCase
      */
     public function testMigrateSuccess(array $expectedCredentialsData): void
     {
-        $sourceClientMock = $this->createMock(DockerRunnerClient::class);
-        $destClientMock = $this->createMock(DockerRunnerClient::class);
+        $sourceClientMock = $this->createMock(SyrupJobRunner::class);
+        $destClientMock = $this->createMock(SyrupJobRunner::class);
 
         // generate credentials
         if (array_key_exists('abs', $expectedCredentialsData)) {
@@ -46,24 +47,20 @@ class MigrateTest extends TestCase
         $destClientMock->expects($this->exactly(3))
             ->method('runJob')
             ->withConsecutive(
-                // restore data
+            // restore data
                 [
                     Config::PROJECT_RESTORE_COMPONENT,
                     [
-                        'configData' => [
-                            'parameters' => array_merge($expectedCredentialsData, ['useDefaultBackend' => true]),
-                        ],
+                        'parameters' => array_merge($expectedCredentialsData, ['useDefaultBackend' => true]),
                     ],
                 ],
                 // restore snowflake writers
                 [
                     Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
                     [
-                        'configData' => [
-                            'parameters' => [
-                                'sourceKbcUrl' => $sourceProjectUrl,
-                                '#sourceKbcToken' => $sourceProjectToken,
-                            ],
+                        'parameters' => [
+                            'sourceKbcUrl' => $sourceProjectUrl,
+                            '#sourceKbcToken' => $sourceProjectToken,
                         ],
                     ],
                 ],
@@ -71,11 +68,9 @@ class MigrateTest extends TestCase
                 [
                     Config::ORCHESTRATOR_MIGRATE_COMPONENT,
                     [
-                        'configData' => [
-                            'parameters' => [
-                                'sourceKbcUrl' => $sourceProjectUrl,
-                                '#sourceKbcToken' => $sourceProjectToken,
-                            ],
+                        'parameters' => [
+                            'sourceKbcUrl' => $sourceProjectUrl,
+                            '#sourceKbcToken' => $sourceProjectToken,
                         ],
                     ],
                 ]
@@ -96,8 +91,8 @@ class MigrateTest extends TestCase
 
     public function testShouldFailOnSnapshotError(): void
     {
-        $sourceClientMock = $this->createMock(DockerRunnerClient::class);
-        $destClientMock = $this->createMock(DockerRunnerClient::class);
+        $sourceClientMock = $this->createMock(SyrupJobRunner::class);
+        $destClientMock = $this->createMock(SyrupJobRunner::class);
 
         // generate credentials
         $this->mockAddMethodGenerateS3ReadCredentials($sourceClientMock);
@@ -129,8 +124,8 @@ class MigrateTest extends TestCase
 
     public function testShouldFailOnRestoreError(): void
     {
-        $sourceClientMock = $this->createMock(DockerRunnerClient::class);
-        $destClientMock = $this->createMock(DockerRunnerClient::class);
+        $sourceClientMock = $this->createMock(SyrupJobRunner::class);
+        $destClientMock = $this->createMock(SyrupJobRunner::class);
 
         $this->mockAddMethodGenerateS3ReadCredentials($sourceClientMock);
         $this->mockAddMethodBackupProject(
@@ -165,8 +160,8 @@ class MigrateTest extends TestCase
 
     public function testCatchSyrupClientException(): void
     {
-        $sourceClientMock = $this->createMock(DockerRunnerClient::class);
-        $destinationClientMock = $this->createMock(DockerRunnerClient::class);
+        $sourceClientMock = $this->createMock(SyrupJobRunner::class);
+        $destinationClientMock = $this->createMock(SyrupJobRunner::class);
 
         $this->mockAddMethodGenerateS3ReadCredentials($sourceClientMock);
         $this->mockAddMethodBackupProject(
@@ -259,10 +254,8 @@ class MigrateTest extends TestCase
             ->with(
                 Config::PROJECT_BACKUP_COMPONENT,
                 [
-                    'configData' => [
-                        'parameters' => [
-                            'backupId' => '123',
-                        ],
+                    'parameters' => [
+                        'backupId' => '123',
                     ],
                 ]
             )

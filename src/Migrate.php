@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate;
 
+use Keboola\AppProjectMigrate\JobRunner\JobRunner;
 use Keboola\Component\UserException;
 use Keboola\Syrup\ClientException;
 use Psr\Log\LoggerInterface;
@@ -12,30 +13,25 @@ class Migrate
 {
     private const JOB_STATUS_SUCCESS = 'success';
 
-    /** @var DockerRunnerClient */
-    private $sourceProjectClient;
+    private JobRunner $sourceJobRunner;
 
-    /** @var DockerRunnerClient */
-    private $destProjectClient;
+    private JobRunner $destJobRunner;
 
-    /** @var string */
-    private $sourceProjectUrl;
+    private string $sourceProjectUrl;
 
-    /** @var string */
-    private $sourceProjectToken;
+    private string $sourceProjectToken;
 
-    /** @var LoggerInterface  */
-    private $logger;
+    private LoggerInterface $logger;
 
     public function __construct(
-        DockerRunnerClient $sourceProjectClient,
-        DockerRunnerClient $destProjectClient,
+        JobRunner $sourceJobRunner,
+        JobRunner $destJobRunner,
         string $sourceProjectUrl,
         string $sourceProjectToken,
         LoggerInterface $logger
     ) {
-        $this->sourceProjectClient = $sourceProjectClient;
-        $this->destProjectClient = $destProjectClient;
+        $this->sourceJobRunner = $sourceJobRunner;
+        $this->destJobRunner = $destJobRunner;
         $this->sourceProjectUrl = $sourceProjectUrl;
         $this->sourceProjectToken = $sourceProjectToken;
         $this->logger = $logger;
@@ -59,7 +55,7 @@ class Migrate
     private function generateBackupCredentials(): array
     {
         $this->logger->info('Creating backup credentials');
-        return $this->sourceProjectClient->runSyncAction(
+        return $this->sourceJobRunner->runSyncAction(
             Config::PROJECT_BACKUP_COMPONENT,
             'generate-read-credentials',
             [
@@ -73,13 +69,12 @@ class Migrate
     private function backupSourceProject(string $backupId): void
     {
         $this->logger->info('Creating source project snapshot');
-        $job = $this->sourceProjectClient->runJob(
+
+        $job = $this->sourceJobRunner->runJob(
             Config::PROJECT_BACKUP_COMPONENT,
             [
-                'configData' => [
-                    'parameters' => [
-                        'backupId' => $backupId,
-                    ],
+                'parameters' => [
+                    'backupId' => $backupId,
                 ],
             ]
         );
@@ -92,12 +87,12 @@ class Migrate
     private function restoreDestinationProject(array $restoreCredentials): void
     {
         $this->logger->info('Restoring current project from snapshot');
-        $job = $this->destProjectClient->runJob(
+
+        $job = $this->destJobRunner->runJob(
             Config::PROJECT_RESTORE_COMPONENT,
-            [
-                'configData' => $this->getRestoreConfigData($restoreCredentials),
-            ]
+            $this->getRestoreConfigData($restoreCredentials)
         );
+
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
             throw new UserException('Project restore error: ' . $job['result']['message']);
         }
@@ -107,17 +102,17 @@ class Migrate
     private function migrateOrchestrations(): void
     {
         $this->logger->info('Migrating orchestrations');
-        $job = $this->destProjectClient->runJob(
+
+        $job = $this->destJobRunner->runJob(
             Config::ORCHESTRATOR_MIGRATE_COMPONENT,
             [
-                'configData' => [
-                    'parameters' => [
-                        'sourceKbcUrl' => $this->sourceProjectUrl,
-                        '#sourceKbcToken' => $this->sourceProjectToken,
-                    ],
+                'parameters' => [
+                    'sourceKbcUrl' => $this->sourceProjectUrl,
+                    '#sourceKbcToken' => $this->sourceProjectToken,
                 ],
             ]
         );
+
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
             throw new UserException('Orchestrations migration error: ' . $job['result']['message']);
         }
@@ -127,17 +122,16 @@ class Migrate
     private function migrateSnowflakeWriters(): void
     {
         $this->logger->info('Migrating Snowflake writers');
-        $job = $this->destProjectClient->runJob(
+        $job = $this->destJobRunner->runJob(
             Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
             [
-                'configData' => [
-                    'parameters' => [
-                        'sourceKbcUrl' => $this->sourceProjectUrl,
-                        '#sourceKbcToken' => $this->sourceProjectToken,
-                    ],
+                'parameters' => [
+                    'sourceKbcUrl' => $this->sourceProjectUrl,
+                    '#sourceKbcToken' => $this->sourceProjectToken,
                 ],
             ]
         );
+
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
             throw new UserException('Snowflake writers migration error: ' . $job['result']['message']);
         }
