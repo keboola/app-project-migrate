@@ -10,16 +10,20 @@ use Keboola\Syrup\Client as SyrupClient;
 
 class QueueV2JobRunner extends JobRunner
 {
+    private const MAX_DELAY = 10;
+
     public function runJob(string $componentId, array $data): array
     {
         $jobData = new JobData($componentId, null, $data);
         $response = $this->getQueueClient()->createJob($jobData);
 
+        $attempt = 0;
         $finished = false;
         while (!$finished) {
             $job = $this->getQueueClient()->getJob($response['id']);
             $finished = $job['isFinished'];
-            sleep(10);
+            $attempt++;
+            sleep(min(pow(2, $attempt), self::MAX_DELAY));
         }
 
         return $job;
