@@ -6,10 +6,11 @@ namespace Keboola\AppProjectMigrate\Tests;
 
 use Generator;
 use Keboola\AppProjectMigrate\Config;
+use Keboola\AppProjectMigrate\JobRunner\JobRunner;
+use Keboola\AppProjectMigrate\JobRunner\QueueV2JobRunner;
 use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Component\UserException;
-use Keboola\StorageApi\Client;
 use Keboola\Syrup\ClientException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -19,12 +20,16 @@ class MigrateTest extends TestCase
 {
 
     /**
+     * @param class-string $jobRunnerClass
      * @dataProvider successMigrateDataProvider
      */
-    public function testMigrateSuccess(array $expectedCredentialsData): void
-    {
-        $sourceClientMock = $this->createMock(SyrupJobRunner::class);
-        $destClientMock = $this->createMock(SyrupJobRunner::class);
+    public function testMigrateSuccess(
+        array $expectedCredentialsData,
+        string $jobRunnerClass,
+        int $expectsRunJobs
+    ): void {
+        $sourceClientMock = $this->createMock($jobRunnerClass);
+        $destClientMock = $this->createMock($jobRunnerClass);
 
         // generate credentials
         if (array_key_exists('abs', $expectedCredentialsData)) {
@@ -44,7 +49,7 @@ class MigrateTest extends TestCase
         $sourceProjectToken = 'xyz';
 
         // run restore with credentials from step 1
-        $destClientMock->expects($this->exactly(3))
+        $destClientMock->expects($this->exactly($expectsRunJobs))
             ->method('runJob')
             ->withConsecutive(
             // restore data
@@ -79,6 +84,8 @@ class MigrateTest extends TestCase
                 'status' => 'success',
             ]);
 
+        /** @var JobRunner $sourceClientMock */
+        /** @var JobRunner $destClientMock */
         $migrate = new Migrate(
             $sourceClientMock,
             $destClientMock,
@@ -265,7 +272,7 @@ class MigrateTest extends TestCase
 
     public function successMigrateDataProvider(): Generator
     {
-        yield 'migrate S3' => [
+        yield 'migrate-S3-syrup' => [
             [
                 's3' => [
                     'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
@@ -274,15 +281,43 @@ class MigrateTest extends TestCase
                     '#sessionToken' => 'zzz',
                 ],
             ],
+            SyrupJobRunner::class,
+            3,
         ];
 
-        yield 'migrate ABS' => [
+        yield 'migrate-ABS-syrup' => [
             [
                 'abs' => [
                     'container' => 'abcdefgh',
                     '#connectionString' => 'https://testConnectionString',
                 ],
             ],
+            SyrupJobRunner::class,
+            3,
+        ];
+
+        yield 'migrate-S3-queuev2' => [
+            [
+                's3' => [
+                    'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
+                    'accessKeyId' => 'xxx',
+                    '#secretAccessKey' => 'yyy',
+                    '#sessionToken' => 'zzz',
+                ],
+            ],
+            QueueV2JobRunner::class,
+            2,
+        ];
+
+        yield 'migrateABS-queuev2' => [
+            [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            QueueV2JobRunner::class,
+            2,
         ];
     }
 }

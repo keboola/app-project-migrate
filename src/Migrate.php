@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate;
 
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
+use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\Component\UserException;
 use Keboola\Syrup\ClientException;
 use Psr\Log\LoggerInterface;
@@ -44,7 +45,9 @@ class Migrate
             $this->backupSourceProject($restoreCredentials['backupId']);
             $this->restoreDestinationProject($restoreCredentials);
             $this->migrateSnowflakeWriters();
-            $this->migrateOrchestrations();
+            if ($this->sourceJobRunner instanceof SyrupJobRunner) {
+                $this->migrateOrchestrations();
+            }
         } catch (ClientException $e) {
             if ($e->getCode() >= 400 && $e->getCode() < 500) {
                 throw new UserException($e->getMessage(), $e->getCode(), $e);
