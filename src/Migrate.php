@@ -78,6 +78,7 @@ class Migrate
             [
                 'parameters' => [
                     'backupId' => $backupId,
+                    'exportStructureOnly' => true,
                 ],
             ]
         );
