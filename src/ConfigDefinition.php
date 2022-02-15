@@ -25,6 +25,7 @@ class ConfigDefinition extends BaseConfigDefinition
                     ->isRequired()
                     ->cannotBeEmpty()
                 ->end()
+                ->booleanNode('directDataMigration')->defaultTrue()->end()
             ->end()
         ;
         // @formatter:on

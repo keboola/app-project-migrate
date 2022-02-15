@@ -26,6 +26,7 @@ class MigrateTest extends TestCase
     public function testMigrateSuccess(
         array $expectedCredentialsData,
         string $jobRunnerClass,
+        bool $migrateDataOfTablesDirectly,
         int $expectsRunJobs
     ): void {
         $sourceClientMock = $this->createMock($jobRunnerClass);
@@ -42,44 +43,62 @@ class MigrateTest extends TestCase
             [
                 'id' => '222',
                 'status' => 'success',
-            ]
+            ],
+            $migrateDataOfTablesDirectly
         );
 
         $sourceProjectUrl = 'https://connection.keboola.com';
         $sourceProjectToken = 'xyz';
 
+        $destinationMockJobs = [
+            // restore data
+            [
+                Config::PROJECT_RESTORE_COMPONENT,
+                [
+                    'parameters' => array_merge($expectedCredentialsData, ['useDefaultBackend' => true]),
+                ],
+            ],
+        ];
+
+        // migrate data of tables
+        if ($migrateDataOfTablesDirectly) {
+            $destinationMockJobs[] = [
+                Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
+                [
+                    'parameters' => [
+                        'sourceKbcUrl' => $sourceProjectUrl,
+                        '#sourceKbcToken' => $sourceProjectToken,
+                    ],
+                ],
+            ];
+        }
+
+        // restore snowflake writers
+        $destinationMockJobs[] = [
+            Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => $sourceProjectUrl,
+                    '#sourceKbcToken' => $sourceProjectToken,
+                ],
+            ],
+        ];
+
+        // restore orchestrations
+        $destinationMockJobs[] = [
+            Config::ORCHESTRATOR_MIGRATE_COMPONENT,
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => $sourceProjectUrl,
+                    '#sourceKbcToken' => $sourceProjectToken,
+                ],
+            ],
+        ];
+
         // run restore with credentials from step 1
         $destClientMock->expects($this->exactly($expectsRunJobs))
             ->method('runJob')
-            ->withConsecutive(
-            // restore data
-                [
-                    Config::PROJECT_RESTORE_COMPONENT,
-                    [
-                        'parameters' => array_merge($expectedCredentialsData, ['useDefaultBackend' => true]),
-                    ],
-                ],
-                // restore snowflake writers
-                [
-                    Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
-                    [
-                        'parameters' => [
-                            'sourceKbcUrl' => $sourceProjectUrl,
-                            '#sourceKbcToken' => $sourceProjectToken,
-                        ],
-                    ],
-                ],
-                // restore orchestrations
-                [
-                    Config::ORCHESTRATOR_MIGRATE_COMPONENT,
-                    [
-                        'parameters' => [
-                            'sourceKbcUrl' => $sourceProjectUrl,
-                            '#sourceKbcToken' => $sourceProjectToken,
-                        ],
-                    ],
-                ]
-            )->willReturn([
+            ->withConsecutive(...$destinationMockJobs)->willReturn([
                 'id' => '222',
                 'status' => 'success',
             ]);
@@ -91,6 +110,7 @@ class MigrateTest extends TestCase
             $destClientMock,
             $sourceProjectUrl,
             $sourceProjectToken,
+            $migrateDataOfTablesDirectly,
             new NullLogger()
         );
         $migrate->run();
@@ -111,7 +131,8 @@ class MigrateTest extends TestCase
                 'result' => [
                     'message' => 'Cannot snapshot project',
                 ],
-            ]
+            ],
+            false
         );
 
         $destClientMock->expects($this->never())
@@ -124,6 +145,7 @@ class MigrateTest extends TestCase
             $destClientMock,
             'xxx',
             'yyy',
+            false,
             new NullLogger()
         );
         $migrate->run();
@@ -140,7 +162,8 @@ class MigrateTest extends TestCase
             [
             'id' => '222',
                 'status' => 'success',
-            ]
+            ],
+            false
         );
 
         $destClientMock->expects($this->any())
@@ -160,6 +183,7 @@ class MigrateTest extends TestCase
             $destClientMock,
             'xxx',
             'yyy',
+            false,
             new NullLogger()
         );
         $migrate->run();
@@ -176,7 +200,8 @@ class MigrateTest extends TestCase
             [
                 'id' => '222',
                 'status' => 'success',
-            ]
+            ],
+            false
         );
 
         $destinationClientMock
@@ -191,6 +216,7 @@ class MigrateTest extends TestCase
             $destinationClientMock,
             'xxx',
             'yyy',
+            false,
             new NullLogger()
         );
 
@@ -254,7 +280,7 @@ class MigrateTest extends TestCase
         ;
     }
 
-    private function mockAddMethodBackupProject(MockObject $mockObject, array $return): void
+    private function mockAddMethodBackupProject(MockObject $mockObject, array $return, bool $exportStructureOnly): void
     {
         $mockObject
             ->method('runJob')
@@ -263,6 +289,7 @@ class MigrateTest extends TestCase
                 [
                     'parameters' => [
                         'backupId' => '123',
+                        'exportStructureOnly' => $exportStructureOnly,
                     ],
                 ]
             )
@@ -282,6 +309,7 @@ class MigrateTest extends TestCase
                 ],
             ],
             SyrupJobRunner::class,
+            false,
             3,
         ];
 
@@ -293,6 +321,7 @@ class MigrateTest extends TestCase
                 ],
             ],
             SyrupJobRunner::class,
+            false,
             3,
         ];
 
@@ -306,6 +335,7 @@ class MigrateTest extends TestCase
                 ],
             ],
             QueueV2JobRunner::class,
+            false,
             2,
         ];
 
@@ -317,7 +347,20 @@ class MigrateTest extends TestCase
                 ],
             ],
             QueueV2JobRunner::class,
+            false,
             2,
+        ];
+
+        yield 'migrateABS-queuev2-data-directly' => [
+            [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            QueueV2JobRunner::class,
+            true,
+            3,
         ];
     }
 }

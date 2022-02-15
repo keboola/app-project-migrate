@@ -24,17 +24,21 @@ class Migrate
 
     private LoggerInterface $logger;
 
+    private bool $directDataMigration;
+
     public function __construct(
         JobRunner $sourceJobRunner,
         JobRunner $destJobRunner,
         string $sourceProjectUrl,
         string $sourceProjectToken,
+        bool $directDataMigration,
         LoggerInterface $logger
     ) {
         $this->sourceJobRunner = $sourceJobRunner;
         $this->destJobRunner = $destJobRunner;
         $this->sourceProjectUrl = $sourceProjectUrl;
         $this->sourceProjectToken = $sourceProjectToken;
+        $this->directDataMigration = $directDataMigration;
         $this->logger = $logger;
     }
 
@@ -44,6 +48,11 @@ class Migrate
         try {
             $this->backupSourceProject($restoreCredentials['backupId']);
             $this->restoreDestinationProject($restoreCredentials);
+
+            if ($this->directDataMigration) {
+                $this->migrateDataOfTablesDirectly();
+            }
+
             $this->migrateSnowflakeWriters();
             if ($this->sourceJobRunner instanceof SyrupJobRunner) {
                 $this->migrateOrchestrations();
@@ -78,6 +87,7 @@ class Migrate
             [
                 'parameters' => [
                     'backupId' => $backupId,
+                    'exportStructureOnly' => $this->directDataMigration,
                 ],
             ]
         );
@@ -100,6 +110,23 @@ class Migrate
             throw new UserException('Project restore error: ' . $job['result']['message']);
         }
         $this->logger->info('Current project restored');
+    }
+
+    private function migrateDataOfTablesDirectly(): void
+    {
+        $this->logger->info('Migrate data of tables directly.');
+
+        $this->destJobRunner->runJob(
+            Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => $this->sourceProjectUrl,
+                    '#sourceKbcToken' => $this->sourceProjectToken,
+                ],
+            ]
+        );
+
+        $this->logger->info('Data of tables has been migrated.');
     }
 
     private function migrateOrchestrations(): void
