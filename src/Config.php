@@ -24,8 +24,8 @@ class Config extends BaseConfig
         return $this->getValue(['parameters', '#sourceKbcToken']);
     }
 
-    public function migrateDataDirectly(): bool
+    public function directDataMigration(): bool
     {
-        return $this->getValue(['parameters', 'migrateDataDirectly']);
+        return $this->getValue(['parameters', 'directDataMigration']);
     }
 }
