@@ -31,12 +31,10 @@ class AfterMigration
 
     protected function checkTables(): void
     {
-
         $buckets = $this->destProjectClient->listBuckets();
 
         $isInvalid = false;
         foreach ($buckets as $bucket) {
-
             $tables = $this->destProjectClient->listTables($bucket['id']);
             foreach ($tables as $table) {
                 try {
