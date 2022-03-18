@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate;
 
+use Keboola\AppProjectMigrate\Checker\AfterMigration;
 use Keboola\AppProjectMigrate\JobRunner\JobRunnerFactory;
 use Keboola\Component\BaseComponent;
 use Keboola\Component\UserException;
@@ -77,6 +78,9 @@ class Component extends BaseComponent
             $logger
         );
         $migrate->run();
+
+        $checkerAfterMigration = new AfterMigration($sourceProjectClient, $destProjectClient, $logger);
+        $checkerAfterMigration->check();
     }
 
     private function createStorageClient(array $params): StorageClient
