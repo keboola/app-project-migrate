@@ -47,9 +47,12 @@ class AfterMigration
                 if ($sourceTable['rowsCount'] !== $table['rowsCount']) {
                     $isInvalid = true;
                     $this->logger->warning(sprintf(
-                        'Bad row count: Bucket "%s", Table "%s".',
+                        'Bad row count: Bucket "%s", Table "%s". ' .
+                        'Source table rows: "%d"; Destination table rows: "%s".',
                         $bucket['name'],
-                        $table['name']
+                        $table['name'],
+                        $sourceTable['rowsCount'],
+                        $table['rowsCount']
                     ));
                 }
             }
