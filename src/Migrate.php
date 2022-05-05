@@ -104,7 +104,8 @@ class Migrate
 
         $job = $this->destJobRunner->runJob(
             Config::PROJECT_RESTORE_COMPONENT,
-            $this->getRestoreConfigData($restoreCredentials)
+            $this->getRestoreConfigData($restoreCredentials),
+            'backupOnlyStorage.1'
         );
 
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
