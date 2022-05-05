@@ -53,7 +53,7 @@ class Migrate
                 $this->migrateDataOfTablesDirectly();
             }
 
-            $this->migrateSnowflakeWriters();
+            //$this->migrateSnowflakeWriters();
             if ($this->sourceJobRunner instanceof SyrupJobRunner) {
                 $this->migrateOrchestrations();
             }
