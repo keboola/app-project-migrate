@@ -90,7 +90,7 @@ class Migrate
                     'exportStructureOnly' => $this->directDataMigration,
                 ],
             ],
-            'backupOnlyStorage.3'
+            'backupOnlyStorage.4'
         );
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
             throw new UserException('Project snapshot create error: ' . $job['result']['message']);
