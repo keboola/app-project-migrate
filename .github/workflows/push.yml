@@ -19,6 +19,7 @@ env:
   KBC_STORAGE_TOKEN: ${{ secrets.KBC_STORAGE_TOKEN }}
   KBC_TEST_PROJECT_URL: "https://connection.keboola.com/"
   KBC_TEST_PROJECT_CONFIGS: "" # space separated list
+  KBC_STORAGE_TOKEN_NOT_MASTER: ${{ secrets.KBC_STORAGE_TOKEN_NOT_MASTER }}
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -83,7 +84,7 @@ jobs:
         env:
           SOURCE_KBC_URL: ${{env.KBC_TEST_PROJECT_URL}}
           KBC_URL: ${{env.KBC_TEST_PROJECT_URL}}
-          SOURCE_KBC_TOKEN: ${{env.KBC_STORAGE_TOKEN}}
+          SOURCE_KBC_TOKEN: ${{env.KBC_STORAGE_TOKEN_NOT_MASTER}}
           KBC_TOKEN: ${{env.KBC_STORAGE_TOKEN}}
         run: |
           docker run \
