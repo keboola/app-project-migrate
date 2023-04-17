@@ -14,7 +14,7 @@ class QueueV2JobRunner extends JobRunner
 
     public function runJob(string $componentId, array $data): array
     {
-        $jobData = new JobData($componentId, null, $data);
+        $jobData = new JobData($componentId, null, $data, 'run', [], 'CM-574-ondra');
         $response = $this->getQueueClient()->createJob($jobData);
 
         $attempt = 0;
