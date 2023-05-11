@@ -7,6 +7,7 @@
         "keboola/job-queue-api-php-client": "^0.4.1",
         "keboola/php-component": "^8.3",
         "keboola/storage-api-client": "^12.2",
+        "keboola/sync-actions-client": "dev-CM-627-ondra",
         "keboola/syrup-php-client": "^5.1"
     },
     "require-dev": {
