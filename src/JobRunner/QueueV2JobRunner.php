@@ -6,7 +6,8 @@ namespace Keboola\AppProjectMigrate\JobRunner;
 
 use Keboola\JobQueueClient\Client;
 use Keboola\JobQueueClient\JobData;
-use Keboola\Syrup\Client as SyrupClient;
+use Keboola\SyncActionsClient\ActionData;
+use Keboola\SyncActionsClient\Client as SyncActionsClient;
 
 class QueueV2JobRunner extends JobRunner
 {
@@ -23,7 +24,7 @@ class QueueV2JobRunner extends JobRunner
             $job = $this->getQueueClient()->getJob($response['id']);
             $finished = $job['isFinished'];
             $attempt++;
-            sleep(min(pow(2, $attempt), self::MAX_DELAY));
+            sleep((int) min(pow(2, $attempt), self::MAX_DELAY));
         }
 
         return $job;
@@ -31,12 +32,11 @@ class QueueV2JobRunner extends JobRunner
 
     public function runSyncAction(string $componentId, string $action, array $data): array
     {
-        return $this->getSyrupClient(1)->runSyncAction(
-            $this->getServiceUrl('docker-runner'),
-            $componentId,
-            $action,
-            $data
-        );
+        $client = $this->getSyncActionsClient();
+
+        $data = new ActionData($componentId, $action, $data);
+
+        return $client->callAction($data);
     }
 
     private function getQueueClient(): Client
@@ -48,19 +48,14 @@ class QueueV2JobRunner extends JobRunner
         );
     }
 
-    private function getSyrupClient(?int $backoffMaxTries = null): SyrupClient
+    private function getSyncActionsClient(?int $backoffMaxTries = null): SyncActionsClient
     {
-        $config = [
-            'token' => $this->storageApiClient->getTokenString(),
-            'url' => $this->getServiceUrl('syrup'),
-            'super' => 'docker',
-            'runId' => $this->storageApiClient->getRunId(),
-        ];
-
-        if ($backoffMaxTries) {
-            $config['backoffMaxTries'] = $backoffMaxTries;
-        }
-
-        return new SyrupClient($config);
+        return new SyncActionsClient(
+            $this->getServiceUrl('sync-actions'),
+            $this->storageApiClient->getTokenString(),
+            [
+                'backoffMaxTries' => $backoffMaxTries,
+            ]
+        );
     }
 }
