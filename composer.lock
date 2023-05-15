@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "50feb0eb370f77cf55e25b447f8b6ab7",
+    "content-hash": "f63cfe017a64cfd48c80a7da4a754d18",
     "packages": [
         {
             "name": "aws/aws-sdk-php",
@@ -651,16 +651,16 @@
         },
         {
             "name": "keboola/sync-actions-client",
-            "version": "dev-CM-627-ondra",
+            "version": "1.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/keboola/sync-actions-api-php-client.git",
-                "reference": "995e5211ef09acffd79e1afc0a846ab93e9ead81"
+                "reference": "acf8f6158cdf420938f4d917f58a49589dfbdfb3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/keboola/sync-actions-api-php-client/zipball/995e5211ef09acffd79e1afc0a846ab93e9ead81",
-                "reference": "995e5211ef09acffd79e1afc0a846ab93e9ead81",
+                "url": "https://api.github.com/repos/keboola/sync-actions-api-php-client/zipball/acf8f6158cdf420938f4d917f58a49589dfbdfb3",
+                "reference": "acf8f6158cdf420938f4d917f58a49589dfbdfb3",
                 "shasum": ""
             },
             "require": {
@@ -690,9 +690,9 @@
             ],
             "description": "Sync actions PHP Client",
             "support": {
-                "source": "https://github.com/keboola/sync-actions-api-php-client/tree/CM-627-ondra"
+                "source": "https://github.com/keboola/sync-actions-api-php-client/tree/1.0.0"
             },
-            "time": "2023-05-11T10:12:41+00:00"
+            "time": "2023-05-15T07:19:15+00:00"
         },
         {
             "name": "keboola/syrup-php-client",
@@ -4778,9 +4778,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "keboola/sync-actions-client": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
