@@ -28,4 +28,9 @@ class Config extends BaseConfig
     {
         return $this->getValue(['parameters', 'directDataMigration']);
     }
+
+    public function exportStructureOnly(): bool
+    {
+        return $this->getValue(['parameters', 'exportStructureOnly']);
+    }
 }

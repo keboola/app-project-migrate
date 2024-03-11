@@ -111,6 +111,7 @@ class MigrateTest extends TestCase
             $sourceProjectUrl,
             $sourceProjectToken,
             $migrateDataOfTablesDirectly,
+            false,
             new NullLogger()
         );
         $migrate->run();
@@ -145,6 +146,7 @@ class MigrateTest extends TestCase
             $destClientMock,
             'xxx',
             'yyy',
+            false,
             false,
             new NullLogger()
         );
@@ -184,6 +186,7 @@ class MigrateTest extends TestCase
             'xxx',
             'yyy',
             false,
+            false,
             new NullLogger()
         );
         $migrate->run();
@@ -216,6 +219,7 @@ class MigrateTest extends TestCase
             $destinationClientMock,
             'xxx',
             'yyy',
+            false,
             false,
             new NullLogger()
         );

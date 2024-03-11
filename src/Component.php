@@ -75,6 +75,7 @@ class Component extends BaseComponent
             $config->getSourceProjectUrl(),
             $config->getSourceProjectToken(),
             $config->directDataMigration(),
+            $config->exportStructureOnly(),
             $logger
         );
         $migrate->run();
