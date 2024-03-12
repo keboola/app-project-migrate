@@ -41,9 +41,10 @@ curl --location 'https://queue.eu-central-1.keboola.com/jobs' \
   "component": "keboola.app-project-migrate",
   "mode": "run",
   "configData": {
-      "parameters": {
-    "sourceKbcUrl": "https://connection.keboola.com",
-    "#sourceKbcToken": "SOURCE_PROJECT_SAPI_TOKEN"}
+    "parameters": {
+      "sourceKbcUrl": "https://connection.keboola.com",
+      "#sourceKbcToken": "SOURCE_PROJECT_SAPI_TOKEN"
+    }
   }
 }'
 ```
