@@ -26,12 +26,15 @@ class Migrate
 
     private bool $directDataMigration;
 
+    private bool $exportStructureOnly;
+
     public function __construct(
         JobRunner $sourceJobRunner,
         JobRunner $destJobRunner,
         string $sourceProjectUrl,
         string $sourceProjectToken,
         bool $directDataMigration,
+        bool $exportStructureOnly,
         LoggerInterface $logger
     ) {
         $this->sourceJobRunner = $sourceJobRunner;
@@ -39,6 +42,7 @@ class Migrate
         $this->sourceProjectUrl = $sourceProjectUrl;
         $this->sourceProjectToken = $sourceProjectToken;
         $this->directDataMigration = $directDataMigration;
+        $this->exportStructureOnly = $exportStructureOnly;
         $this->logger = $logger;
     }
 
@@ -49,7 +53,7 @@ class Migrate
             $this->backupSourceProject($restoreCredentials['backupId']);
             $this->restoreDestinationProject($restoreCredentials);
 
-            if ($this->directDataMigration) {
+            if (!$this->exportStructureOnly && $this->directDataMigration) {
                 $this->migrateDataOfTablesDirectly();
             }
 
@@ -87,7 +91,7 @@ class Migrate
             [
                 'parameters' => [
                     'backupId' => $backupId,
-                    'exportStructureOnly' => $this->directDataMigration,
+                    'exportStructureOnly' => $this->directDataMigration || $this->exportStructureOnly,
                 ],
             ]
         );
