@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate;
 
+use InvalidArgumentException;
 use Keboola\Component\Config\BaseConfig;
 
 class Config extends BaseConfig
@@ -27,5 +28,15 @@ class Config extends BaseConfig
     public function directDataMigration(): bool
     {
         return $this->getValue(['parameters', 'directDataMigration']);
+    }
+
+    public function shouldMigrateSecrets(): bool
+    {
+        return $this->getValue(['parameters', 'migrateSecrets']);
+    }
+
+    public function getManageToken(): ?string
+    {
+        return $this->getValue(['parameters', '#manageToken']);
     }
 }
