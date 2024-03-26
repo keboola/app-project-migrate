@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate\JobRunner;
 
+use Keboola\AppProjectMigrate\Config;
 use Keboola\JobQueueClient\Client;
 use Keboola\JobQueueClient\JobData;
 use Keboola\SyncActionsClient\ActionData;
@@ -15,7 +16,10 @@ class QueueV2JobRunner extends JobRunner
 
     public function runJob(string $componentId, array $data): array
     {
-        $jobData = new JobData($componentId, null, $data);
+        if ($componentId === Config::PROJECT_RESTORE_COMPONENT) {
+            $tag = 'jv-PST-1562';
+        }
+        $jobData = new JobData($componentId, null, $data, 'run', [], $tag ?? null);
         $response = $this->getQueueClient()->createJob($jobData);
 
         $attempt = 0;
