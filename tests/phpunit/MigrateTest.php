@@ -55,7 +55,13 @@ class MigrateTest extends TestCase
             [
                 Config::PROJECT_RESTORE_COMPONENT,
                 [
-                    'parameters' => array_merge($expectedCredentialsData, ['useDefaultBackend' => true]),
+                    'parameters' => array_merge(
+                        $expectedCredentialsData,
+                        [
+                            'useDefaultBackend' => true,
+                            'restoreConfigs' => true,
+                        ]
+                    ),
                 ],
             ],
         ];
@@ -111,7 +117,8 @@ class MigrateTest extends TestCase
             $sourceProjectUrl,
             $sourceProjectToken,
             $migrateDataOfTablesDirectly,
-            new NullLogger()
+            new NullLogger(),
+            false,
         );
         $migrate->run();
     }
@@ -146,7 +153,8 @@ class MigrateTest extends TestCase
             'xxx',
             'yyy',
             false,
-            new NullLogger()
+            new NullLogger(),
+            false,
         );
         $migrate->run();
     }
@@ -184,7 +192,8 @@ class MigrateTest extends TestCase
             'xxx',
             'yyy',
             false,
-            new NullLogger()
+            new NullLogger(),
+            false,
         );
         $migrate->run();
     }
@@ -217,7 +226,8 @@ class MigrateTest extends TestCase
             'xxx',
             'yyy',
             false,
-            new NullLogger()
+            new NullLogger(),
+            false,
         );
 
         $this->expectException(UserException::class);
