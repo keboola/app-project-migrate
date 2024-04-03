@@ -26,13 +26,16 @@ class Migrate
 
     private bool $directDataMigration;
 
+    private bool $migrateSecrets;
+
     public function __construct(
         JobRunner $sourceJobRunner,
         JobRunner $destJobRunner,
         string $sourceProjectUrl,
         string $sourceProjectToken,
         bool $directDataMigration,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        bool $migrateSecrets
     ) {
         $this->sourceJobRunner = $sourceJobRunner;
         $this->destJobRunner = $destJobRunner;
@@ -40,6 +43,7 @@ class Migrate
         $this->sourceProjectToken = $sourceProjectToken;
         $this->directDataMigration = $directDataMigration;
         $this->logger = $logger;
+        $this->migrateSecrets = $migrateSecrets;
     }
 
     public function run(): void
@@ -180,6 +184,7 @@ class Migrate
                         '#sessionToken' => $restoreCredentials['credentials']['sessionToken'],
                     ],
                     'useDefaultBackend' => true,
+                    'restoreConfigs' => $this->migrateSecrets === false,
                 ],
             ];
         } elseif (isset($restoreCredentials['credentials']['connectionString'])) {
@@ -190,6 +195,7 @@ class Migrate
                         '#connectionString' => $restoreCredentials['credentials']['connectionString'],
                     ],
                     'useDefaultBackend' => true,
+                    'restoreConfigs' => $this->migrateSecrets === false,
                 ],
             ];
         } else {

@@ -27,7 +27,9 @@ class MigrateTest extends TestCase
         array $expectedCredentialsData,
         string $jobRunnerClass,
         bool $migrateDataOfTablesDirectly,
-        int $expectsRunJobs
+        int $expectsRunJobs,
+        bool $migrateSecrets,
+        bool $restoreConfigs
     ): void {
         $sourceClientMock = $this->createMock($jobRunnerClass);
         $destClientMock = $this->createMock($jobRunnerClass);
@@ -55,7 +57,13 @@ class MigrateTest extends TestCase
             [
                 Config::PROJECT_RESTORE_COMPONENT,
                 [
-                    'parameters' => array_merge($expectedCredentialsData, ['useDefaultBackend' => true]),
+                    'parameters' => array_merge(
+                        $expectedCredentialsData,
+                        [
+                            'useDefaultBackend' => true,
+                            'restoreConfigs' => $restoreConfigs,
+                        ]
+                    ),
                 ],
             ],
         ];
@@ -111,7 +119,8 @@ class MigrateTest extends TestCase
             $sourceProjectUrl,
             $sourceProjectToken,
             $migrateDataOfTablesDirectly,
-            new NullLogger()
+            new NullLogger(),
+            $migrateSecrets,
         );
         $migrate->run();
     }
@@ -146,7 +155,8 @@ class MigrateTest extends TestCase
             'xxx',
             'yyy',
             false,
-            new NullLogger()
+            new NullLogger(),
+            false,
         );
         $migrate->run();
     }
@@ -184,7 +194,8 @@ class MigrateTest extends TestCase
             'xxx',
             'yyy',
             false,
-            new NullLogger()
+            new NullLogger(),
+            false,
         );
         $migrate->run();
     }
@@ -217,7 +228,8 @@ class MigrateTest extends TestCase
             'xxx',
             'yyy',
             false,
-            new NullLogger()
+            new NullLogger(),
+            false,
         );
 
         $this->expectException(UserException::class);
@@ -300,7 +312,7 @@ class MigrateTest extends TestCase
     public function successMigrateDataProvider(): Generator
     {
         yield 'migrate-S3-syrup' => [
-            [
+            'expectedCredentialsData' => [
                 's3' => [
                     'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
                     'accessKeyId' => 'xxx',
@@ -308,25 +320,29 @@ class MigrateTest extends TestCase
                     '#sessionToken' => 'zzz',
                 ],
             ],
-            SyrupJobRunner::class,
-            false,
-            3,
+            'jobRunnerClass' => SyrupJobRunner::class,
+            'migrateDataOfTablesDirectly' => false,
+            'expectsRunJobs' => 3,
+            'migrateSecrets' => false,
+            'restoreConfigs' => true,
         ];
 
         yield 'migrate-ABS-syrup' => [
-            [
+            'expectedCredentialsData' => [
                 'abs' => [
                     'container' => 'abcdefgh',
                     '#connectionString' => 'https://testConnectionString',
                 ],
             ],
-            SyrupJobRunner::class,
-            false,
-            3,
+            'jobRunnerClass' => SyrupJobRunner::class,
+            'migrateDataOfTablesDirectly' => false,
+            'expectsRunJobs' => 3,
+            'migrateSecrets' => false,
+            'restoreConfigs' => true,
         ];
 
         yield 'migrate-S3-queuev2' => [
-            [
+            'expectedCredentialsData' => [
                 's3' => [
                     'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
                     'accessKeyId' => 'xxx',
@@ -334,33 +350,67 @@ class MigrateTest extends TestCase
                     '#sessionToken' => 'zzz',
                 ],
             ],
-            QueueV2JobRunner::class,
-            false,
-            2,
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => false,
+            'expectsRunJobs' => 2,
+            'migrateSecrets' => false,
+            'restoreConfigs' => true,
         ];
 
         yield 'migrateABS-queuev2' => [
-            [
+            'expectedCredentialsData' => [
                 'abs' => [
                     'container' => 'abcdefgh',
                     '#connectionString' => 'https://testConnectionString',
                 ],
             ],
-            QueueV2JobRunner::class,
-            false,
-            2,
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => false,
+            'expectsRunJobs' => 2,
+            'migrateSecrets' => false,
+            'restoreConfigs' => true,
         ];
 
         yield 'migrateABS-queuev2-data-directly' => [
-            [
+            'expectedCredentialsData' => [
                 'abs' => [
                     'container' => 'abcdefgh',
                     '#connectionString' => 'https://testConnectionString',
                 ],
             ],
-            QueueV2JobRunner::class,
-            true,
-            3,
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => true,
+            'expectsRunJobs' => 3,
+            'migrateSecrets' => false,
+            'restoreConfigs' => true,
+        ];
+
+        yield 'migrate-secrets-false' => [
+            'expectedCredentialsData' => [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => true,
+            'expectsRunJobs' => 3,
+            'migrateSecrets' => false,
+            'restoreConfigs' => true,
+        ];
+
+        yield 'migrate-secrets-true' => [
+            'expectedCredentialsData' => [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => true,
+            'expectsRunJobs' => 3,
+            'migrateSecrets' => true,
+            'restoreConfigs' => false,
         ];
     }
 }
