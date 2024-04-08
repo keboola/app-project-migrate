@@ -1,1 +1,1 @@
-The token "%s" in the destination project "%s" hasn't master permissions.
+Cannot authorize destination project: Invalid access token
