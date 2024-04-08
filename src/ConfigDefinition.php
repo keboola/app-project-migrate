@@ -27,6 +27,8 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->end()
                 ->booleanNode('directDataMigration')->defaultTrue()->end()
                 ->booleanNode('migrateSecrets')->defaultFalse()->end()
+                ->enumNode('dataMode')->values(['sapi', 'database'])->defaultValue('sapi')->end()
+                ->scalarNode('#manageToken')->end()
                 ->scalarNode('#sourceManageToken')->defaultNull()->end()
             ->end()
             ->validate()

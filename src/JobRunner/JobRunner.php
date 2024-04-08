@@ -23,7 +23,7 @@ abstract class JobRunner
         $this->logger = $logger;
     }
 
-    abstract public function runJob(string $componentId, array $data): array;
+    abstract public function runJob(string $componentId, array $data, ?string $tag = null): array;
 
     abstract public function runSyncAction(string $componentId, string $action, array $data): array;
 

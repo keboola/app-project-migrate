@@ -46,6 +46,8 @@ class Migrate
         'gooddata-writer',
     ];
 
+    private string $migrateDataMode;
+
     public function __construct(
         Config $config,
         JobRunner $sourceJobRunner,
@@ -67,6 +69,7 @@ class Migrate
         $this->directDataMigration = $config->directDataMigration();
         $this->migrateSecrets = $config->shouldMigrateSecrets();
         $this->logger = $logger;
+        $this->migrateDataMode = $config->getMigrateDataMode();
     }
 
     public function run(): void
@@ -202,10 +205,12 @@ class Migrate
             Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
             [
                 'parameters' => [
+                    'mode' => $this->migrateDataMode,
                     'sourceKbcUrl' => $this->sourceProjectUrl,
                     '#sourceKbcToken' => $this->sourceProjectToken,
                 ],
-            ]
+            ],
+            'ondra-migrate-large-tables'
         );
 
         $this->logger->info('Data of tables has been migrated.');

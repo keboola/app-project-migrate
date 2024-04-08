@@ -8,11 +8,17 @@ use Keboola\Syrup\Client;
 
 class SyrupJobRunner extends JobRunner
 {
-    public function runJob(string $componentId, array $data): array
+    public function runJob(string $componentId, array $data, ?string $tag = null): array
     {
+        $options = [
+            'configData' => $data,
+        ];
+        if ($tag) {
+            $options['tag'] = $tag;
+        }
         return $this->getSyrupClient()->runJob(
             $componentId,
-            ['configData' => $data]
+            $options,
         );
     }
 
