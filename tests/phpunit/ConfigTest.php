@@ -30,6 +30,29 @@ class ConfigTest extends TestCase
         );
     }
 
+    public function testMigrateDataViaSapiWithDbCredentialsInvalid(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage('Parameter "db" is allowed only when "dataMode" is set to "database".');
+
+        new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'dataMode' => 'sapi',
+                    'db' => [
+                        'host' => 'host',
+                        'username' => 'username',
+                        '#password' => 'password',
+                        'warehouse' => 'warehouse',
+                    ],
+                ],
+            ],
+            new ConfigDefinition()
+        );
+    }
+
     public function testMigrateSecretsConfigValid(): void
     {
         $baseConfig = new Config(

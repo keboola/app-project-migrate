@@ -48,6 +48,8 @@ class Migrate
 
     private string $migrateDataMode;
 
+    private array $db;
+
     public function __construct(
         Config $config,
         JobRunner $sourceJobRunner,
@@ -70,6 +72,7 @@ class Migrate
         $this->migrateSecrets = $config->shouldMigrateSecrets();
         $this->logger = $logger;
         $this->migrateDataMode = $config->getMigrateDataMode();
+        $this->db = $config->getDb();
     }
 
     public function run(): void
@@ -201,14 +204,20 @@ class Migrate
     {
         $this->logger->info('Migrate data of tables directly.');
 
+        $parameters = [
+            'mode' => $this->migrateDataMode,
+            'sourceKbcUrl' => $this->sourceProjectUrl,
+            '#sourceKbcToken' => $this->sourceProjectToken,
+        ];
+
+        if ($this->migrateDataMode === 'database' && !empty($this->db)) {
+            $parameters['db'] = $this->db;
+        }
+
         $this->destJobRunner->runJob(
             Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
             [
-                'parameters' => [
-                    'mode' => $this->migrateDataMode,
-                    'sourceKbcUrl' => $this->sourceProjectUrl,
-                    '#sourceKbcToken' => $this->sourceProjectToken,
-                ],
+                'parameters' => $parameters,
             ],
             'ondra-migrate-large-tables'
         );
