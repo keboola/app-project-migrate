@@ -46,6 +46,6 @@ class Config extends BaseConfig
 
     public function getDb(): array
     {
-        return (array) $this->getValue(['parameters', 'db']);
+        return (array) $this->getValue(['parameters', 'db'], []);
     }
 }
