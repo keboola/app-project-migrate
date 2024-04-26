@@ -36,7 +36,7 @@ class Component extends BaseComponent
         ]);
 
         try {
-            $destinationTokenInfo = $sourceProjectClient->verifyToken();
+            $destinationTokenInfo = $destProjectClient->verifyToken();
         } catch (StorageClientException $e) {
             throw new UserException('Cannot authorize destination project: ' . $e->getMessage(), $e->getCode(), $e);
         }
