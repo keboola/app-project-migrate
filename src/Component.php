@@ -74,9 +74,11 @@ class Component extends BaseComponent
             JobRunnerFactory::create($destProjectClient, $logger),
             $config->getSourceProjectUrl(),
             $config->getSourceProjectToken(),
+            $destProjectClient->getApiUrl(),
+            $destProjectClient->getTokenString(),
             $config->directDataMigration(),
-            $logger,
             $config->shouldMigrateSecrets(),
+            $logger,
         );
         $migrate->run();
 

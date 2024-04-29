@@ -118,9 +118,11 @@ class MigrateTest extends TestCase
             $destClientMock,
             $sourceProjectUrl,
             $sourceProjectToken,
+            'xxx-b',
+            'yyy-b',
             $migrateDataOfTablesDirectly,
-            new NullLogger(),
             $migrateSecrets,
+            new NullLogger(),
         );
         $migrate->run();
     }
@@ -154,9 +156,11 @@ class MigrateTest extends TestCase
             $destClientMock,
             'xxx',
             'yyy',
+            'xxx-b',
+            'yyy-b',
+            false,
             false,
             new NullLogger(),
-            false,
         );
         $migrate->run();
     }
@@ -193,9 +197,11 @@ class MigrateTest extends TestCase
             $destClientMock,
             'xxx',
             'yyy',
+            'xxx-b',
+            'yyy-b',
+            false,
             false,
             new NullLogger(),
-            false,
         );
         $migrate->run();
     }
@@ -227,9 +233,11 @@ class MigrateTest extends TestCase
             $destinationClientMock,
             'xxx',
             'yyy',
+            'xxx-b',
+            'yyy-b',
+            false,
             false,
             new NullLogger(),
-            false,
         );
 
         $this->expectException(UserException::class);

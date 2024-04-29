@@ -7,6 +7,9 @@ namespace Keboola\AppProjectMigrate;
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
 use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\Component\UserException;
+use Keboola\StorageApi\Client;
+use Keboola\StorageApi\Components;
+use Keboola\StorageApi\DevBranches;
 use Keboola\Syrup\ClientException;
 use Psr\Log\LoggerInterface;
 
@@ -22,6 +25,10 @@ class Migrate
 
     private string $sourceProjectToken;
 
+    private string $destinationProjectUrl;
+
+    private string $destinationProjectToken;
+
     private LoggerInterface $logger;
 
     private bool $directDataMigration;
@@ -33,17 +40,21 @@ class Migrate
         JobRunner $destJobRunner,
         string $sourceProjectUrl,
         string $sourceProjectToken,
+        string $destinationProjectUrl,
+        string $destinationProjectToken,
         bool $directDataMigration,
-        LoggerInterface $logger,
-        bool $migrateSecrets
+        bool $migrateSecrets,
+        LoggerInterface $logger
     ) {
         $this->sourceJobRunner = $sourceJobRunner;
         $this->destJobRunner = $destJobRunner;
         $this->sourceProjectUrl = $sourceProjectUrl;
         $this->sourceProjectToken = $sourceProjectToken;
+        $this->destinationProjectUrl = $destinationProjectUrl;
+        $this->destinationProjectToken = $destinationProjectToken;
         $this->directDataMigration = $directDataMigration;
-        $this->logger = $logger;
         $this->migrateSecrets = $migrateSecrets;
+        $this->logger = $logger;
     }
 
     public function run(): void
@@ -52,6 +63,10 @@ class Migrate
         try {
             $this->backupSourceProject($restoreCredentials['backupId']);
             $this->restoreDestinationProject($restoreCredentials);
+
+            if ($this->migrateSecrets) {
+                $this->migrateSecrets();
+            }
 
             if ($this->directDataMigration) {
                 $this->migrateDataOfTablesDirectly();
@@ -114,6 +129,20 @@ class Migrate
             throw new UserException('Project restore error: ' . $job['result']['message']);
         }
         $this->logger->info('Current project restored');
+    }
+
+    private function migrateSecrets(): void
+    {
+        $this->logger->info('Migrating secrets in configurations');
+
+//        $client = new Client([ 'token' => $this->sourceProjectToken, 'url' => $this->sourceProjectUrl ]);
+//        $componentsApi = new Components($client);
+//        $devBranches = new DevBranches($client);
+//
+//        $componentsApi->listComponentConfigurations();
+//        foreach ($devBranches->listBranches() as $branch) {
+//            //$branch['isDefault'] ===
+//        }
     }
 
     private function migrateDataOfTablesDirectly(): void
