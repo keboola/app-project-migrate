@@ -69,15 +69,15 @@ class Component extends BaseComponent
             $config->getSourceProjectUrl()
         ));
 
+        $sourceJobRunner = JobRunnerFactory::create($sourceProjectClient, $logger);
+        $destJobRunner = JobRunnerFactory::create($destProjectClient, $logger);
+
         $migrate = new Migrate(
-            JobRunnerFactory::create($sourceProjectClient, $logger),
-            JobRunnerFactory::create($destProjectClient, $logger),
-            $config->getSourceProjectUrl(),
-            $config->getSourceProjectToken(),
+            $config,
+            $sourceJobRunner,
+            $destJobRunner,
             $destProjectClient->getApiUrl(),
             $destProjectClient->getTokenString(),
-            $config->directDataMigration(),
-            $config->shouldMigrateSecrets(),
             $logger,
         );
         $migrate->run();

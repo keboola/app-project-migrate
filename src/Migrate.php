@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate;
 
+use Closure;
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
 use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\Component\UserException;
-use Keboola\StorageApi\Client;
+use Keboola\EncryptionApiClient\Migrations;
+use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\Components;
 use Keboola\StorageApi\DevBranches;
+use Keboola\StorageApi\Options\Components\ListComponentConfigurationsOptions;
+use Keboola\StorageApi\Options\IndexOptions;
 use Keboola\Syrup\ClientException;
 use Psr\Log\LoggerInterface;
 
@@ -21,6 +25,8 @@ class Migrate
 
     private JobRunner $destJobRunner;
 
+    private Migrations $migrationsClient;
+
     private string $sourceProjectUrl;
 
     private string $sourceProjectToken;
@@ -29,31 +35,35 @@ class Migrate
 
     private string $destinationProjectToken;
 
+    private ?string $manageApiToken;
+
     private LoggerInterface $logger;
 
     private bool $directDataMigration;
 
     private bool $migrateSecrets;
 
+    private Closure $sourceClientFactory;
+
+    private Closure $migrationsClientFactory;
+
     public function __construct(
+        Config $config,
         JobRunner $sourceJobRunner,
         JobRunner $destJobRunner,
-        string $sourceProjectUrl,
-        string $sourceProjectToken,
         string $destinationProjectUrl,
         string $destinationProjectToken,
-        bool $directDataMigration,
-        bool $migrateSecrets,
         LoggerInterface $logger
     ) {
         $this->sourceJobRunner = $sourceJobRunner;
         $this->destJobRunner = $destJobRunner;
-        $this->sourceProjectUrl = $sourceProjectUrl;
-        $this->sourceProjectToken = $sourceProjectToken;
+        $this->sourceProjectUrl = $config->getSourceProjectUrl();
+        $this->sourceProjectToken = $config->getSourceProjectToken();
         $this->destinationProjectUrl = $destinationProjectUrl;
         $this->destinationProjectToken = $destinationProjectToken;
-        $this->directDataMigration = $directDataMigration;
-        $this->migrateSecrets = $migrateSecrets;
+        $this->manageApiToken = $config->getManageToken();
+        $this->directDataMigration = $config->directDataMigration();
+        $this->migrateSecrets = $config->shouldMigrateSecrets();
         $this->logger = $logger;
     }
 
@@ -65,6 +75,9 @@ class Migrate
             $this->restoreDestinationProject($restoreCredentials);
 
             if ($this->migrateSecrets) {
+                if (!$this->manageApiToken) {
+                    throw new UserException('#manageToken must be set', 422);
+                }
                 $this->migrateSecrets();
             }
 
@@ -85,6 +98,16 @@ class Migrate
                 throw new UserException($e->getMessage(), $e->getCode(), $e);
             }
         }
+    }
+
+    public function setSourceClientFactory(callable $factory): void
+    {
+        $this->sourceClientFactory = Closure::fromCallable($factory);
+    }
+
+    public function setMigrationsClientFactory(callable $factory): void
+    {
+        $this->migrationsClientFactory = Closure::fromCallable($factory);
     }
 
     private function generateBackupCredentials(): array
@@ -139,14 +162,46 @@ class Migrate
     {
         $this->logger->info('Migrating secrets in configurations');
 
-//        $client = new Client([ 'token' => $this->sourceProjectToken, 'url' => $this->sourceProjectUrl ]);
-//        $componentsApi = new Components($client);
-//        $devBranches = new DevBranches($client);
-//
-//        $componentsApi->listComponentConfigurations();
-//        foreach ($devBranches->listBranches() as $branch) {
-//            //$branch['isDefault'] ===
-//        }
+        $sourceClient = $this->createSourceClient();
+
+        $sourceDevBranches = new DevBranches($sourceClient);
+        $sourceBranches = $sourceDevBranches->listBranches();
+        $defaultSourceBranch = current(array_filter($sourceBranches, fn($b) => $b['isDefault'] === true));
+
+        $sourceComponentsApi = new Components($sourceClient);
+        $configurations = $sourceComponentsApi->listComponentConfigurations(new ListComponentConfigurationsOptions());
+
+        $migrations = $this->createMigrationsClient($sourceClient->getServiceUrl('encryption'));
+
+        foreach ($configurations as $config) {
+            $migrations
+                ->migrateConfiguration(
+                    $this->sourceProjectToken,
+                    Utils::getStackFromProjectUrl($this->destinationProjectUrl),
+                    $this->destinationProjectToken,
+                    $config['componentId'],
+                    $config['id'],
+                    $defaultSourceBranch['id'],
+                );
+        }
+    }
+
+    private function createSourceClient(): StorageClient
+    {
+        if (isset($this->sourceClientFactory)) {
+            return (fn(): StorageClient => ($this->sourceClientFactory)())();
+        }
+        return new StorageClient(['token' => $this->sourceProjectToken, 'url' => $this->sourceProjectUrl ]);
+    }
+
+    private function createMigrationsClient(string $encryptionApiUrl): Migrations
+    {
+        if (isset($this->migrationsClientFactory)) {
+            return (fn(): Migrations => ($this->migrationsClientFactory)())();
+        }
+        return new Migrations($this->manageApiToken, [
+            'url' => $encryptionApiUrl,
+        ]);
     }
 
     private function migrateDataOfTablesDirectly(): void

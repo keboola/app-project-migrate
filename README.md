@@ -30,6 +30,8 @@ This is example of project migration from US to EU, please replace these paramet
 
 - `DEST_PROJECT_SAPI_TOKEN` - Storage API token associated to admin of destination EU project
 - `SOURCE_PROJECT_SAPI_TOKEN` - Storage API token associated to admin of source US project
+- `MANAGE_API_TOKEN` - Manage API token with super admin rights. Must be from source stack.
+  Required if parameter `migrateSecrets` is `true`.
 
 ### Queue v2
 
@@ -43,7 +45,9 @@ curl --location 'https://queue.eu-central-1.keboola.com/jobs' \
   "configData": {
     "parameters": {
       "sourceKbcUrl": "https://connection.keboola.com",
-      "#sourceKbcToken": "SOURCE_PROJECT_SAPI_TOKEN"
+      "#sourceKbcToken": "SOURCE_PROJECT_SAPI_TOKEN",
+      "migrateSecrets": true,
+      "#manageToken": "MANAGE_API_TOKEN"
     }
   }
 }'
