@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate;
 
-use InvalidArgumentException;
 use Keboola\Component\Config\BaseConfig;
 
 class Config extends BaseConfig

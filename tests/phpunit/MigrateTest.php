@@ -6,11 +6,13 @@ namespace Keboola\AppProjectMigrate\Tests;
 
 use Generator;
 use Keboola\AppProjectMigrate\Config;
+use Keboola\AppProjectMigrate\ConfigDefinition;
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
 use Keboola\AppProjectMigrate\JobRunner\QueueV2JobRunner;
 use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Component\UserException;
+use Keboola\StorageApi\Client as StorageClient;
 use Keboola\Syrup\ClientException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -31,17 +33,17 @@ class MigrateTest extends TestCase
         bool $migrateSecrets,
         bool $restoreConfigs
     ): void {
-        $sourceClientMock = $this->createMock($jobRunnerClass);
-        $destClientMock = $this->createMock($jobRunnerClass);
+        $sourceJobRunnerMock = $this->createMock($jobRunnerClass);
+        $destJobRunnerMock = $this->createMock($jobRunnerClass);
 
         // generate credentials
         if (array_key_exists('abs', $expectedCredentialsData)) {
-            $this->mockAddMethodGenerateAbsReadCredentials($sourceClientMock);
+            $this->mockAddMethodGenerateAbsReadCredentials($sourceJobRunnerMock);
         } else {
-            $this->mockAddMethodGenerateS3ReadCredentials($sourceClientMock);
+            $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
         }
         $this->mockAddMethodBackupProject(
-            $sourceClientMock,
+            $sourceJobRunnerMock,
             [
                 'id' => '222',
                 'status' => 'success',
@@ -104,26 +106,60 @@ class MigrateTest extends TestCase
         ];
 
         // run restore with credentials from step 1
-        $destClientMock->expects($this->exactly($expectsRunJobs))
+        $destJobRunnerMock->expects($this->exactly($expectsRunJobs))
             ->method('runJob')
             ->withConsecutive(...$destinationMockJobs)->willReturn([
                 'id' => '222',
                 'status' => 'success',
             ]);
 
-        /** @var JobRunner $sourceClientMock */
-        /** @var JobRunner $destClientMock */
+        $config = new Config([
+            'parameters' => [
+                'sourceKbcUrl' => $sourceProjectUrl,
+                '#sourceKbcToken' => $sourceProjectToken,
+                'migrateSecrets' => $migrateSecrets,
+                'directDataMigration' => $migrateDataOfTablesDirectly,
+            ],
+            new ConfigDefinition(),
+        ]);
+
+        /** @var JobRunner $sourceJobRunnerMock */
+        /** @var JobRunner $destJobRunnerMock */
         $migrate = new Migrate(
-            $sourceClientMock,
-            $destClientMock,
-            $sourceProjectUrl,
-            $sourceProjectToken,
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
             'xxx-b',
             'yyy-b',
-            $migrateDataOfTablesDirectly,
-            $migrateSecrets,
             new NullLogger(),
         );
+
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock
+            ->method('apiGet')
+            ->willReturnMap([
+                [
+                    'dev-branches/', null,
+                    [
+                        [
+                            'id' => '123',
+                            'name' => 'default',
+                            'isDefault' => true,
+                        ],
+                    ],
+                ],
+                [
+                    'components//configs?', null,
+                    [
+                        [
+                            'id' => '123',
+                        ],
+                    ],
+                ],
+            ])
+        ;
+        $migrate->setSourceClientFactory(fn() => $sourceClientMock);
+
         $migrate->run();
     }
 
@@ -180,7 +216,7 @@ class MigrateTest extends TestCase
             false
         );
 
-        $destClientMock->expects($this->any())
+        $destClientMock
             ->method('runJob')
             ->willReturn([
                 'id' => '222',

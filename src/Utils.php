@@ -61,4 +61,12 @@ class Utils
             ));
         }
     }
+
+    public static function getStackFromProjectUrl(string $url): string
+    {
+        if (!preg_match('~^https?://~', $url)) {
+            $url = 'https://' . $url;
+        }
+        return parse_url($url)['host'] ?? '';
+    }
 }
