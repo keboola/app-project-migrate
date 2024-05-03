@@ -72,9 +72,6 @@ class Migrate
             $this->restoreDestinationProject($restoreCredentials);
 
             if ($this->migrateSecrets) {
-                if (!$this->manageApiToken) {
-                    throw new UserException('#manageToken must be set', 422);
-                }
                 $this->migrateSecrets();
             }
 
@@ -206,6 +203,9 @@ class Migrate
     {
         if (isset($this->migrationsClientFactory)) {
             return (fn(): Migrations => ($this->migrationsClientFactory)($encryptionApiUrl))();
+        }
+        if (!$this->manageApiToken) {
+            throw new UserException('#manageToken must be set', 422);
         }
         return new Migrations($this->manageApiToken, [
             'url' => $encryptionApiUrl,

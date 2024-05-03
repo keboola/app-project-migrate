@@ -171,7 +171,7 @@ class MigrateTest extends TestCase
 
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock->method('migrateConfiguration')
-            ->willReturnCallback(function(...$args) {
+            ->willReturnCallback(function (...$args) {
                 [, $destinationStack, , $configId] = $args;
                 return [
                     'message' => "Configuration with ID '$configId' successfully " .
