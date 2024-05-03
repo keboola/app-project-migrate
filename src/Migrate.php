@@ -57,7 +57,11 @@ class Migrate
                 $this->migrateDataOfTablesDirectly();
             }
 
-            $this->migrateSnowflakeWriters();
+            if (!$this->migrateSecrets) {
+                // We want to migrate Snowflake writers only if we are not migrating secrets, because when migrating
+                // secrets, Snowflake writers will be migrated by the encryption-api.
+                $this->migrateSnowflakeWriters();
+            }
             if ($this->sourceJobRunner instanceof SyrupJobRunner) {
                 $this->migrateOrchestrations();
             }
