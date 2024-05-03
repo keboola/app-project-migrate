@@ -27,11 +27,10 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->end()
                 ->booleanNode('directDataMigration')->defaultTrue()->end()
                 ->booleanNode('migrateSecrets')->defaultFalse()->end()
-                ->scalarNode('#manageToken')->end()
+                ->scalarNode('#manageToken')->defaultNull()->end()
             ->end()
             ->validate()
-                ->ifTrue(fn($values) =>
-                    isset($values['migrateSecrets']) && $values['migrateSecrets'] && !isset($values['#manageToken']))
+                ->ifTrue(fn($values) => ($values['migrateSecrets'] ?? false) && !isset($values['#manageToken']))
                 ->thenInvalid('Parameter "#manageToken" is required when "migrateSecrets" is set to true.')
             ->end()
         ;
