@@ -8,13 +8,12 @@ use Closure;
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
 use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\Component\UserException;
+use Keboola\EncryptionApiClient\Exception\ClientException as EncryptionClientException;
 use Keboola\EncryptionApiClient\Migrations;
 use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\Components;
 use Keboola\StorageApi\DevBranches;
-use Keboola\StorageApi\Options\Components\ListComponentConfigurationsOptions;
-use Keboola\StorageApi\Options\IndexOptions;
-use Keboola\Syrup\ClientException;
+use Keboola\Syrup\ClientException as SyrupClientException;
 use Psr\Log\LoggerInterface;
 
 class Migrate
@@ -24,8 +23,6 @@ class Migrate
     private JobRunner $sourceJobRunner;
 
     private JobRunner $destJobRunner;
-
-    private Migrations $migrationsClient;
 
     private string $sourceProjectUrl;
 
@@ -93,7 +90,7 @@ class Migrate
             if ($this->sourceJobRunner instanceof SyrupJobRunner) {
                 $this->migrateOrchestrations();
             }
-        } catch (ClientException $e) {
+        } catch (SyrupClientException|EncryptionClientException $e) {
             if ($e->getCode() >= 400 && $e->getCode() < 500) {
                 throw new UserException($e->getMessage(), $e->getCode(), $e);
             }
@@ -169,21 +166,32 @@ class Migrate
         $defaultSourceBranch = current(array_filter($sourceBranches, fn($b) => $b['isDefault'] === true));
 
         $sourceComponentsApi = new Components($sourceClient);
-        $configurations = $sourceComponentsApi->listComponentConfigurations(new ListComponentConfigurationsOptions());
-
-        $migrations = $this->createMigrationsClient($sourceClient->getServiceUrl('encryption'));
-
-        foreach ($configurations as $config) {
-            $migrations
-                ->migrateConfiguration(
-                    $this->sourceProjectToken,
-                    Utils::getStackFromProjectUrl($this->destinationProjectUrl),
-                    $this->destinationProjectToken,
-                    $config['componentId'],
-                    $config['id'],
-                    $defaultSourceBranch['id'],
-                );
+        $components = $sourceComponentsApi->listComponents();
+        if (!$components) {
+            $this->logger->info('There are no components to migrate.');
+            return;
         }
+
+        $encryptionApiUrl = $sourceClient->getServiceUrl('encryption');
+        $migrations = $this->createMigrationsClient($encryptionApiUrl);
+
+        foreach ($components as $component) {
+            foreach ($component['configurations'] as $config) {
+                $response = $migrations
+                    ->migrateConfiguration(
+                        $this->sourceProjectToken,
+                        Utils::getStackFromProjectUrl($this->destinationProjectUrl),
+                        $this->destinationProjectToken,
+                        $component['id'],
+                        $config['id'],
+                        $defaultSourceBranch['id'],
+                    );
+
+                $this->logger->debug($response['message']);
+            }
+        }
+
+        $this->logger->info('Secrets in configurations have been migrated.');
     }
 
     private function createSourceClient(): StorageClient
@@ -197,7 +205,7 @@ class Migrate
     private function createMigrationsClient(string $encryptionApiUrl): Migrations
     {
         if (isset($this->migrationsClientFactory)) {
-            return (fn(): Migrations => ($this->migrationsClientFactory)())();
+            return (fn(): Migrations => ($this->migrationsClientFactory)($encryptionApiUrl))();
         }
         return new Migrations($this->manageApiToken, [
             'url' => $encryptionApiUrl,

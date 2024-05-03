@@ -12,6 +12,7 @@ use Keboola\AppProjectMigrate\JobRunner\QueueV2JobRunner;
 use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Component\UserException;
+use Keboola\EncryptionApiClient\Migrations;
 use Keboola\StorageApi\Client as StorageClient;
 use Keboola\Syrup\ClientException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -24,6 +25,7 @@ class MigrateTest extends TestCase
     /**
      * @param class-string $jobRunnerClass
      * @dataProvider successMigrateDataProvider
+     * @throws UserException
      */
     public function testMigrateSuccess(
         array $expectedCredentialsData,
@@ -113,15 +115,18 @@ class MigrateTest extends TestCase
                 'status' => 'success',
             ]);
 
-        $config = new Config([
-            'parameters' => [
-                'sourceKbcUrl' => $sourceProjectUrl,
-                '#sourceKbcToken' => $sourceProjectToken,
-                'migrateSecrets' => $migrateSecrets,
-                'directDataMigration' => $migrateDataOfTablesDirectly,
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => $sourceProjectUrl,
+                    '#sourceKbcToken' => $sourceProjectToken,
+                    'migrateSecrets' => $migrateSecrets,
+                    'directDataMigration' => $migrateDataOfTablesDirectly,
+                    '#manageToken' => 'manage-token',
+                ],
             ],
-            new ConfigDefinition(),
-        ]);
+            new ConfigDefinition()
+        );
 
         /** @var JobRunner $sourceJobRunnerMock */
         /** @var JobRunner $destJobRunnerMock */
@@ -139,7 +144,7 @@ class MigrateTest extends TestCase
             ->method('apiGet')
             ->willReturnMap([
                 [
-                    'dev-branches/', null,
+                    'dev-branches/', null, [],
                     [
                         [
                             'id' => '123',
@@ -149,7 +154,7 @@ class MigrateTest extends TestCase
                     ],
                 ],
                 [
-                    'components//configs?', null,
+                    'components//configs?', null, [],
                     [
                         [
                             'id' => '123',
@@ -158,20 +163,38 @@ class MigrateTest extends TestCase
                 ],
             ])
         ;
+        $sourceClientMock
+            ->method('getServiceUrl')
+            ->with('encryption')
+            ->willReturn('https://encryption.keboola.com')
+        ;
+
+        $migrationsClientMock = $this->createMock(Migrations::class);
+        $migrationsClientMock->method('migrateConfiguration')
+            ->willReturnCallback(function(...$args) {
+                [, $destinationStack, , $configId] = $args;
+                return [
+                    'message' => "Configuration with ID '$configId' successfully " .
+                        "migrated to stack '$destinationStack'.",
+                    'data' => [],
+                ];
+            });
+
         $migrate->setSourceClientFactory(fn() => $sourceClientMock);
+        $migrate->setMigrationsClientFactory(fn() => $migrationsClientMock);
 
         $migrate->run();
     }
 
     public function testShouldFailOnSnapshotError(): void
     {
-        $sourceClientMock = $this->createMock(SyrupJobRunner::class);
-        $destClientMock = $this->createMock(SyrupJobRunner::class);
+        $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
+        $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
 
         // generate credentials
-        $this->mockAddMethodGenerateS3ReadCredentials($sourceClientMock);
+        $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
         $this->mockAddMethodBackupProject(
-            $sourceClientMock,
+            $sourceJobRunnerMock,
             [
                 'id' => '222',
                 'status' => 'error',
@@ -182,20 +205,30 @@ class MigrateTest extends TestCase
             false
         );
 
-        $destClientMock->expects($this->never())
+        $destJobRunnerMock->expects($this->never())
             ->method('runJob');
 
         $this->expectException(UserException::class);
         $this->expectExceptionMessageMatches('/Cannot snapshot project/');
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'xxx',
+                    '#sourceKbcToken' => 'yyy',
+                    'migrateSecrets' => false,
+                    'directDataMigration' => false,
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
         $migrate = new Migrate(
-            $sourceClientMock,
-            $destClientMock,
-            'xxx',
-            'yyy',
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
             'xxx-b',
             'yyy-b',
-            false,
-            false,
             new NullLogger(),
         );
         $migrate->run();
@@ -228,15 +261,25 @@ class MigrateTest extends TestCase
 
         $this->expectException(UserException::class);
         $this->expectExceptionMessageMatches('/Cannot restore project/');
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'xxx',
+                    '#sourceKbcToken' => 'yyy',
+                    'migrateSecrets' => false,
+                    'directDataMigration' => false,
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
         $migrate = new Migrate(
+            $config,
             $sourceClientMock,
             $destClientMock,
-            'xxx',
-            'yyy',
             'xxx-b',
             'yyy-b',
-            false,
-            false,
             new NullLogger(),
         );
         $migrate->run();
@@ -264,15 +307,24 @@ class MigrateTest extends TestCase
             )
         ;
 
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'xxx',
+                    '#sourceKbcToken' => 'yyy',
+                    'migrateSecrets' => false,
+                    'directDataMigration' => false,
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
         $migrate = new Migrate(
+            $config,
             $sourceClientMock,
             $destinationClientMock,
-            'xxx',
-            'yyy',
             'xxx-b',
             'yyy-b',
-            false,
-            false,
             new NullLogger(),
         );
 
