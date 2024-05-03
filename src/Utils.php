@@ -67,6 +67,7 @@ class Utils
         if (!preg_match('~^https?://~', $url)) {
             $url = 'https://' . $url;
         }
-        return parse_url($url)['host'] ?? '';
+        $parsedUrl = parse_url($url);
+        return is_array($parsedUrl) && isset($parsedUrl['host']) ? $parsedUrl['host'] : '';
     }
 }
