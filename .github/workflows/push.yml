@@ -16,9 +16,10 @@ env:
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # Test KBC projects
-  KBC_SOURCE_STORAGE_TOKEN_NOT_MASTER: ${{ secrets.KBC_STORAGE_TOKEN_NOT_MASTER }}
+  KBC_SOURCE_STORAGE_TOKEN_NOT_MASTER: ${{ secrets.KBC_SOURCE_STORAGE_TOKEN_NOT_MASTER }}
   KBC_SOURCE_PROJECT_URL: "https://connection.keboola.com/"
-  KBC_DEST_STORAGE_TOKEN: ${{ secrets.KBC_STORAGE_TOKEN }}
+  KBC_DEST_STORAGE_TOKEN: ${{ secrets.KBC_DEST_STORAGE_TOKEN }}
+  KBC_DEST_STORAGE_TOKEN_NOT_MASTER: ${{ secrets.KBC_DEST_STORAGE_TOKEN_NOT_MASTER }}
   KBC_DEST_PROJECT_URL: "https://connection.europe-west3.gcp.keboola.com/"
   KBC_DEST_PROJECT_CONFIGS: "" # space separated list
 jobs:
@@ -86,11 +87,13 @@ jobs:
           SOURCE_KBC_TOKEN: ${{env.KBC_SOURCE_STORAGE_TOKEN_NOT_MASTER}}
           SOURCE_KBC_URL: ${{env.KBC_SOURCE_PROJECT_URL}}
           KBC_TOKEN: ${{env.KBC_DEST_STORAGE_TOKEN}}
+          KBC_TOKEN_NOT_MASTER: ${{env.KBC_DEST_STORAGE_TOKEN_NOT_MASTER}}
           KBC_URL: ${{env.KBC_DEST_PROJECT_URL}}
         run: |
           docker run \
           -e KBC_URL \
           -e KBC_TOKEN \
+          -e KBC_TOKEN_NOT_MASTER \
           -e SOURCE_KBC_URL \
           -e SOURCE_KBC_TOKEN \
           ${{env.APP_IMAGE}} composer ci
