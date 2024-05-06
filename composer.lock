@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "54b8ab80021bfe1ef150456b91950fb0",
+    "content-hash": "7fa0837bb1f5028affe5b8fe07d33c47",
     "packages": [
         {
             "name": "aws/aws-sdk-php",
@@ -477,16 +477,16 @@
         },
         {
             "name": "keboola/encryption-api-php-client",
-            "version": "0.2.1",
+            "version": "dev-roman-pst-1686-manage-api-token",
             "source": {
                 "type": "git",
                 "url": "https://github.com/keboola/encryption-api-php-client.git",
-                "reference": "0af54d85142dba1c54a061419c8b5ae26bf355a5"
+                "reference": "c18e85c670e1539df5b355d95e347c24b8c78b8a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/keboola/encryption-api-php-client/zipball/0af54d85142dba1c54a061419c8b5ae26bf355a5",
-                "reference": "0af54d85142dba1c54a061419c8b5ae26bf355a5",
+                "url": "https://api.github.com/repos/keboola/encryption-api-php-client/zipball/c18e85c670e1539df5b355d95e347c24b8c78b8a",
+                "reference": "c18e85c670e1539df5b355d95e347c24b8c78b8a",
                 "shasum": ""
             },
             "require": {
@@ -520,9 +520,9 @@
             ],
             "description": "Keboola Encryption API Client",
             "support": {
-                "source": "https://github.com/keboola/encryption-api-php-client/tree/0.2.1"
+                "source": "https://github.com/keboola/encryption-api-php-client/tree/roman-pst-1686-manage-api-token"
             },
-            "time": "2024-05-02T14:13:10+00:00"
+            "time": "2024-05-06T14:50:06+00:00"
         },
         {
             "name": "keboola/job-queue-api-php-client",
@@ -4831,7 +4831,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "keboola/encryption-api-php-client": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
