@@ -181,7 +181,7 @@ class Migrate
                         $this->destinationProjectToken,
                         $component['id'],
                         $config['id'],
-                        $defaultSourceBranch['id'],
+                        (string) $defaultSourceBranch['id'],
                     );
 
                 $this->logger->debug($response['message']);
