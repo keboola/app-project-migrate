@@ -36,7 +36,8 @@ This is example of project migration from US to EU, please replace these paramet
 ### Queue v2
 
 ```shell
-curl --location 'https://queue.eu-central-1.keboola.com/jobs' \
+curl -X POST \
+--location 'https://queue.eu-central-1.keboola.com/jobs' \
 --header 'X-StorageApi-Token: DEST_PROJECT_SAPI_TOKEN' \
 --header 'Content-Type: application/json' \
 --data '{
