@@ -9,6 +9,8 @@ use Keboola\StorageApi\Client;
 use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\Components;
 use Keboola\Syrup\Client as SyrupClient;
+use Symfony\Component\Validator\Constraints\Url;
+use Symfony\Component\Validator\Validation;
 
 class Utils
 {
@@ -67,6 +69,13 @@ class Utils
         if (!preg_match('~^https?://~', $url)) {
             $url = 'https://' . $url;
         }
+
+        $validator = Validation::createValidator();
+        $violations = $validator->validate($url, new Url());
+        if (count($violations) > 0) {
+            throw new UserException(sprintf('Invalid destination project URL: "%s".', $url));
+        }
+
         $parsedUrl = parse_url($url);
         return is_array($parsedUrl) && isset($parsedUrl['host']) ? $parsedUrl['host'] : '';
     }

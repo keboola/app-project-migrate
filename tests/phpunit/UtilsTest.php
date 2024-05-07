@@ -100,7 +100,6 @@ class UtilsTest extends TestCase
         ];
     }
 
-
     public function testMissingSourceApp(): void
     {
         $sourceClientMock = $this->createMock(Client::class);
@@ -142,5 +141,39 @@ class UtilsTest extends TestCase
         $this->expectException(UserException::class);
         $this->expectExceptionMessage('Missing "keboola.project-restore" application in the destination project.');
         Utils::checkMigrationApps($sourceClientMock, $destClientMock);
+    }
+
+    public function testStackFromProjectUrl(): void
+    {
+        self::assertSame(
+            'connection.keboola.com',
+            Utils::getStackFromProjectUrl('connection.keboola.com/')
+        );
+
+        self::assertSame(
+            'connection.europe-west3.gcp.keboola.com',
+            Utils::getStackFromProjectUrl('https://connection.europe-west3.gcp.keboola.com/')
+        );
+
+        self::assertSame(
+            'connection.europe-west3.gcp.keboola.com',
+            Utils::getStackFromProjectUrl('https://connection.europe-west3.gcp.keboola.com/')
+        );
+
+        self::assertSame(
+            'connection.e2e.us-east-1.aws.keboola.dev',
+            Utils::getStackFromProjectUrl('connection.e2e.us-east-1.aws.keboola.dev')
+        );
+    }
+
+    public function testStackFromInvalidProjectUrl(): void
+    {
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessage('Invalid destination project URL: "https://htt://invalid-url.com".');
+        Utils::getStackFromProjectUrl('htt://invalid-url.com');
+
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessage('Invalid destination project URL: "".');
+        Utils::getStackFromProjectUrl('');
     }
 }
