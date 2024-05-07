@@ -91,6 +91,7 @@ class Migrate
             if ($e->getCode() >= 400 && $e->getCode() < 500) {
                 throw new UserException($e->getMessage(), $e->getCode(), $e);
             }
+            throw $e;
         }
     }
 
