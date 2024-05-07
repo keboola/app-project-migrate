@@ -185,7 +185,8 @@ class Migrate
                         (string) $defaultSourceBranch['id'],
                     );
 
-                $this->logger->debug($response['message']);
+                //$this->logger->debug($response['message']);
+                $this->logger->info($response['message']);
             }
         }
 
