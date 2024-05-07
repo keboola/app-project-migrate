@@ -408,7 +408,7 @@ class MigrateTest extends TestCase
             ],
             'jobRunnerClass' => QueueV2JobRunner::class,
             'migrateDataOfTablesDirectly' => true,
-            'expectsRunJobs' => 3,
+            'expectsRunJobs' => 2,
             'migrateSecrets' => true,
             'restoreConfigs' => false,
         ];
