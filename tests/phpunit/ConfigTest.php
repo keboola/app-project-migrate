@@ -14,7 +14,9 @@ class ConfigTest extends TestCase
     public function testMigrateSecretsConfigInvalid(): void
     {
         $this->expectException(InvalidConfigurationException::class);
-        $this->expectExceptionMessage('Parameter "#sourceManageToken" is required when "migrateSecrets" is set to true.');
+        $this->expectExceptionMessage(
+            'Parameter "#sourceManageToken" is required when "migrateSecrets" is set to true.'
+        );
 
         new Config(
             [
