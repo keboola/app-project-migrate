@@ -17,6 +17,7 @@ use Keboola\StorageApi\Client as StorageClient;
 use Keboola\Syrup\ClientException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 class MigrateTest extends TestCase
@@ -128,6 +129,8 @@ class MigrateTest extends TestCase
             new ConfigDefinition()
         );
 
+        $loggerMock = $this->createMock(LoggerInterface::class);
+
         /** @var JobRunner $sourceJobRunnerMock */
         /** @var JobRunner $destJobRunnerMock */
         $migrate = new Migrate(
@@ -136,7 +139,7 @@ class MigrateTest extends TestCase
             $destJobRunnerMock,
             'xxx-b',
             'yyy-b',
-            new NullLogger(),
+            $loggerMock,
         );
 
         $sourceClientMock = $this->createMock(StorageClient::class);
@@ -154,10 +157,29 @@ class MigrateTest extends TestCase
                     ],
                 ],
                 [
-                    'components//configs?', null, [],
+                    'components?include=', null, [],
                     [
                         [
-                            'id' => '123',
+                            'id' => 'gooddata-writer', // should be skipped
+                        ],
+                        [
+                            'id' => 'some-component',
+                            'configurations' => [
+                                [
+                                    'id' => '101',
+                                ],
+                                [
+                                    'id' => '102',
+                                ],
+                            ],
+                        ],
+                        [
+                            'id' => 'another-component',
+                            'configurations' => [
+                                [
+                                    'id' => '201',
+                                ],
+                            ],
                         ],
                     ],
                 ],
@@ -170,15 +192,30 @@ class MigrateTest extends TestCase
         ;
 
         $migrationsClientMock = $this->createMock(Migrations::class);
-        $migrationsClientMock->method('migrateConfiguration')
-            ->willReturnCallback(function (...$args) {
-                [, $destinationStack, , $configId] = $args;
-                return [
-                    'message' => "Configuration with ID '$configId' successfully " .
-                        "migrated to stack '$destinationStack'.",
-                    'data' => [],
-                ];
-            });
+
+        if ($migrateSecrets) {
+            $migrationsClientMock
+                ->expects(self::exactly(3))
+                ->method('migrateConfiguration')
+                ->willReturnCallback(function (...$args) {
+                    [, $destinationStack, , , $configId] = $args;
+                    return [
+                        'message' => "Configuration with ID '$configId' successfully " .
+                            "migrated to stack '$destinationStack'.",
+                        'data' => [],
+                    ];
+                });
+
+            $loggerMock->expects(self::exactly(3))
+                ->method('debug')
+                ->withConsecutive(
+                    [self::equalTo('Configuration with ID \'101\' successfully migrated to stack \'xxx-b\'.')],
+                    [self::equalTo('Configuration with ID \'102\' successfully migrated to stack \'xxx-b\'.')],
+                    [self::equalTo('Configuration with ID \'201\' successfully migrated to stack \'xxx-b\'.')]
+                );
+        } else {
+            $migrationsClientMock->expects(self::never())->method('migrateConfiguration');
+        }
 
         $migrate->setSourceClientFactory(fn() => $sourceClientMock);
         $migrate->setMigrationsClientFactory(fn() => $migrationsClientMock);
