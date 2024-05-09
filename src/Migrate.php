@@ -44,6 +44,11 @@ class Migrate
 
     private Closure $migrationsClientFactory;
 
+    public const OBSOLETE_COMPONENTS = [
+        'orchestrator',
+        'gooddata-writer',
+    ];
+
     public function __construct(
         Config $config,
         JobRunner $sourceJobRunner,
@@ -174,6 +179,10 @@ class Migrate
         $migrations = $this->createMigrationsClient($encryptionApiUrl);
 
         foreach ($components as $component) {
+            if (in_array($component['id'], self::OBSOLETE_COMPONENTS, true)) {
+                continue;
+            }
+
             foreach ($component['configurations'] as $config) {
                 $response = $migrations
                     ->migrateConfiguration(
