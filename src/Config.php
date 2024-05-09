@@ -34,8 +34,8 @@ class Config extends BaseConfig
         return $this->getValue(['parameters', 'migrateSecrets']);
     }
 
-    public function getManageToken(): ?string
+    public function getSourceManageToken(): ?string
     {
-        return $this->getValue(['parameters', '#manageToken']);
+        return $this->getValue(['parameters', '#sourceManageToken']);
     }
 }

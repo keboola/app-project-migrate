@@ -14,7 +14,7 @@ class ConfigTest extends TestCase
     public function testMigrateSecretsConfigInvalid(): void
     {
         $this->expectException(InvalidConfigurationException::class);
-        $this->expectExceptionMessage('Parameter "#manageToken" is required when "migrateSecrets" is set to true.');
+        $this->expectExceptionMessage('Parameter "#sourceManageToken" is required when "migrateSecrets" is set to true.');
 
         new Config(
             [
@@ -36,13 +36,13 @@ class ConfigTest extends TestCase
                     'sourceKbcUrl' => 'https://connection.keboola.com',
                     '#sourceKbcToken' => 'token',
                     'migrateSecrets' => true,
-                    '#manageToken' => 'manage-token',
+                    '#sourceManageToken' => 'manage-token',
                 ],
             ],
             new ConfigDefinition()
         );
 
         $this->assertSame(true, $baseConfig->shouldMigrateSecrets());
-        $this->assertEquals('manage-token', $baseConfig->getManageToken());
+        $this->assertEquals('manage-token', $baseConfig->getSourceManageToken());
     }
 }

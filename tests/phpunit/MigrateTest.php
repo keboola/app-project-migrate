@@ -123,7 +123,7 @@ class MigrateTest extends TestCase
                     '#sourceKbcToken' => $sourceProjectToken,
                     'migrateSecrets' => $migrateSecrets,
                     'directDataMigration' => $migrateDataOfTablesDirectly,
-                    '#manageToken' => 'manage-token',
+                    '#sourceManageToken' => 'manage-token',
                 ],
             ],
             new ConfigDefinition()

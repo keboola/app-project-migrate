@@ -32,7 +32,7 @@ class Migrate
 
     private string $destinationProjectToken;
 
-    private ?string $manageApiToken;
+    private ?string $sourceManageApiToken;
 
     private LoggerInterface $logger;
 
@@ -63,7 +63,7 @@ class Migrate
         $this->sourceProjectToken = $config->getSourceProjectToken();
         $this->destinationProjectUrl = $destinationProjectUrl;
         $this->destinationProjectToken = $destinationProjectToken;
-        $this->manageApiToken = $config->getManageToken();
+        $this->sourceManageApiToken = $config->getSourceManageToken();
         $this->directDataMigration = $config->directDataMigration();
         $this->migrateSecrets = $config->shouldMigrateSecrets();
         $this->logger = $logger;
@@ -214,10 +214,10 @@ class Migrate
         if (isset($this->migrationsClientFactory)) {
             return (fn(): Migrations => ($this->migrationsClientFactory)($encryptionApiUrl))();
         }
-        if (!$this->manageApiToken) {
-            throw new UserException('#manageToken must be set', 422);
+        if (!$this->sourceManageApiToken) {
+            throw new UserException('#sourceManageToken must be set', 422);
         }
-        return new Migrations($this->manageApiToken, [
+        return new Migrations($this->sourceManageApiToken, [
             'url' => $encryptionApiUrl,
         ]);
     }
