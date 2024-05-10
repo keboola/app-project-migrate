@@ -137,8 +137,8 @@ class MigrateTest extends TestCase
             $config,
             $sourceJobRunnerMock,
             $destJobRunnerMock,
-            'xxx-b',
-            'yyy-b',
+            'https://dest-stack/',
+            'dest-token',
             $loggerMock,
         );
 
@@ -209,9 +209,9 @@ class MigrateTest extends TestCase
             $loggerMock->expects(self::exactly(3))
                 ->method('debug')
                 ->withConsecutive(
-                    [self::equalTo('Configuration with ID \'101\' successfully migrated to stack \'xxx-b\'.')],
-                    [self::equalTo('Configuration with ID \'102\' successfully migrated to stack \'xxx-b\'.')],
-                    [self::equalTo('Configuration with ID \'201\' successfully migrated to stack \'xxx-b\'.')]
+                    [self::equalTo('Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.')],
+                    [self::equalTo('Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.')],
+                    [self::equalTo('Configuration with ID \'201\' successfully migrated to stack \'dest-stack\'.')]
                 );
         } else {
             $migrationsClientMock->expects(self::never())->method('migrateConfiguration');

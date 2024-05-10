@@ -146,11 +146,6 @@ class UtilsTest extends TestCase
     public function testStackFromProjectUrl(): void
     {
         self::assertSame(
-            'connection.keboola.com',
-            Utils::getStackFromProjectUrl('connection.keboola.com/')
-        );
-
-        self::assertSame(
             'connection.europe-west3.gcp.keboola.com',
             Utils::getStackFromProjectUrl('https://connection.europe-west3.gcp.keboola.com/')
         );
@@ -162,12 +157,20 @@ class UtilsTest extends TestCase
 
         self::assertSame(
             'connection.e2e.us-east-1.aws.keboola.dev',
-            Utils::getStackFromProjectUrl('connection.e2e.us-east-1.aws.keboola.dev')
+            Utils::getStackFromProjectUrl('https://connection.e2e.us-east-1.aws.keboola.dev')
         );
     }
 
     public function testStackFromInvalidProjectUrl(): void
     {
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessage('Invalid destination project URL: "connection.keboola.com/".');
+        Utils::getStackFromProjectUrl('connection.keboola.com/');
+
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessage('Invalid destination project URL: "connection.e2e.us-east-1.aws.keboola.dev".');
+        Utils::getStackFromProjectUrl('connection.e2e.us-east-1.aws.keboola.dev');
+
         $this->expectException(UserException::class);
         $this->expectExceptionMessage('Invalid destination project URL: "https://htt://invalid-url.com".');
         Utils::getStackFromProjectUrl('htt://invalid-url.com');

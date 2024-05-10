@@ -66,10 +66,6 @@ class Utils
 
     public static function getStackFromProjectUrl(string $url): string
     {
-        if (!preg_match('~^https?://~', $url)) {
-            $url = 'https://' . $url;
-        }
-
         $validator = Validation::createValidator();
         $violations = $validator->validate($url, new Url());
         if (count($violations) > 0) {
