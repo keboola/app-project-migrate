@@ -133,17 +133,6 @@ class MigrateTest extends TestCase
         $logsHandler = new TestHandler();
         $logger = new Logger('tests', [$logsHandler]);
 
-        /** @var JobRunner $sourceJobRunnerMock */
-        /** @var JobRunner $destJobRunnerMock */
-        $migrate = new Migrate(
-            $config,
-            $sourceJobRunnerMock,
-            $destJobRunnerMock,
-            'https://dest-stack/',
-            'dest-token',
-            $logger,
-        );
-
         $sourceClientMock = $this->createMock(StorageClient::class);
         $sourceClientMock
             ->method('apiGet')
@@ -211,8 +200,18 @@ class MigrateTest extends TestCase
             $migrationsClientMock->expects(self::never())->method('migrateConfiguration');
         }
 
-        $migrate->setSourceClientFactory(fn() => $sourceClientMock);
-        $migrate->setMigrationsClientFactory(fn() => $migrationsClientMock);
+        /** @var JobRunner $sourceJobRunnerMock */
+        /** @var JobRunner $destJobRunnerMock */
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            $logger,
+        );
 
         $migrate->run();
 
@@ -249,6 +248,8 @@ class MigrateTest extends TestCase
     {
         $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $migrationsClientMock = $this->createMock(Migrations::class);
 
         // generate credentials
         $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
@@ -286,6 +287,8 @@ class MigrateTest extends TestCase
             $config,
             $sourceJobRunnerMock,
             $destJobRunnerMock,
+            $sourceClientMock,
+            $migrationsClientMock,
             'xxx-b',
             'yyy-b',
             new NullLogger(),
@@ -295,12 +298,14 @@ class MigrateTest extends TestCase
 
     public function testShouldFailOnRestoreError(): void
     {
-        $sourceClientMock = $this->createMock(SyrupJobRunner::class);
-        $destClientMock = $this->createMock(SyrupJobRunner::class);
+        $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
+        $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $migrationsClientMock = $this->createMock(Migrations::class);
 
-        $this->mockAddMethodGenerateS3ReadCredentials($sourceClientMock);
+        $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
         $this->mockAddMethodBackupProject(
-            $sourceClientMock,
+            $sourceJobRunnerMock,
             [
             'id' => '222',
                 'status' => 'success',
@@ -308,7 +313,7 @@ class MigrateTest extends TestCase
             false
         );
 
-        $destClientMock
+        $destJobRunnerMock
             ->method('runJob')
             ->willReturn([
                 'id' => '222',
@@ -335,8 +340,10 @@ class MigrateTest extends TestCase
 
         $migrate = new Migrate(
             $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
             $sourceClientMock,
-            $destClientMock,
+            $migrationsClientMock,
             'xxx-b',
             'yyy-b',
             new NullLogger(),
@@ -346,12 +353,14 @@ class MigrateTest extends TestCase
 
     public function testCatchSyrupClientException(): void
     {
-        $sourceClientMock = $this->createMock(SyrupJobRunner::class);
-        $destinationClientMock = $this->createMock(SyrupJobRunner::class);
+        $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
+        $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $migrationsClientMock = $this->createMock(Migrations::class);
 
-        $this->mockAddMethodGenerateS3ReadCredentials($sourceClientMock);
+        $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
         $this->mockAddMethodBackupProject(
-            $sourceClientMock,
+            $sourceJobRunnerMock,
             [
                 'id' => '222',
                 'status' => 'success',
@@ -359,7 +368,7 @@ class MigrateTest extends TestCase
             false
         );
 
-        $destinationClientMock
+        $destJobRunnerMock
             ->method('runJob')
             ->willThrowException(
                 new ClientException('Test ClientException', 401)
@@ -380,8 +389,10 @@ class MigrateTest extends TestCase
 
         $migrate = new Migrate(
             $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
             $sourceClientMock,
-            $destinationClientMock,
+            $migrationsClientMock,
             'xxx-b',
             'yyy-b',
             new NullLogger(),

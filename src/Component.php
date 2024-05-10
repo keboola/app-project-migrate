@@ -8,6 +8,7 @@ use Keboola\AppProjectMigrate\Checker\AfterMigration;
 use Keboola\AppProjectMigrate\JobRunner\JobRunnerFactory;
 use Keboola\Component\BaseComponent;
 use Keboola\Component\UserException;
+use Keboola\EncryptionApiClient\Migrations;
 use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\ClientException as StorageClientException;
 use Keboola\StorageApi\Components;
@@ -51,6 +52,10 @@ class Component extends BaseComponent
             );
         }
 
+        if ($config->shouldMigrateSecrets() && !$config->getSourceManageToken()) {
+            throw new UserException('#sourceManageToken must be set.', 422);
+        }
+
         Utils::checkMigrationApps($sourceProjectClient, $destProjectClient);
 
         if (!Utils::checkIfProjectEmpty($destProjectClient, new Components($destProjectClient))) {
@@ -71,11 +76,16 @@ class Component extends BaseComponent
 
         $sourceJobRunner = JobRunnerFactory::create($sourceProjectClient, $logger);
         $destJobRunner = JobRunnerFactory::create($destProjectClient, $logger);
+        $migrationsClient = new Migrations($config->getSourceManageToken() ?? '', [
+            'url' => $sourceProjectClient->getServiceUrl('encryption'),
+        ]);
 
         $migrate = new Migrate(
             $config,
             $sourceJobRunner,
             $destJobRunner,
+            $sourceProjectClient,
+            $migrationsClient,
             $destProjectClient->getApiUrl(),
             $destProjectClient->getTokenString(),
             $logger,
