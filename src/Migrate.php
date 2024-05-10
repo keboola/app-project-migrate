@@ -160,7 +160,7 @@ class Migrate
 
     private function migrateSecrets(): void
     {
-        $this->logger->info('Migrating secrets in configurations');
+        $this->logger->info('Migrating secrets in configurations', ['secrets']);
 
         $sourceClient = $this->createSourceClient();
 
@@ -171,7 +171,7 @@ class Migrate
         $sourceComponentsApi = new Components($sourceClient);
         $components = $sourceComponentsApi->listComponents();
         if (!$components) {
-            $this->logger->info('There are no components to migrate.');
+            $this->logger->info('There are no components to migrate.', ['secrets']);
             return;
         }
 
@@ -194,11 +194,9 @@ class Migrate
                         (string) $defaultSourceBranch['id'],
                     );
 
-                $this->logger->debug($response['message']);
+                $this->logger->info($response['message'], ['secrets']);
             }
         }
-
-        $this->logger->info('Secrets in configurations have been migrated.');
     }
 
     private function createSourceClient(): StorageClient

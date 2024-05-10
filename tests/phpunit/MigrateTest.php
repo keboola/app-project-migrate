@@ -15,9 +15,10 @@ use Keboola\Component\UserException;
 use Keboola\EncryptionApiClient\Migrations;
 use Keboola\StorageApi\Client as StorageClient;
 use Keboola\Syrup\ClientException;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 class MigrateTest extends TestCase
@@ -129,7 +130,8 @@ class MigrateTest extends TestCase
             new ConfigDefinition()
         );
 
-        $loggerMock = $this->createMock(LoggerInterface::class);
+        $logsHandler = new TestHandler();
+        $logger = new Logger('tests', [$logsHandler]);
 
         /** @var JobRunner $sourceJobRunnerMock */
         /** @var JobRunner $destJobRunnerMock */
@@ -139,7 +141,7 @@ class MigrateTest extends TestCase
             $destJobRunnerMock,
             'https://dest-stack/',
             'dest-token',
-            $loggerMock,
+            $logger,
         );
 
         $sourceClientMock = $this->createMock(StorageClient::class);
@@ -205,14 +207,6 @@ class MigrateTest extends TestCase
                         'data' => [],
                     ];
                 });
-
-            $loggerMock->expects(self::exactly(3))
-                ->method('debug')
-                ->withConsecutive(
-                    [self::equalTo('Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.')],
-                    [self::equalTo('Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.')],
-                    [self::equalTo('Configuration with ID \'201\' successfully migrated to stack \'dest-stack\'.')]
-                );
         } else {
             $migrationsClientMock->expects(self::never())->method('migrateConfiguration');
         }
@@ -221,6 +215,32 @@ class MigrateTest extends TestCase
         $migrate->setMigrationsClientFactory(fn() => $migrationsClientMock);
 
         $migrate->run();
+
+        if ($migrateSecrets) {
+            $records = array_filter(
+                $logsHandler->getRecords(),
+                fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
+            );
+            self::assertCount(4, $records);
+
+            $record = array_shift($records);
+            self::assertSame('Migrating secrets in configurations', $record['message']);
+            $record = array_shift($records);
+            self::assertSame(
+                'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
+                $record['message']
+            );
+            $record = array_shift($records);
+            self::assertSame(
+                'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
+                $record['message']
+            );
+            $record = array_shift($records);
+            self::assertSame(
+                'Configuration with ID \'201\' successfully migrated to stack \'dest-stack\'.',
+                $record['message']
+            );
+        }
     }
 
     public function testShouldFailOnSnapshotError(): void
