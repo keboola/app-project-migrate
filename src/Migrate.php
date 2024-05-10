@@ -180,6 +180,10 @@ class Migrate
 
         foreach ($components as $component) {
             if (in_array($component['id'], self::OBSOLETE_COMPONENTS, true)) {
+                $this->logger->info(
+                    sprintf('Components "%s" is obsolete, skipping migration...', $component['id']),
+                    ['secrets']
+                );
                 continue;
             }
 

@@ -221,10 +221,12 @@ class MigrateTest extends TestCase
                 $logsHandler->getRecords(),
                 fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
             );
-            self::assertCount(4, $records);
+            self::assertCount(5, $records);
 
             $record = array_shift($records);
             self::assertSame('Migrating secrets in configurations', $record['message']);
+            $record = array_shift($records);
+            self::assertSame('Components "gooddata-writer" is obsolete, skipping migration...', $record['message']);
             $record = array_shift($records);
             self::assertSame(
                 'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
