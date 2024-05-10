@@ -17,6 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	&& chmod +x /tmp/composer-install.sh \
 	&& /tmp/composer-install.sh
 
+RUN pecl install xdebug-2.9.8 \
+ && docker-php-ext-enable xdebug
+
 ## Composer - deps always cached unless changed
 # First copy only composer files
 COPY composer.* /code/

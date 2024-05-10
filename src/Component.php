@@ -8,6 +8,7 @@ use Keboola\AppProjectMigrate\Checker\AfterMigration;
 use Keboola\AppProjectMigrate\JobRunner\JobRunnerFactory;
 use Keboola\Component\BaseComponent;
 use Keboola\Component\UserException;
+use Keboola\EncryptionApiClient\Migrations;
 use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\ClientException as StorageClientException;
 use Keboola\StorageApi\Components;
@@ -36,7 +37,7 @@ class Component extends BaseComponent
         ]);
 
         try {
-            $destinationTokenInfo = $sourceProjectClient->verifyToken();
+            $destinationTokenInfo = $destProjectClient->verifyToken();
         } catch (StorageClientException $e) {
             throw new UserException('Cannot authorize destination project: ' . $e->getMessage(), $e->getCode(), $e);
         }
@@ -49,6 +50,10 @@ class Component extends BaseComponent
                     $destinationTokenInfo['owner']['name']
                 )
             );
+        }
+
+        if ($config->shouldMigrateSecrets() && !$config->getSourceManageToken()) {
+            throw new UserException('#sourceManageToken must be set.', 422);
         }
 
         Utils::checkMigrationApps($sourceProjectClient, $destProjectClient);
@@ -69,14 +74,21 @@ class Component extends BaseComponent
             $config->getSourceProjectUrl()
         ));
 
+        $sourceJobRunner = JobRunnerFactory::create($sourceProjectClient, $logger);
+        $destJobRunner = JobRunnerFactory::create($destProjectClient, $logger);
+        $migrationsClient = new Migrations($config->getSourceManageToken() ?? '', [
+            'url' => $sourceProjectClient->getServiceUrl('encryption'),
+        ]);
+
         $migrate = new Migrate(
-            JobRunnerFactory::create($sourceProjectClient, $logger),
-            JobRunnerFactory::create($destProjectClient, $logger),
-            $config->getSourceProjectUrl(),
-            $config->getSourceProjectToken(),
-            $config->directDataMigration(),
+            $config,
+            $sourceJobRunner,
+            $destJobRunner,
+            $sourceProjectClient,
+            $migrationsClient,
+            $destProjectClient->getApiUrl(),
+            $destProjectClient->getTokenString(),
             $logger,
-            $config->shouldMigrateSecrets(),
         );
         $migrate->run();
 

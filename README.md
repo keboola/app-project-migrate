@@ -28,13 +28,16 @@ It is recommended to run [migration validation application](https://github.com/k
 Run the migration in destination project wil the following command.
 This is example of project migration from US to EU, please replace these parameters:
 
-- `DEST_PROJECT_SAPI_TOKEN` - Storage API token associated to admin of destination EU project
-- `SOURCE_PROJECT_SAPI_TOKEN` - Storage API token associated to admin of source US project
+- `DEST_PROJECT_SAPI_TOKEN` - Storage API token associated to admin of destination EU project (master)
+- `SOURCE_PROJECT_SAPI_TOKEN` - Storage API token associated to admin of source US project (non-master, all permissions are required)
+- `MANAGE_API_TOKEN` - Manage API token with super admin rights. Must be from source stack.
+  Required if parameter `migrateSecrets` is `true`.
 
 ### Queue v2
 
 ```shell
-curl --location 'https://queue.eu-central-1.keboola.com/jobs' \
+curl -X POST \
+--location 'https://queue.eu-central-1.keboola.com/jobs' \
 --header 'X-StorageApi-Token: DEST_PROJECT_SAPI_TOKEN' \
 --header 'Content-Type: application/json' \
 --data '{
@@ -43,7 +46,9 @@ curl --location 'https://queue.eu-central-1.keboola.com/jobs' \
   "configData": {
     "parameters": {
       "sourceKbcUrl": "https://connection.keboola.com",
-      "#sourceKbcToken": "SOURCE_PROJECT_SAPI_TOKEN"
+      "#sourceKbcToken": "SOURCE_PROJECT_SAPI_TOKEN",
+      "migrateSecrets": true,
+      "#manageToken": "MANAGE_API_TOKEN"
     }
   }
 }'

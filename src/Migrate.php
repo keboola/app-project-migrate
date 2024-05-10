@@ -7,7 +7,12 @@ namespace Keboola\AppProjectMigrate;
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
 use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\Component\UserException;
-use Keboola\Syrup\ClientException;
+use Keboola\EncryptionApiClient\Exception\ClientException as EncryptionClientException;
+use Keboola\EncryptionApiClient\Migrations as MigrationsClient;
+use Keboola\StorageApi\Client as StorageClient;
+use Keboola\StorageApi\Components;
+use Keboola\StorageApi\DevBranches;
+use Keboola\Syrup\ClientException as SyrupClientException;
 use Psr\Log\LoggerInterface;
 
 class Migrate
@@ -18,9 +23,17 @@ class Migrate
 
     private JobRunner $destJobRunner;
 
+    private StorageClient $sourceProjectStorageClient;
+
+    private MigrationsClient $migrationsClient;
+
     private string $sourceProjectUrl;
 
     private string $sourceProjectToken;
+
+    private string $destinationProjectUrl;
+
+    private string $destinationProjectToken;
 
     private LoggerInterface $logger;
 
@@ -28,22 +41,32 @@ class Migrate
 
     private bool $migrateSecrets;
 
+    public const OBSOLETE_COMPONENTS = [
+        'orchestrator',
+        'gooddata-writer',
+    ];
+
     public function __construct(
+        Config $config,
         JobRunner $sourceJobRunner,
         JobRunner $destJobRunner,
-        string $sourceProjectUrl,
-        string $sourceProjectToken,
-        bool $directDataMigration,
-        LoggerInterface $logger,
-        bool $migrateSecrets
+        StorageClient $sourceProjectStorageClient,
+        MigrationsClient $migrationsClient,
+        string $destinationProjectUrl,
+        string $destinationProjectToken,
+        LoggerInterface $logger
     ) {
         $this->sourceJobRunner = $sourceJobRunner;
         $this->destJobRunner = $destJobRunner;
-        $this->sourceProjectUrl = $sourceProjectUrl;
-        $this->sourceProjectToken = $sourceProjectToken;
-        $this->directDataMigration = $directDataMigration;
+        $this->sourceProjectStorageClient = $sourceProjectStorageClient;
+        $this->migrationsClient = $migrationsClient;
+        $this->sourceProjectUrl = $config->getSourceProjectUrl();
+        $this->sourceProjectToken = $config->getSourceProjectToken();
+        $this->destinationProjectUrl = $destinationProjectUrl;
+        $this->destinationProjectToken = $destinationProjectToken;
+        $this->directDataMigration = $config->directDataMigration();
+        $this->migrateSecrets = $config->shouldMigrateSecrets();
         $this->logger = $logger;
-        $this->migrateSecrets = $migrateSecrets;
     }
 
     public function run(): void
@@ -52,6 +75,10 @@ class Migrate
         try {
             $this->backupSourceProject($restoreCredentials['backupId']);
             $this->restoreDestinationProject($restoreCredentials);
+
+            if ($this->migrateSecrets) {
+                $this->migrateSecrets();
+            }
 
             if ($this->directDataMigration) {
                 $this->migrateDataOfTablesDirectly();
@@ -65,10 +92,11 @@ class Migrate
             if ($this->sourceJobRunner instanceof SyrupJobRunner) {
                 $this->migrateOrchestrations();
             }
-        } catch (ClientException $e) {
+        } catch (SyrupClientException|EncryptionClientException $e) {
             if ($e->getCode() >= 400 && $e->getCode() < 500) {
                 throw new UserException($e->getMessage(), $e->getCode(), $e);
             }
+            throw $e;
         }
     }
 
@@ -118,6 +146,46 @@ class Migrate
             throw new UserException('Project restore error: ' . $job['result']['message']);
         }
         $this->logger->info('Current project restored');
+    }
+
+    private function migrateSecrets(): void
+    {
+        $this->logger->info('Migrating secrets in configurations', ['secrets']);
+
+        $sourceDevBranches = new DevBranches($this->sourceProjectStorageClient);
+        $sourceBranches = $sourceDevBranches->listBranches();
+        $defaultSourceBranch = current(array_filter($sourceBranches, fn($b) => $b['isDefault'] === true));
+
+        $sourceComponentsApi = new Components($this->sourceProjectStorageClient);
+        $components = $sourceComponentsApi->listComponents();
+        if (!$components) {
+            $this->logger->info('There are no components to migrate.', ['secrets']);
+            return;
+        }
+
+        foreach ($components as $component) {
+            if (in_array($component['id'], self::OBSOLETE_COMPONENTS, true)) {
+                $this->logger->info(
+                    sprintf('Components "%s" is obsolete, skipping migration...', $component['id']),
+                    ['secrets']
+                );
+                continue;
+            }
+
+            foreach ($component['configurations'] as $config) {
+                $response = $this->migrationsClient
+                    ->migrateConfiguration(
+                        $this->sourceProjectToken,
+                        Utils::getStackFromProjectUrl($this->destinationProjectUrl),
+                        $this->destinationProjectToken,
+                        $component['id'],
+                        $config['id'],
+                        (string) $defaultSourceBranch['id'],
+                    );
+
+                $this->logger->info($response['message'], ['secrets']);
+            }
+        }
     }
 
     private function migrateDataOfTablesDirectly(): void

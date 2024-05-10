@@ -4,6 +4,7 @@
     "license": "MIT",
     "require": {
         "PHP": "^7.4",
+        "keboola/encryption-api-php-client": "^0.2.2",
         "keboola/job-queue-api-php-client": "^0.4.1",
         "keboola/php-component": "^8.3",
         "keboola/storage-api-client": "^12.2",

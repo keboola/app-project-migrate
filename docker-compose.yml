@@ -8,5 +8,6 @@ services:
     environment:
       - KBC_URL
       - KBC_TOKEN
+      - KBC_TOKEN_NOT_MASTER
       - SOURCE_KBC_URL
       - SOURCE_KBC_TOKEN

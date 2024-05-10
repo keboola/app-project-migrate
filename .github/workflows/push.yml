@@ -15,11 +15,13 @@ env:
   DOCKERHUB_USER: "keboolabot"
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  # Test KBC project
-  KBC_STORAGE_TOKEN: ${{ secrets.KBC_STORAGE_TOKEN }}
-  KBC_TEST_PROJECT_URL: "https://connection.keboola.com/"
-  KBC_TEST_PROJECT_CONFIGS: "" # space separated list
-  KBC_STORAGE_TOKEN_NOT_MASTER: ${{ secrets.KBC_STORAGE_TOKEN_NOT_MASTER }}
+  # Test KBC projects
+  KBC_SOURCE_STORAGE_TOKEN_NOT_MASTER: ${{ secrets.KBC_SOURCE_STORAGE_TOKEN_NOT_MASTER }}
+  KBC_SOURCE_PROJECT_URL: "https://connection.keboola.com/"
+  KBC_DEST_STORAGE_TOKEN: ${{ secrets.KBC_DEST_STORAGE_TOKEN }}
+  KBC_DEST_STORAGE_TOKEN_NOT_MASTER: ${{ secrets.KBC_DEST_STORAGE_TOKEN_NOT_MASTER }}
+  KBC_DEST_PROJECT_URL: "https://connection.europe-west3.gcp.keboola.com/"
+  KBC_DEST_PROJECT_CONFIGS: "" # space separated list
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,7 +31,7 @@ jobs:
     steps:
       -
         name: Check out the repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       -
         name: Print Docker version
         run: docker -v
@@ -67,7 +69,7 @@ jobs:
     steps:
       -
         name: Check out the repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       -
         name: Pull image from ECR
         uses: keboola/action-pull-from-ecr@master
@@ -82,14 +84,16 @@ jobs:
       -
         name: Run tests
         env:
-          SOURCE_KBC_URL: ${{env.KBC_TEST_PROJECT_URL}}
-          KBC_URL: ${{env.KBC_TEST_PROJECT_URL}}
-          SOURCE_KBC_TOKEN: ${{env.KBC_STORAGE_TOKEN_NOT_MASTER}}
-          KBC_TOKEN: ${{env.KBC_STORAGE_TOKEN}}
+          SOURCE_KBC_TOKEN: ${{env.KBC_SOURCE_STORAGE_TOKEN_NOT_MASTER}}
+          SOURCE_KBC_URL: ${{env.KBC_SOURCE_PROJECT_URL}}
+          KBC_TOKEN: ${{env.KBC_DEST_STORAGE_TOKEN}}
+          KBC_TOKEN_NOT_MASTER: ${{env.KBC_DEST_STORAGE_TOKEN_NOT_MASTER}}
+          KBC_URL: ${{env.KBC_DEST_PROJECT_URL}}
         run: |
           docker run \
           -e KBC_URL \
           -e KBC_TOKEN \
+          -e KBC_TOKEN_NOT_MASTER \
           -e SOURCE_KBC_URL \
           -e SOURCE_KBC_TOKEN \
           ${{env.APP_IMAGE}} composer ci
@@ -100,13 +104,13 @@ jobs:
     steps:
       -
         name: Run KBC test jobs
-        if: env.KBC_STORAGE_TOKEN && env.KBC_TEST_PROJECT_CONFIGS
+        if: env.KBC_DEST_STORAGE_TOKEN && env.KBC_DEST_PROJECT_CONFIGS
         uses: keboola/action-run-configs-parallel@master
         with:
-          token: ${{ env.KBC_STORAGE_TOKEN }}
+          token: ${{ env.KBC_DEST_STORAGE_TOKEN }}
           componentId: ${{ env.KBC_DEVELOPERPORTAL_APP }}
           tag: ${{ needs.build.outputs.app_image_tag }}
-          configs: ${{ env.KBC_TEST_PROJECT_CONFIGS }}
+          configs: ${{ env.KBC_DEST_PROJECT_CONFIGS }}
 
   deploy:
     needs:
