@@ -34,7 +34,6 @@ class MigrateTest extends TestCase
         string $jobRunnerClass,
         bool $migrateDataOfTablesDirectly,
         int $expectsRunJobs,
-        bool $migrateSecrets,
         bool $restoreConfigs
     ): void {
         $sourceJobRunnerMock = $this->createMock($jobRunnerClass);
@@ -122,7 +121,7 @@ class MigrateTest extends TestCase
                 'parameters' => [
                     'sourceKbcUrl' => $sourceProjectUrl,
                     '#sourceKbcToken' => $sourceProjectToken,
-                    'migrateSecrets' => $migrateSecrets,
+                    'migrateSecrets' => false,
                     'directDataMigration' => $migrateDataOfTablesDirectly,
                     '#sourceManageToken' => 'manage-token',
                 ],
@@ -183,22 +182,122 @@ class MigrateTest extends TestCase
         ;
 
         $migrationsClientMock = $this->createMock(Migrations::class);
+        $migrationsClientMock->expects(self::never())->method('migrateConfiguration');
 
-        if ($migrateSecrets) {
-            $migrationsClientMock
-                ->expects(self::exactly(3))
-                ->method('migrateConfiguration')
-                ->willReturnCallback(function (...$args) {
-                    [, $destinationStack, , , $configId] = $args;
-                    return [
-                        'message' => "Configuration with ID '$configId' successfully " .
-                            "migrated to stack '$destinationStack'.",
-                        'data' => [],
-                    ];
-                });
-        } else {
-            $migrationsClientMock->expects(self::never())->method('migrateConfiguration');
-        }
+        /** @var JobRunner $sourceJobRunnerMock */
+        /** @var JobRunner $destJobRunnerMock */
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            $logger,
+        );
+
+        $migrate->run();
+    }
+
+    public function testMigrateSecretsSuccess(): void
+    {
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        // generate credentials
+        $this->mockAddMethodGenerateAbsReadCredentials($sourceJobRunnerMock);
+        $this->mockAddMethodBackupProject(
+            $sourceJobRunnerMock,
+            [
+                'id' => '222',
+                'status' => 'success',
+            ],
+            true
+        );
+
+        $destJobRunnerMock->method('runJob')
+            ->willReturn([
+                'id' => '222',
+                'status' => 'success',
+            ]);
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'xyz',
+                    'migrateSecrets' => true,
+                    '#sourceManageToken' => 'manage-token',
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $logsHandler = new TestHandler();
+        $logger = new Logger('tests', [$logsHandler]);
+
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock
+            ->method('apiGet')
+            ->willReturnMap([
+                [
+                    'dev-branches/', null, [],
+                    [
+                        [
+                            'id' => '123',
+                            'name' => 'default',
+                            'isDefault' => true,
+                        ],
+                    ],
+                ],
+                [
+                    'components?include=', null, [],
+                    [
+                        [
+                            'id' => 'gooddata-writer', // should be skipped
+                        ],
+                        [
+                            'id' => 'some-component',
+                            'configurations' => [
+                                [
+                                    'id' => '101',
+                                ],
+                                [
+                                    'id' => '102',
+                                ],
+                            ],
+                        ],
+                        [
+                            'id' => 'another-component',
+                            'configurations' => [
+                                [
+                                    'id' => '201',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ])
+        ;
+        $sourceClientMock
+            ->method('getServiceUrl')
+            ->with('encryption')
+            ->willReturn('https://encryption.keboola.com')
+        ;
+
+        $migrationsClientMock = $this->createMock(Migrations::class);
+        $migrationsClientMock
+            ->expects(self::exactly(3))
+            ->method('migrateConfiguration')
+            ->willReturnCallback(function (...$args) {
+                [, $destinationStack, , , $configId] = $args;
+                return [
+                    'message' => "Configuration with ID '$configId' successfully " .
+                        "migrated to stack '$destinationStack'.",
+                    'data' => [],
+                ];
+            });
 
         /** @var JobRunner $sourceJobRunnerMock */
         /** @var JobRunner $destJobRunnerMock */
@@ -215,33 +314,31 @@ class MigrateTest extends TestCase
 
         $migrate->run();
 
-        if ($migrateSecrets) {
-            $records = array_filter(
-                $logsHandler->getRecords(),
-                fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
-            );
-            self::assertCount(5, $records);
+        $records = array_filter(
+            $logsHandler->getRecords(),
+            fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
+        );
+        self::assertCount(5, $records);
 
-            $record = array_shift($records);
-            self::assertSame('Migrating configurations with secrets', $record['message']);
-            $record = array_shift($records);
-            self::assertSame('Components "gooddata-writer" is obsolete, skipping migration...', $record['message']);
-            $record = array_shift($records);
-            self::assertSame(
-                'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
-                $record['message']
-            );
-            $record = array_shift($records);
-            self::assertSame(
-                'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
-                $record['message']
-            );
-            $record = array_shift($records);
-            self::assertSame(
-                'Configuration with ID \'201\' successfully migrated to stack \'dest-stack\'.',
-                $record['message']
-            );
-        }
+        $record = array_shift($records);
+        self::assertSame('Migrating configurations with secrets', $record['message']);
+        $record = array_shift($records);
+        self::assertSame('Components "gooddata-writer" is obsolete, skipping migration...', $record['message']);
+        $record = array_shift($records);
+        self::assertSame(
+            'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Configuration with ID \'201\' successfully migrated to stack \'dest-stack\'.',
+            $record['message']
+        );
     }
 
     public function testShouldFailOnSnapshotError(): void
@@ -489,7 +586,6 @@ class MigrateTest extends TestCase
             'jobRunnerClass' => SyrupJobRunner::class,
             'migrateDataOfTablesDirectly' => false,
             'expectsRunJobs' => 3,
-            'migrateSecrets' => false,
             'restoreConfigs' => true,
         ];
 
@@ -503,7 +599,6 @@ class MigrateTest extends TestCase
             'jobRunnerClass' => SyrupJobRunner::class,
             'migrateDataOfTablesDirectly' => false,
             'expectsRunJobs' => 3,
-            'migrateSecrets' => false,
             'restoreConfigs' => true,
         ];
 
@@ -519,7 +614,6 @@ class MigrateTest extends TestCase
             'jobRunnerClass' => QueueV2JobRunner::class,
             'migrateDataOfTablesDirectly' => false,
             'expectsRunJobs' => 2,
-            'migrateSecrets' => false,
             'restoreConfigs' => true,
         ];
 
@@ -533,7 +627,6 @@ class MigrateTest extends TestCase
             'jobRunnerClass' => QueueV2JobRunner::class,
             'migrateDataOfTablesDirectly' => false,
             'expectsRunJobs' => 2,
-            'migrateSecrets' => false,
             'restoreConfigs' => true,
         ];
 
@@ -547,7 +640,6 @@ class MigrateTest extends TestCase
             'jobRunnerClass' => QueueV2JobRunner::class,
             'migrateDataOfTablesDirectly' => true,
             'expectsRunJobs' => 3,
-            'migrateSecrets' => false,
             'restoreConfigs' => true,
         ];
 
@@ -561,22 +653,7 @@ class MigrateTest extends TestCase
             'jobRunnerClass' => QueueV2JobRunner::class,
             'migrateDataOfTablesDirectly' => true,
             'expectsRunJobs' => 3,
-            'migrateSecrets' => false,
             'restoreConfigs' => true,
-        ];
-
-        yield 'migrate-secrets-true' => [
-            'expectedCredentialsData' => [
-                'abs' => [
-                    'container' => 'abcdefgh',
-                    '#connectionString' => 'https://testConnectionString',
-                ],
-            ],
-            'jobRunnerClass' => QueueV2JobRunner::class,
-            'migrateDataOfTablesDirectly' => true,
-            'expectsRunJobs' => 2,
-            'migrateSecrets' => true,
-            'restoreConfigs' => false,
         ];
     }
 }
