@@ -1,6 +1,6 @@
 {
   "parameters": {
-    "sourceKbcUrl":  "%env(string:SOURCE_KBC_URL)%",
-    "#sourceKbcToken": "%env(string:SOURCE_KBC_TOKEN)%"
+    "sourceKbcUrl":  "%env(string:SOURCE_PROJECT_URL)%",
+    "#sourceKbcToken": "%env(string:SOURCE_STORAGE_API_ADMIN_TOKEN)%"
   }
 }
