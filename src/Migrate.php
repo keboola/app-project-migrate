@@ -150,7 +150,7 @@ class Migrate
 
     private function migrateSecrets(): void
     {
-        $this->logger->info('Migrating secrets in configurations', ['secrets']);
+        $this->logger->info('Migrating configurations with secrets', ['secrets']);
 
         $sourceDevBranches = new DevBranches($this->sourceProjectStorageClient);
         $sourceBranches = $sourceDevBranches->listBranches();

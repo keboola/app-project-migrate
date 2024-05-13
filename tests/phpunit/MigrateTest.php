@@ -223,7 +223,7 @@ class MigrateTest extends TestCase
             self::assertCount(5, $records);
 
             $record = array_shift($records);
-            self::assertSame('Migrating secrets in configurations', $record['message']);
+            self::assertSame('Migrating configurations with secrets', $record['message']);
             $record = array_shift($records);
             self::assertSame('Components "gooddata-writer" is obsolete, skipping migration...', $record['message']);
             $record = array_shift($records);
