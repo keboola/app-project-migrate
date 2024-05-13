@@ -6,8 +6,8 @@ services:
       - ./:/code
       - ./data:/data
     environment:
-      - KBC_URL
-      - KBC_TOKEN
-      - KBC_TOKEN_NOT_MASTER
-      - SOURCE_KBC_URL
-      - SOURCE_KBC_TOKEN
+      - DEST_PROJECT_URL
+      - DEST_STORAGE_API_TOKEN
+      - DEST_STORAGE_API_TOKEN_NOT_MASTER
+      - SOURCE_PROJECT_URL
+      - SOURCE_STORAGE_API_ADMIN_TOKEN
