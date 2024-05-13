@@ -32,8 +32,8 @@ class Component extends BaseComponent
         }
 
         $destProjectClient = $this->createStorageClient([
-            'url' => getenv('DEST_PROJECT_URL'),
-            'token' => getenv('DEST_STORAGE_API_TOKEN'),
+            'url' => getenv('KBC_URL'),
+            'token' => getenv('KBC_TOKEN'),
         ]);
 
         try {
