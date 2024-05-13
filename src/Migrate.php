@@ -184,6 +184,12 @@ class Migrate
                     );
 
                 $this->logger->info($response['message'], ['secrets']);
+
+                if (isset($response['warnings']) && is_array($response['warnings'])) {
+                    foreach ($response['warnings'] as $warning) {
+                        $this->logger->warning($warning, ['secrets']);
+                    }
+                }
             }
         }
     }
