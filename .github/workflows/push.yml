@@ -84,16 +84,16 @@ jobs:
       -
         name: Run tests
         env:
+          KBC_URL: ${{env.DEST_PROJECT_URL}}
+          KBC_TOKEN: ${{env.DEST_STORAGE_API_TOKEN}}
+          KBC_TOKEN_NOT_MASTER: ${{env.DEST_STORAGE_API_TOKEN_NOT_MASTER}}
           SOURCE_STORAGE_API_ADMIN_TOKEN: ${{env.SOURCE_STORAGE_API_ADMIN_TOKEN}}
           SOURCE_PROJECT_URL: ${{env.SOURCE_PROJECT_URL}}
-          DEST_STORAGE_API_TOKEN: ${{env.DEST_STORAGE_API_TOKEN}}
-          DEST_STORAGE_API_TOKEN_NOT_MASTER: ${{env.DEST_STORAGE_API_TOKEN_NOT_MASTER}}
-          DEST_PROJECT_URL: ${{env.DEST_PROJECT_URL}}
         run: |
           docker run \
-          -e DEST_PROJECT_URL \
-          -e DEST_STORAGE_API_TOKEN \
-          -e DEST_STORAGE_API_TOKEN_NOT_MASTER \
+          -e KBC_URL \
+          -e KBC_TOKEN \
+          -e KBC_TOKEN_NOT_MASTER \
           -e SOURCE_PROJECT_URL \
           -e SOURCE_STORAGE_API_ADMIN_TOKEN \
           ${{env.APP_IMAGE}} composer ci

@@ -12,7 +12,7 @@ class DatadirTest extends DatadirTestCase
     {
         parent::setUp();
 
-        $nonMasterDestToken = getenv('DEST_STORAGE_API_TOKEN_NOT_MASTER');
-        putenv('DEST_STORAGE_API_TOKEN=' . $nonMasterDestToken);
+        $nonMasterDestToken = getenv('KBC_TOKEN_NOT_MASTER');
+        putenv('KBC_TOKEN=' . $nonMasterDestToken);
     }
 }
