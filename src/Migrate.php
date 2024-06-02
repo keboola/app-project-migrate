@@ -218,8 +218,7 @@ class Migrate
             Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
             [
                 'parameters' => $parameters,
-            ],
-            'ondra-migrate-large-tables'
+            ]
         );
 
         $this->logger->info('Data of tables has been migrated.');

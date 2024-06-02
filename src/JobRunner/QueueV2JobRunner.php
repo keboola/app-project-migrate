@@ -13,16 +13,9 @@ class QueueV2JobRunner extends JobRunner
 {
     private const MAX_DELAY = 10;
 
-    public function runJob(string $componentId, array $data, ?string $tag = null): array
+    public function runJob(string $componentId, array $data): array
     {
-        $jobData = new JobData(
-            $componentId,
-            null,
-            $data,
-            'run',
-            [],
-            $tag
-        );
+        $jobData = new JobData($componentId, null, $data);
         $response = $this->getQueueClient()->createJob($jobData);
 
         $attempt = 0;
