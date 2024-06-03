@@ -38,4 +38,14 @@ class Config extends BaseConfig
     {
         return $this->getValue(['parameters', '#sourceManageToken']);
     }
+
+    public function getMigrateDataMode(): string
+    {
+        return $this->getValue(['parameters', 'dataMode']);
+    }
+
+    public function getDb(): array
+    {
+        return (array) $this->getValue(['parameters', 'db'], []);
+    }
 }

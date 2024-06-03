@@ -79,6 +79,7 @@ class MigrateTest extends TestCase
                 Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
                 [
                     'parameters' => [
+                        'mode' => 'sapi',
                         'sourceKbcUrl' => $sourceProjectUrl,
                         '#sourceKbcToken' => $sourceProjectToken,
                     ],

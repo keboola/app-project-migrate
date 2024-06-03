@@ -42,16 +42,6 @@ class Component extends BaseComponent
             throw new UserException('Cannot authorize destination project: ' . $e->getMessage(), $e->getCode(), $e);
         }
 
-        if (!$destinationTokenInfo['isMasterToken']) {
-            throw new UserException(
-                sprintf(
-                    'The token "%s" in the destination project "%s" hasn\'t master permissions.',
-                    $destinationTokenInfo['description'],
-                    $destinationTokenInfo['owner']['name']
-                )
-            );
-        }
-
         if ($config->shouldMigrateSecrets() && !$config->getSourceManageToken()) {
             throw new UserException('#sourceManageToken must be set.', 422);
         }
