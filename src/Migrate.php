@@ -148,11 +148,12 @@ class Migrate
     {
         $this->logger->info('Restoring current project from snapshot');
 
+        $configData = $this->getRestoreConfigData($restoreCredentials);
+        $configData['parameters']['dryRun'] = $this->dryRun;
+
         $job = $this->destJobRunner->runJob(
             Config::PROJECT_RESTORE_COMPONENT,
-            $this->getRestoreConfigData($restoreCredentials) + [
-                'dryRun' => $this->dryRun,
-            ]
+            $configData
         );
 
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {

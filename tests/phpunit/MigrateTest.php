@@ -67,6 +67,7 @@ class MigrateTest extends TestCase
                         [
                             'useDefaultBackend' => true,
                             'restoreConfigs' => $restoreConfigs,
+                            'dryRun' => false,
                         ]
                     ),
                 ],
@@ -82,6 +83,7 @@ class MigrateTest extends TestCase
                         'mode' => 'sapi',
                         'sourceKbcUrl' => $sourceProjectUrl,
                         '#sourceKbcToken' => $sourceProjectToken,
+                        'dryRun' => false,
                     ],
                 ],
             ];
@@ -94,6 +96,7 @@ class MigrateTest extends TestCase
                 'parameters' => [
                     'sourceKbcUrl' => $sourceProjectUrl,
                     '#sourceKbcToken' => $sourceProjectToken,
+                    'dryRun' => false,
                 ],
             ],
         ];
@@ -105,6 +108,7 @@ class MigrateTest extends TestCase
                 'parameters' => [
                     'sourceKbcUrl' => $sourceProjectUrl,
                     '#sourceKbcToken' => $sourceProjectToken,
+                    'dryRun' => false,
                 ],
             ],
         ];
@@ -556,8 +560,12 @@ class MigrateTest extends TestCase
         ;
     }
 
-    private function mockAddMethodBackupProject(MockObject $mockObject, array $return, bool $exportStructureOnly): void
-    {
+    private function mockAddMethodBackupProject(
+        MockObject $mockObject,
+        array $return,
+        bool $exportStructureOnly,
+        bool $dryRun = false
+    ): void {
         $mockObject
             ->method('runJob')
             ->with(
@@ -566,6 +574,7 @@ class MigrateTest extends TestCase
                     'parameters' => [
                         'backupId' => '123',
                         'exportStructureOnly' => $exportStructureOnly,
+                        'dryRun' => $dryRun,
                     ],
                 ]
             )
