@@ -506,17 +506,16 @@ class MigrateTest extends TestCase
         $migrate->run();
     }
 
-    /** @dataProvider provideDryRunOptions */
+    /**
+     * @param class-string<JobRunner> $jobRunnerClass
+     * @dataProvider provideDryRunOptions
+     */
     public function testDryRunMode(
         string $jobRunnerClass,
         bool $migrateSecrets,
         bool $directDataMigration,
         array $componentsInDryRunMode
     ): void {
-        /**
-         * @var JobRunner $sourceJobRunnerMock
-         * @var JobRunner $destJobRunnerMock
-         */
         $sourceJobRunnerMock = $this->createMock($jobRunnerClass);
         $destJobRunnerMock = $this->createMock($jobRunnerClass);
 
