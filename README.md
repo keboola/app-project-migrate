@@ -47,7 +47,9 @@ curl -X POST \
     "parameters": {
       "sourceKbcUrl": "https://connection.keboola.com",
       "#sourceKbcToken": "SOURCE_PROJECT_SAPI_TOKEN",
-      "migrateSecrets": true,
+      "dryRun": false,
+      "directDataMigration": true,
+      "migrateSecrets": false,
       "#sourceManageToken": "SOURCE_MANAGE_API_TOKEN"
     }
   }
@@ -62,6 +64,37 @@ curl -X POST \
  -H 'X-StorageApi-Token: DEST_PROJECT_SAPI_TOKEN' \
  -d '{"configData": {"parameters": {"sourceKbcUrl": "https://connection.keboola.com", "#sourceKbcToken":"SOURCE_PROJECT_SAPI_TOKEN"}}}'
 ```
+
+### Dry-run mode
+
+If you want to save some time and check that everything is set correctly, you can use the dry-run
+mode. Just set `configData.parameters.dryRun` on `true` in your request payload.
+
+What is **not** executed during dry-run mode?
+
+#### Project restore
+
+- add project [metadata](https://github.com/keboola/php-kbc-project-restore/blob/65e461097541210227a31d3db16594f1524e4815/src/Restore.php#L74) into destination project
+- add restored [configurations](https://github.com/keboola/php-kbc-project-restore/blob/65e461097541210227a31d3db16594f1524e4815/src/Restore.php#L157), its [rows](https://github.com/keboola/php-kbc-project-restore/blob/65e461097541210227a31d3db16594f1524e4815/src/Restore.php#L199), [metadata](https://github.com/keboola/php-kbc-project-restore/blob/65e461097541210227a31d3db16594f1524e4815/src/Restore.php#L266), [state](https://github.com/keboola/php-kbc-project-restore/blob/65e461097541210227a31d3db16594f1524e4815/src/Restore.php#L173) and [row order](https://github.com/keboola/php-kbc-project-restore/blob/65e461097541210227a31d3db16594f1524e4815/src/Restore.php#L236) into destination project
+- create [buckets](https://github.com/keboola/php-kbc-project-restore/blob/65e461097541210227a31d3db16594f1524e4815/src/Restore.php#L308) and its [metadata](https://github.com/keboola/php-kbc-project-restore/blob/65e461097541210227a31d3db16594f1524e4815/src/Restore.php#L328) in destination project
+- create [tables](https://github.com/keboola/php-kbc-project-restore/blob/65e461097541210227a31d3db16594f1524e4815/src/Restore.php#L487), [table aliases and metadata](https://github.com/keboola/php-kbc-project-restore/blob/65e461097541210227a31d3db16594f1524e4815/src/Restore.php#L439) in destination project
+
+#### Migrate configurations (via `encryption-api`)
+
+- add migrated configurations, its rows, metadata, state and row order into destination project
+
+#### Migrate Snowflake writers
+
+- create [workspace](https://github.com/keboola/app-snowflake-writer-migrate/blob/ee8ef0fa341e863bdb6f683424f764b2e5d0e6aa/src/MigrateWriter.php#L74) for destination project (Keboola-provisioned writers)
+- add migrated [configurations](https://github.com/keboola/app-snowflake-writer-migrate/blob/ee8ef0fa341e863bdb6f683424f764b2e5d0e6aa/src/MigrateWriter.php#L95) and its [rows](https://github.com/keboola/app-snowflake-writer-migrate/blob/ee8ef0fa341e863bdb6f683424f764b2e5d0e6aa/src/MigrateWriter.php#L117)
+
+#### Migrate tables data
+
+- default (API) mode:
+  - [file upload](https://github.com/keboola/app-project-migrate-tables-data/blob/88625047c4e6974fc556a2ff0eabdbfbf16b2c51/src/Strategy/SapiMigrate.php#L74) into destination project
+  - [write data](https://github.com/keboola/app-project-migrate-tables-data/blob/88625047c4e6974fc556a2ff0eabdbfbf16b2c51/src/Strategy/SapiMigrate.php#L96) into destination tables
+- database mode:
+  - [replicate tables](https://github.com/keboola/app-project-migrate-tables-data/blob/88625047c4e6974fc556a2ff0eabdbfbf16b2c51/src/Strategy/DatabaseMigrate.php#L109)
 
 ## Development
  
