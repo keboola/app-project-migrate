@@ -36,7 +36,6 @@ class ConfigDefinition extends BaseConfigDefinition
                         ->scalarNode('warehouse')->isRequired()->cannotBeEmpty()->end()
                     ->end()
                 ->end()
-                ->scalarNode('#manageToken')->end()
                 ->scalarNode('#sourceManageToken')->defaultNull()->end()
             ->end()
             ->validate()
