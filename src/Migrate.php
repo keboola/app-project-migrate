@@ -37,6 +37,8 @@ class Migrate
 
     private LoggerInterface $logger;
 
+    private bool $dryRun;
+
     private bool $directDataMigration;
 
     private bool $migrateSecrets;
@@ -68,6 +70,7 @@ class Migrate
         $this->sourceProjectToken = $config->getSourceProjectToken();
         $this->destinationProjectUrl = $destinationProjectUrl;
         $this->destinationProjectToken = $destinationProjectToken;
+        $this->dryRun = $config->isDryRun();
         $this->directDataMigration = $config->directDataMigration();
         $this->migrateSecrets = $config->shouldMigrateSecrets();
         $this->logger = $logger;
@@ -109,6 +112,7 @@ class Migrate
     private function generateBackupCredentials(): array
     {
         $this->logger->info('Creating backup credentials');
+
         return $this->sourceJobRunner->runSyncAction(
             Config::PROJECT_BACKUP_COMPONENT,
             'generate-read-credentials',
@@ -130,6 +134,7 @@ class Migrate
                 'parameters' => [
                     'backupId' => $backupId,
                     'exportStructureOnly' => $this->directDataMigration,
+                    'dryRun' => $this->dryRun,
                 ],
             ]
         );
@@ -145,7 +150,9 @@ class Migrate
 
         $job = $this->destJobRunner->runJob(
             Config::PROJECT_RESTORE_COMPONENT,
-            $this->getRestoreConfigData($restoreCredentials)
+            $this->getRestoreConfigData($restoreCredentials) + [
+                'dryRun' => $this->dryRun,
+            ]
         );
 
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
@@ -187,9 +194,15 @@ class Migrate
                         $component['id'],
                         $config['id'],
                         (string) $defaultSourceBranch['id'],
+                        $this->dryRun
                     );
 
-                $this->logger->info($response['message'], ['secrets']);
+                $message = $response['message'];
+                if ($this->dryRun) {
+                    $message = '[dry-run] ' . $message;
+                }
+
+                $this->logger->info($message, ['secrets']);
 
                 if (isset($response['warnings']) && is_array($response['warnings'])) {
                     foreach ($response['warnings'] as $warning) {
@@ -208,6 +221,7 @@ class Migrate
             'mode' => $this->migrateDataMode,
             'sourceKbcUrl' => $this->sourceProjectUrl,
             '#sourceKbcToken' => $this->sourceProjectToken,
+            'dryRun' => $this->dryRun,
         ];
 
         if ($this->migrateDataMode === 'database' && !empty($this->db)) {
@@ -234,6 +248,7 @@ class Migrate
                 'parameters' => [
                     'sourceKbcUrl' => $this->sourceProjectUrl,
                     '#sourceKbcToken' => $this->sourceProjectToken,
+                    'dryRun' => $this->dryRun,
                 ],
             ]
         );
@@ -253,6 +268,7 @@ class Migrate
                 'parameters' => [
                     'sourceKbcUrl' => $this->sourceProjectUrl,
                     '#sourceKbcToken' => $this->sourceProjectToken,
+                    'dryRun' => $this->dryRun,
                 ],
             ]
         );
