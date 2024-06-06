@@ -47,7 +47,9 @@ curl -X POST \
     "parameters": {
       "sourceKbcUrl": "https://connection.keboola.com",
       "#sourceKbcToken": "SOURCE_PROJECT_SAPI_TOKEN",
-      "migrateSecrets": true,
+      dryRun: false,
+      directDataMigration: true,
+      migrateSecrets": false,
       "#sourceManageToken": "SOURCE_MANAGE_API_TOKEN"
     }
   }
