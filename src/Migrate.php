@@ -134,7 +134,6 @@ class Migrate
                 'parameters' => [
                     'backupId' => $backupId,
                     'exportStructureOnly' => $this->directDataMigration,
-                    'dryRun' => $this->dryRun,
                 ],
             ]
         );
@@ -249,7 +248,6 @@ class Migrate
                 'parameters' => [
                     'sourceKbcUrl' => $this->sourceProjectUrl,
                     '#sourceKbcToken' => $this->sourceProjectToken,
-                    'dryRun' => $this->dryRun,
                 ],
             ]
         );
