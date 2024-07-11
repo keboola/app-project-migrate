@@ -27,7 +27,7 @@ class MigrateTest extends TestCase
     /**
      * @param class-string $jobRunnerClass
      * @dataProvider successMigrateDataProvider
-     * @throws UserException
+     * @throws UserException|ClientException
      */
     public function testMigrateSuccess(
         array $expectedCredentialsData,
@@ -108,7 +108,6 @@ class MigrateTest extends TestCase
                 'parameters' => [
                     'sourceKbcUrl' => $sourceProjectUrl,
                     '#sourceKbcToken' => $sourceProjectToken,
-                    'dryRun' => false,
                 ],
             ],
         ];
@@ -507,8 +506,9 @@ class MigrateTest extends TestCase
     }
 
     /**
-     * @param class-string<JobRunner> $jobRunnerClass
      * @dataProvider provideDryRunOptions
+     * @param class-string<JobRunner> $jobRunnerClass
+     * @throws ClientException|UserException
      */
     public function testDryRunMode(
         string $jobRunnerClass,
@@ -516,7 +516,9 @@ class MigrateTest extends TestCase
         bool $directDataMigration,
         array $componentsInDryRunMode
     ): void {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
         $sourceJobRunnerMock = $this->createMock($jobRunnerClass);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
         $destJobRunnerMock = $this->createMock($jobRunnerClass);
 
         $sourceJobRunnerMock
@@ -631,7 +633,6 @@ class MigrateTest extends TestCase
             'migrateSecrets' => false,
             'directDataMigration' => true,
             'componentsInDryRunMode' => [
-                Config::PROJECT_BACKUP_COMPONENT,
                 Config::PROJECT_RESTORE_COMPONENT,
                 Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
                 Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
@@ -642,7 +643,6 @@ class MigrateTest extends TestCase
             'migrateSecrets' => true,
             'directDataMigration' => false,
             'componentsInDryRunMode' => [
-                Config::PROJECT_BACKUP_COMPONENT,
                 Config::PROJECT_RESTORE_COMPONENT,
                 'migrate-secrets',
             ],
@@ -652,10 +652,8 @@ class MigrateTest extends TestCase
             'migrateSecrets' => false,
             'directDataMigration' => false,
             'componentsInDryRunMode' => [
-                Config::PROJECT_BACKUP_COMPONENT,
                 Config::PROJECT_RESTORE_COMPONENT,
                 Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
-                Config::ORCHESTRATOR_MIGRATE_COMPONENT,
             ],
         ];
     }
@@ -717,8 +715,7 @@ class MigrateTest extends TestCase
     private function mockAddMethodBackupProject(
         MockObject $mockObject,
         array $return,
-        bool $exportStructureOnly,
-        bool $dryRun = false
+        bool $exportStructureOnly
     ): void {
         $mockObject
             ->method('runJob')
@@ -728,7 +725,6 @@ class MigrateTest extends TestCase
                     'parameters' => [
                         'backupId' => '123',
                         'exportStructureOnly' => $exportStructureOnly,
-                        'dryRun' => $dryRun,
                     ],
                 ]
             )
