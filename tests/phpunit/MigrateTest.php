@@ -27,7 +27,7 @@ class MigrateTest extends TestCase
     /**
      * @param class-string $jobRunnerClass
      * @dataProvider successMigrateDataProvider
-     * @throws UserException
+     * @throws UserException|ClientException
      */
     public function testMigrateSuccess(
         array $expectedCredentialsData,
@@ -67,6 +67,7 @@ class MigrateTest extends TestCase
                         [
                             'useDefaultBackend' => true,
                             'restoreConfigs' => $restoreConfigs,
+                            'dryRun' => false,
                         ]
                     ),
                 ],
@@ -82,6 +83,7 @@ class MigrateTest extends TestCase
                         'mode' => 'sapi',
                         'sourceKbcUrl' => $sourceProjectUrl,
                         '#sourceKbcToken' => $sourceProjectToken,
+                        'dryRun' => false,
                     ],
                 ],
             ];
@@ -94,6 +96,7 @@ class MigrateTest extends TestCase
                 'parameters' => [
                     'sourceKbcUrl' => $sourceProjectUrl,
                     '#sourceKbcToken' => $sourceProjectToken,
+                    'dryRun' => false,
                 ],
             ],
         ];
@@ -502,6 +505,159 @@ class MigrateTest extends TestCase
         $migrate->run();
     }
 
+    /**
+     * @dataProvider provideDryRunOptions
+     * @param class-string<JobRunner> $jobRunnerClass
+     * @throws ClientException|UserException
+     */
+    public function testDryRunMode(
+        string $jobRunnerClass,
+        bool $migrateSecrets,
+        bool $directDataMigration,
+        array $expectedEntriesInDryRunMode
+    ): void {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        $sourceJobRunnerMock = $this->createMock($jobRunnerClass);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
+        $destJobRunnerMock = $this->createMock($jobRunnerClass);
+
+        $sourceJobRunnerMock
+            ->method('runSyncAction')
+            ->willReturnCallback(function (string $componentId, string $action) {
+                if ($componentId === Config::PROJECT_BACKUP_COMPONENT && $action === 'generate-read-credentials') {
+                    return [
+                        'backupId' => '123',
+                        'container' => 'container',
+                        'credentials' => [
+                            'connectionString' => '###',
+                        ],
+                    ];
+                }
+                return null;
+            });
+
+        $actualEntriesInDryRunMode = [];
+
+        $sourceJobRunnerMock
+            ->method('runJob')
+            ->willReturnCallback(function (string $componentId, array $data) use (&$actualEntriesInDryRunMode) {
+                $actualEntriesInDryRunMode[$componentId] = $data['parameters']['dryRun'] ?? false;
+                return [
+                    'status' => 'success',
+                ];
+            });
+        $destJobRunnerMock
+            ->method('runJob')
+            ->willReturnCallback(function (string $componentId, array $data) use (&$actualEntriesInDryRunMode) {
+                $actualEntriesInDryRunMode[$componentId] = $data['parameters']['dryRun'] ?? false;
+                return [
+                    'status' => 'success',
+                ];
+            });
+
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock
+            ->method('apiGet')
+            ->willReturnMap([
+                [
+                    'dev-branches/', null, [],
+                    [
+                        [
+                            'id' => '123',
+                            'name' => 'default',
+                            'isDefault' => true,
+                        ],
+                    ],
+                ],
+                [
+                    'components?include=', null, [],
+                    [
+                        [
+                            'id' => 'some-component',
+                            'configurations' => [
+                                [
+                                    'id' => '101',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+
+        $migrationsClientMock = $this->createMock(Migrations::class);
+        $migrationsClientMock
+            ->method('migrateConfiguration')
+            ->willReturnCallback(function (...$args) use (&$actualEntriesInDryRunMode) {
+                $actualEntriesInDryRunMode['migrate-secrets'] = $args[6] ?? false;
+                return [
+                    'message' => 'OK',
+                ];
+            });
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://source-stack',
+                    '#sourceKbcToken' => 'token',
+                    'dryRun' => true,
+                    'migrateSecrets' => $migrateSecrets,
+                    'directDataMigration' => $directDataMigration,
+                    '#sourceManageToken' => 'manage-token',
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            new NullLogger(),
+        );
+
+        $migrate->run();
+
+        $actualEntriesInDryRunMode = array_keys(array_filter($actualEntriesInDryRunMode, fn(bool $dry) => $dry));
+
+        self::assertSame($expectedEntriesInDryRunMode, $actualEntriesInDryRunMode);
+    }
+
+    public function provideDryRunOptions(): iterable
+    {
+        yield 'Q2 without secrets & with direct data migration' => [
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateSecrets' => false,
+            'directDataMigration' => true,
+            'expectedEntriesInDryRunMode' => [
+                Config::PROJECT_RESTORE_COMPONENT,
+                Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
+                Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
+            ],
+        ];
+        yield 'Q2 with secrets & without direct data migration' => [
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateSecrets' => true,
+            'directDataMigration' => false,
+            'expectedEntriesInDryRunMode' => [
+                Config::PROJECT_RESTORE_COMPONENT,
+                'migrate-secrets',
+            ],
+        ];
+        yield 'Syrup without secrets & direct data migration' => [
+            'jobRunnerClass' => SyrupJobRunner::class,
+            'migrateSecrets' => false,
+            'directDataMigration' => false,
+            'expectedEntriesInDryRunMode' => [
+                Config::PROJECT_RESTORE_COMPONENT,
+                Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
+            ],
+        ];
+    }
+
     private function mockAddMethodGenerateS3ReadCredentials(MockObject $mockObject): void
     {
         $mockObject->expects($this->once())
@@ -556,8 +712,11 @@ class MigrateTest extends TestCase
         ;
     }
 
-    private function mockAddMethodBackupProject(MockObject $mockObject, array $return, bool $exportStructureOnly): void
-    {
+    private function mockAddMethodBackupProject(
+        MockObject $mockObject,
+        array $return,
+        bool $exportStructureOnly
+    ): void {
         $mockObject
             ->method('runJob')
             ->with(

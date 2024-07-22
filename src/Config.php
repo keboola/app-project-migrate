@@ -24,6 +24,11 @@ class Config extends BaseConfig
         return $this->getValue(['parameters', '#sourceKbcToken']);
     }
 
+    public function isDryRun(): bool
+    {
+        return $this->getValue(['parameters', 'dryRun']);
+    }
+
     public function directDataMigration(): bool
     {
         return $this->getValue(['parameters', 'directDataMigration']);
