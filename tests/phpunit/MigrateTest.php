@@ -34,7 +34,9 @@ class MigrateTest extends TestCase
         string $jobRunnerClass,
         bool $migrateDataOfTablesDirectly,
         int $expectsRunJobs,
-        bool $restoreConfigs
+        bool $restoreConfigs,
+        bool $migrateStructureOnly,
+        bool $restorePermanentFiles
     ): void {
         $sourceJobRunnerMock = $this->createMock($jobRunnerClass);
         $destJobRunnerMock = $this->createMock($jobRunnerClass);
@@ -51,7 +53,8 @@ class MigrateTest extends TestCase
                 'id' => '222',
                 'status' => 'success',
             ],
-            $migrateDataOfTablesDirectly
+            $migrateDataOfTablesDirectly,
+            $migrateStructureOnly,
         );
 
         $sourceProjectUrl = 'https://connection.keboola.com';
@@ -68,6 +71,7 @@ class MigrateTest extends TestCase
                             'useDefaultBackend' => true,
                             'restoreConfigs' => $restoreConfigs,
                             'dryRun' => false,
+                            'restorePermanentFiles' => $restorePermanentFiles,
                         ]
                     ),
                 ],
@@ -128,6 +132,8 @@ class MigrateTest extends TestCase
                     'migrateSecrets' => false,
                     'directDataMigration' => $migrateDataOfTablesDirectly,
                     '#sourceManageToken' => 'manage-token',
+                    'migrateStructureOnly' => $migrateStructureOnly,
+                    'migratePermanentFiles' => $restorePermanentFiles,
                 ],
             ],
             new ConfigDefinition()
@@ -715,7 +721,8 @@ class MigrateTest extends TestCase
     private function mockAddMethodBackupProject(
         MockObject $mockObject,
         array $return,
-        bool $exportStructureOnly
+        bool $migrateDataOfTablesDirectly,
+        bool $exportStructureOnly = false
     ): void {
         $mockObject
             ->method('runJob')
@@ -724,7 +731,7 @@ class MigrateTest extends TestCase
                 [
                     'parameters' => [
                         'backupId' => '123',
-                        'exportStructureOnly' => $exportStructureOnly,
+                        'exportStructureOnly' => $exportStructureOnly || $migrateDataOfTablesDirectly,
                     ],
                 ]
             )
@@ -747,6 +754,8 @@ class MigrateTest extends TestCase
             'migrateDataOfTablesDirectly' => false,
             'expectsRunJobs' => 3,
             'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
         ];
 
         yield 'migrate-ABS-syrup' => [
@@ -760,6 +769,8 @@ class MigrateTest extends TestCase
             'migrateDataOfTablesDirectly' => false,
             'expectsRunJobs' => 3,
             'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
         ];
 
         yield 'migrate-S3-queuev2' => [
@@ -775,6 +786,8 @@ class MigrateTest extends TestCase
             'migrateDataOfTablesDirectly' => false,
             'expectsRunJobs' => 2,
             'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
         ];
 
         yield 'migrateABS-queuev2' => [
@@ -788,6 +801,8 @@ class MigrateTest extends TestCase
             'migrateDataOfTablesDirectly' => false,
             'expectsRunJobs' => 2,
             'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
         ];
 
         yield 'migrateABS-queuev2-data-directly' => [
@@ -801,6 +816,23 @@ class MigrateTest extends TestCase
             'migrateDataOfTablesDirectly' => true,
             'expectsRunJobs' => 3,
             'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
+        ];
+
+        yield 'migrateABS-queuev2-structure-only' => [
+            'expectedCredentialsData' => [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => false,
+            'expectsRunJobs' => 2,
+            'restoreConfigs' => true,
+            'migrateStructureOnly' => true,
+            'restorePermanentFiles' => true,
         ];
 
         yield 'migrate-secrets-false' => [
@@ -814,6 +846,23 @@ class MigrateTest extends TestCase
             'migrateDataOfTablesDirectly' => true,
             'expectsRunJobs' => 3,
             'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
+        ];
+
+        yield 'migrate-permanentFiles-false' => [
+            'expectedCredentialsData' => [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => true,
+            'expectsRunJobs' => 3,
+            'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => false,
         ];
     }
 }

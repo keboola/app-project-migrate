@@ -27,6 +27,8 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->end()
                 ->booleanNode('dryRun')->defaultFalse()->end()
                 ->booleanNode('directDataMigration')->defaultTrue()->end()
+                ->booleanNode('migratePermanentFiles')->defaultTrue()->end()
+                ->booleanNode('migrateStructureOnly')->defaultFalse()->end()
                 ->booleanNode('migrateSecrets')->defaultFalse()->end()
                 ->enumNode('dataMode')->values(['sapi', 'database'])->defaultValue('sapi')->end()
                 ->arrayNode('db')
