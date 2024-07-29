@@ -43,6 +43,10 @@ class Migrate
 
     private bool $migrateSecrets;
 
+    private bool $migratePermanentFiles;
+
+    private bool $migrateStructureOnly;
+
     public const OBSOLETE_COMPONENTS = [
         'orchestrator',
         'gooddata-writer',
@@ -73,6 +77,8 @@ class Migrate
         $this->dryRun = $config->isDryRun();
         $this->directDataMigration = $config->directDataMigration();
         $this->migrateSecrets = $config->shouldMigrateSecrets();
+        $this->migratePermanentFiles = $config->shouldMigratePermanentFiles();
+        $this->migrateStructureOnly = $config->shouldMigrateStructureOnly();
         $this->logger = $logger;
         $this->migrateDataMode = $config->getMigrateDataMode();
         $this->db = $config->getDb();
@@ -89,7 +95,7 @@ class Migrate
                 $this->migrateSecrets();
             }
 
-            if ($this->directDataMigration) {
+            if ($this->directDataMigration && !$this->migrateStructureOnly) {
                 $this->migrateDataOfTablesDirectly();
             }
 
@@ -133,7 +139,7 @@ class Migrate
             [
                 'parameters' => [
                     'backupId' => $backupId,
-                    'exportStructureOnly' => $this->directDataMigration,
+                    'exportStructureOnly' => $this->directDataMigration || $this->migrateStructureOnly,
                 ],
             ]
         );
@@ -291,6 +297,7 @@ class Migrate
                     ],
                     'useDefaultBackend' => true,
                     'restoreConfigs' => $this->migrateSecrets === false,
+                    'restorePermanentFiles' => $this->migratePermanentFiles,
                 ],
             ];
         } elseif (isset($restoreCredentials['credentials']['connectionString'])) {
@@ -302,6 +309,7 @@ class Migrate
                     ],
                     'useDefaultBackend' => true,
                     'restoreConfigs' => $this->migrateSecrets === false,
+                    'restorePermanentFiles' => $this->migratePermanentFiles,
                 ],
             ];
         } else {
