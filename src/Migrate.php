@@ -12,6 +12,7 @@ use Keboola\EncryptionApiClient\Migrations as MigrationsClient;
 use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\Components;
 use Keboola\StorageApi\DevBranches;
+use Keboola\StorageApi\Options\Components\Configuration;
 use Keboola\Syrup\ClientException as SyrupClientException;
 use Psr\Log\LoggerInterface;
 
@@ -24,6 +25,8 @@ class Migrate
     private JobRunner $destJobRunner;
 
     private StorageClient $sourceProjectStorageClient;
+
+    private StorageClient $destProjectStorageClient;
 
     private MigrationsClient $migrationsClient;
 
@@ -52,15 +55,25 @@ class Migrate
         'gooddata-writer',
     ];
 
+    public const SNOWFLAKE_WRITER_COMPONENT_IDS = [
+        'keboola.wr-db-snowflake', // aws
+        'keboola.wr-snowflake-blob-storage', // azure
+        'keboola.wr-db-snowflake-gcs', // gcp
+        'keboola.wr-db-snowflake-gcs-s3', // gcp with s3
+    ];
+
     private string $migrateDataMode;
 
     private array $db;
+
+    private array $migratedSnowflakeWorkspaces = [];
 
     public function __construct(
         Config $config,
         JobRunner $sourceJobRunner,
         JobRunner $destJobRunner,
         StorageClient $sourceProjectStorageClient,
+        StorageClient $destProjectStorageClient,
         MigrationsClient $migrationsClient,
         string $destinationProjectUrl,
         string $destinationProjectToken,
@@ -69,6 +82,7 @@ class Migrate
         $this->sourceJobRunner = $sourceJobRunner;
         $this->destJobRunner = $destJobRunner;
         $this->sourceProjectStorageClient = $sourceProjectStorageClient;
+        $this->destProjectStorageClient = $destProjectStorageClient;
         $this->migrationsClient = $migrationsClient;
         $this->sourceProjectUrl = $config->getSourceProjectUrl();
         $this->sourceProjectToken = $config->getSourceProjectToken();
@@ -203,6 +217,14 @@ class Migrate
                         $this->dryRun
                     );
 
+                if (in_array($component['id'], self::SNOWFLAKE_WRITER_COMPONENT_IDS, true)) {
+                    $this->preserveProperSnowflakeWorkspace(
+                        $response['data']['componentId'],
+                        $response['data']['configId'],
+                        $config
+                    );
+                }
+
                 $message = $response['message'];
                 if ($this->dryRun) {
                     $message = '[dry-run] ' . $message;
@@ -315,5 +337,53 @@ class Migrate
         } else {
             throw new UserException('Unrecognized restore credentials.');
         }
+    }
+
+    private function preserveProperSnowflakeWorkspace(
+        string $destinationComponentId,
+        string $destinationConfigurationId,
+        array $sourceConfigurationData
+    ): void {
+        if ($this->dryRun) {
+            return;
+        }
+
+        $snowflakeUser = $sourceConfigurationData['configuration']['parameters']['db']['user'];
+
+        $destinationComponentsApi = new Components($this->destProjectStorageClient);
+        $destinationConfigurationData = (array) $destinationComponentsApi
+            ->getConfiguration($destinationComponentId, $destinationConfigurationId);
+
+        $migratedWorkspaceParameters = $this->migratedSnowflakeWorkspaces[$snowflakeUser] ?? null;
+
+        if ($migratedWorkspaceParameters) {
+            // Use the existing Snowflake workspace from a previous configuration that has the same source workspace
+            $destinationConfigurationData['configuration']['parameters']['db'] = $migratedWorkspaceParameters;
+
+            $destinationConfiguration = (new Configuration())
+                ->setConfigurationId($destinationConfigurationId)
+                ->setComponentId($destinationComponentId)
+                ->setName($destinationConfigurationData['name'])
+                ->setDescription($destinationConfigurationData['description'])
+                ->setIsDisabled($destinationConfigurationData['isDisabled'])
+                ->setConfiguration($destinationConfigurationData['configuration']);
+
+            $destinationComponentsApi->updateConfiguration($destinationConfiguration);
+
+            $this->logger->info(
+                sprintf(
+                    "Used existing Snowflake workspace '%s' for configuration with ID '%s' (%s).",
+                    $migratedWorkspaceParameters['user'],
+                    $destinationConfigurationId,
+                    $destinationComponentId,
+                ),
+                ['secrets']
+            );
+            return;
+        }
+
+        // Store Snowflake workspace for next configurations
+        $workspaceParameters = $destinationConfigurationData['configuration']['parameters']['db'];
+        $this->migratedSnowflakeWorkspaces[$snowflakeUser] = $workspaceParameters;
     }
 }

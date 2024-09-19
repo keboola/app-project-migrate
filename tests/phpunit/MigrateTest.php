@@ -191,6 +191,8 @@ class MigrateTest extends TestCase
             ->willReturn('https://encryption.keboola.com')
         ;
 
+        $destClientMock = $this->createMock(StorageClient::class);
+
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock->expects(self::never())->method('migrateConfiguration');
 
@@ -201,6 +203,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'https://dest-stack/',
             'dest-token',
@@ -296,6 +299,8 @@ class MigrateTest extends TestCase
             ->willReturn('https://encryption.keboola.com')
         ;
 
+        $destClientMock = $this->createMock(StorageClient::class);
+
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock
             ->expects(self::exactly(3))
@@ -316,6 +321,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'https://dest-stack/',
             'dest-token',
@@ -356,6 +362,7 @@ class MigrateTest extends TestCase
         $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $sourceClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createMock(StorageClient::class);
         $migrationsClientMock = $this->createMock(Migrations::class);
 
         // generate credentials
@@ -395,6 +402,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'xxx-b',
             'yyy-b',
@@ -408,6 +416,7 @@ class MigrateTest extends TestCase
         $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $sourceClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createMock(StorageClient::class);
         $migrationsClientMock = $this->createMock(Migrations::class);
 
         $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
@@ -450,6 +459,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'xxx-b',
             'yyy-b',
@@ -463,6 +473,7 @@ class MigrateTest extends TestCase
         $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $sourceClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createMock(StorageClient::class);
         $migrationsClientMock = $this->createMock(Migrations::class);
 
         $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
@@ -499,6 +510,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'xxx-b',
             'yyy-b',
@@ -590,6 +602,8 @@ class MigrateTest extends TestCase
                 ],
             ]);
 
+        $destClientMock = $this->createMock(StorageClient::class);
+
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock
             ->method('migrateConfiguration')
@@ -619,6 +633,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'https://dest-stack/',
             'dest-token',
