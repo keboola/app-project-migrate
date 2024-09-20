@@ -13,6 +13,7 @@ use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\Components;
 use Keboola\StorageApi\DevBranches;
 use Keboola\StorageApi\Options\Components\Configuration;
+use Keboola\StorageApi\Options\Components\ListComponentsOptions;
 use Keboola\Syrup\ClientException as SyrupClientException;
 use Psr\Log\LoggerInterface;
 
@@ -190,7 +191,9 @@ class Migrate
         $defaultSourceBranch = current(array_filter($sourceBranches, fn($b) => $b['isDefault'] === true));
 
         $sourceComponentsApi = new Components($this->sourceProjectStorageClient);
-        $components = $sourceComponentsApi->listComponents();
+        $listComponentOptions = new ListComponentsOptions();
+        $listComponentOptions->setInclude(['configuration']);
+        $components = $sourceComponentsApi->listComponents($listComponentOptions);
         if (!$components) {
             $this->logger->info('There are no components to migrate.', ['secrets']);
             return;

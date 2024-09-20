@@ -157,7 +157,7 @@ class MigrateTest extends TestCase
                     ],
                 ],
                 [
-                    'components?include=', null, [],
+                    'components?include=configuration', null, [],
                     [
                         [
                             'id' => 'gooddata-writer', // should be skipped
@@ -265,7 +265,7 @@ class MigrateTest extends TestCase
                     ],
                 ],
                 [
-                    'components?include=', null, [],
+                    'components?include=configuration', null, [],
                     [
                         [
                             'id' => 'gooddata-writer', // should be skipped
@@ -472,7 +472,7 @@ class MigrateTest extends TestCase
                     ],
                 ],
                 [
-                    'components?include=', null, [],
+                    'components?include=configuration', null, [],
                     [
                         [
                             'id' => 'keboola.wr-db-snowflake',
@@ -794,7 +794,7 @@ class MigrateTest extends TestCase
                     ],
                 ],
                 [
-                    'components?include=', null, [],
+                    'components?include=configuration', null, [],
                     [
                         [
                             'id' => 'some-component',
