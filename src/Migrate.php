@@ -219,9 +219,10 @@ class Migrate
 
                 if (in_array($component['id'], self::SNOWFLAKE_WRITER_COMPONENT_IDS, true)) {
                     $this->preserveProperSnowflakeWorkspace(
+                        $component['id'],
+                        $config['id'],
                         $response['data']['componentId'],
-                        $response['data']['configId'],
-                        $config
+                        $response['data']['configId']
                     );
                 }
 
@@ -340,20 +341,23 @@ class Migrate
     }
 
     private function preserveProperSnowflakeWorkspace(
+        string $sourceComponentId,
+        string $sourceConfigurationId,
         string $destinationComponentId,
-        string $destinationConfigurationId,
-        array $sourceConfigurationData
+        string $destinationConfigurationId
     ): void {
         if ($this->dryRun) {
             return;
         }
-
-        $snowflakeUser = $sourceConfigurationData['configuration']['parameters']['db']['user'];
+        $sourceComponentsApi = new Components($this->sourceProjectStorageClient);
+        $sourceConfigurationData = (array) $sourceComponentsApi
+            ->getConfiguration($sourceComponentId, $sourceConfigurationId);
 
         $destinationComponentsApi = new Components($this->destProjectStorageClient);
         $destinationConfigurationData = (array) $destinationComponentsApi
             ->getConfiguration($destinationComponentId, $destinationConfigurationId);
 
+        $snowflakeUser = $sourceConfigurationData['configuration']['parameters']['db']['user'];
         $migratedWorkspaceParameters = $this->migratedSnowflakeWorkspaces[$snowflakeUser] ?? null;
 
         if ($migratedWorkspaceParameters) {

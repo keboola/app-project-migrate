@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate\Tests;
 
 use Generator;
+use InvalidArgumentException;
 use Keboola\AppProjectMigrate\Config;
 use Keboola\AppProjectMigrate\ConfigDefinition;
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
@@ -460,27 +461,30 @@ class MigrateTest extends TestCase
         $sourceClientMock = $this->createMock(StorageClient::class);
         $sourceClientMock
             ->method('apiGet')
-            ->willReturnMap([
-                [
-                    'dev-branches/', null, [],
-                    [
+            ->willReturnCallback(function ($url) use ($testConfigurations) {
+                if ($url === 'dev-branches/') {
+                    return [
                         [
                             'id' => '123',
                             'name' => 'default',
                             'isDefault' => true,
                         ],
-                    ],
-                ],
-                [
-                    'components?include=', null, [],
-                    [
+                    ];
+                }
+                if ($url === 'components?include=') {
+                    return [
                         [
                             'id' => 'keboola.wr-db-snowflake',
                             'configurations' => $testConfigurations,
                         ],
-                    ],
-                ],
-            ])
+                    ];
+                }
+                if (preg_match('~components/([^/]+)/configs/([^/]+)~', $url, $matches)) {
+                    [, , $configId] = $matches + [null, null, null];
+                    return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
+                }
+                throw new InvalidArgumentException(sprintf('Unexpected URL "%s"', $url));
+            })
         ;
         $sourceClientMock
             ->method('getServiceUrl')
