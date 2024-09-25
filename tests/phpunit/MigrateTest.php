@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate\Tests;
 
 use Generator;
+use InvalidArgumentException;
 use Keboola\AppProjectMigrate\Config;
 use Keboola\AppProjectMigrate\ConfigDefinition;
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
@@ -191,6 +192,8 @@ class MigrateTest extends TestCase
             ->willReturn('https://encryption.keboola.com')
         ;
 
+        $destClientMock = $this->createMock(StorageClient::class);
+
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock->expects(self::never())->method('migrateConfiguration');
 
@@ -201,6 +204,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'https://dest-stack/',
             'dest-token',
@@ -296,6 +300,8 @@ class MigrateTest extends TestCase
             ->willReturn('https://encryption.keboola.com')
         ;
 
+        $destClientMock = $this->createMock(StorageClient::class);
+
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock
             ->expects(self::exactly(3))
@@ -316,6 +322,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'https://dest-stack/',
             'dest-token',
@@ -351,11 +358,221 @@ class MigrateTest extends TestCase
         );
     }
 
+    public function testMigrateSnowflakeWritersWithSharedWorkspacesSuccess(): void
+    {
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        // generate credentials
+        $this->mockAddMethodGenerateAbsReadCredentials($sourceJobRunnerMock);
+        $this->mockAddMethodBackupProject(
+            $sourceJobRunnerMock,
+            [
+                'id' => '222',
+                'status' => 'success',
+            ],
+            true
+        );
+
+        $destJobRunnerMock->method('runJob')
+            ->willReturn([
+                'id' => '222',
+                'status' => 'success',
+            ]);
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'xyz',
+                    'migrateSecrets' => true,
+                    '#sourceManageToken' => 'manage-token',
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $logsHandler = new TestHandler();
+        $logger = new Logger('tests', [$logsHandler]);
+
+        $testConfigurations = [
+            [
+                'id' => '101',
+                'name' => 'My Snowflake Data Destination #1',
+                'description' => '',
+                'isDisabled' => false,
+                'configuration' => [
+                    'parameters' => [
+                        'db' => [
+                            'port' => 'port',
+                            'schema' => 'schema',
+                            'warehouse' => 'warehouse',
+                            'driver' => 'snowflake',
+                            'host' => 'host',
+                            'user' => 'USER_01',
+                            'database' => 'database',
+                            '#password' => 'encrypted-password',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'id' => '102',
+                'name' => 'My Snowflake Data Destination #2',
+                'description' => '',
+                'isDisabled' => false,
+                'configuration' => [
+                    'parameters' => [
+                        'db' => [
+                            'port' => 'port',
+                            'schema' => 'schema',
+                            'warehouse' => 'warehouse',
+                            'driver' => 'snowflake',
+                            'host' => 'host',
+                            'user' => 'USER_02',
+                            'database' => 'database',
+                            '#password' => 'encrypted-password',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'id' => '103',
+                'name' => 'My Snowflake Data Destination #3',
+                'description' => '',
+                'isDisabled' => false,
+                'configuration' => [
+                    'parameters' => [
+                        'db' => [
+                            'port' => 'port',
+                            'schema' => 'schema',
+                            'warehouse' => 'warehouse',
+                            'driver' => 'snowflake',
+                            'host' => 'host',
+                            'user' => 'USER_01',
+                            'database' => 'database',
+                            '#password' => 'encrypted-password',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock
+            ->method('apiGet')
+            ->willReturnCallback(function ($url) use ($testConfigurations) {
+                if ($url === 'dev-branches/') {
+                    return [
+                        [
+                            'id' => '123',
+                            'name' => 'default',
+                            'isDefault' => true,
+                        ],
+                    ];
+                }
+                if ($url === 'components?include=') {
+                    return [
+                        [
+                            'id' => 'keboola.wr-db-snowflake',
+                            'configurations' => $testConfigurations,
+                        ],
+                    ];
+                }
+                if (preg_match('~components/([^/]+)/configs/([^/]+)~', $url, $matches)) {
+                    [, , $configId] = $matches + [null, null, null];
+                    return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
+                }
+                throw new InvalidArgumentException(sprintf('Unexpected URL "%s"', $url));
+            })
+        ;
+        $sourceClientMock
+            ->method('getServiceUrl')
+            ->with('encryption')
+            ->willReturn('https://encryption.keboola.com')
+        ;
+
+        $destClientMock = $this->createMock(StorageClient::class);
+        $destClientMock
+            ->method('apiGet')
+            ->willReturnCallback(function ($url) use ($testConfigurations): ?array {
+                preg_match('~components/([^/]+)/configs/([^/]+)~', $url, $matches);
+                [, , $configId] = $matches + [null, null, null];
+                return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
+            })
+        ;
+
+        $migrationsClientMock = $this->createMock(Migrations::class);
+        $migrationsClientMock
+            ->expects(self::exactly(3))
+            ->method('migrateConfiguration')
+            ->willReturnCallback(function (...$args) {
+                [, $destinationStack, , $componentId, $configId, $branchId] = $args;
+                return [
+                    'message' => "Configuration with ID '$configId' successfully " .
+                        "migrated to stack '$destinationStack'.",
+                    'data' => [
+                        'destinationStack' => $destinationStack,
+                        'componentId' => $componentId,
+                        'configId' => $configId,
+                        'branchId' => $branchId,
+                    ],
+                ];
+            });
+
+        /** @var JobRunner $sourceJobRunnerMock */
+        /** @var JobRunner $destJobRunnerMock */
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            $logger,
+        );
+
+        $migrate->run();
+
+        $records = array_filter(
+            $logsHandler->getRecords(),
+            fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
+        );
+        self::assertCount(5, $records);
+
+        $record = array_shift($records);
+        self::assertSame('Migrating configurations with secrets', $record['message']);
+        $record = array_shift($records);
+        self::assertSame(
+            'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Used existing Snowflake workspace \'USER_01\' for configuration with ID \'103\' '
+            . '(keboola.wr-db-snowflake).',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Configuration with ID \'103\' successfully migrated to stack \'dest-stack\'.',
+            $record['message']
+        );
+    }
+
     public function testShouldFailOnSnapshotError(): void
     {
         $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $sourceClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createMock(StorageClient::class);
         $migrationsClientMock = $this->createMock(Migrations::class);
 
         // generate credentials
@@ -395,6 +612,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'xxx-b',
             'yyy-b',
@@ -408,6 +626,7 @@ class MigrateTest extends TestCase
         $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $sourceClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createMock(StorageClient::class);
         $migrationsClientMock = $this->createMock(Migrations::class);
 
         $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
@@ -450,6 +669,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'xxx-b',
             'yyy-b',
@@ -463,6 +683,7 @@ class MigrateTest extends TestCase
         $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
         $sourceClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createMock(StorageClient::class);
         $migrationsClientMock = $this->createMock(Migrations::class);
 
         $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
@@ -499,6 +720,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'xxx-b',
             'yyy-b',
@@ -590,6 +812,8 @@ class MigrateTest extends TestCase
                 ],
             ]);
 
+        $destClientMock = $this->createMock(StorageClient::class);
+
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock
             ->method('migrateConfiguration')
@@ -619,6 +843,7 @@ class MigrateTest extends TestCase
             $sourceJobRunnerMock,
             $destJobRunnerMock,
             $sourceClientMock,
+            $destClientMock,
             $migrationsClientMock,
             'https://dest-stack/',
             'dest-token',

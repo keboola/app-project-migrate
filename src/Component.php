@@ -75,6 +75,7 @@ class Component extends BaseComponent
             $sourceJobRunner,
             $destJobRunner,
             $sourceProjectClient,
+            $destProjectClient,
             $migrationsClient,
             $destProjectClient->getApiUrl(),
             $destProjectClient->getTokenString(),
