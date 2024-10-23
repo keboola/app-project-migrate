@@ -335,7 +335,7 @@ class MigrateTest extends TestCase
             $logsHandler->getRecords(),
             fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
         );
-        self::assertCount(5, $records);
+        self::assertCount(8, $records);
 
         $record = array_shift($records);
         self::assertSame('Migrating configurations with secrets', $record['message']);
@@ -343,12 +343,27 @@ class MigrateTest extends TestCase
         self::assertSame('Components "gooddata-writer" is obsolete, skipping migration...', $record['message']);
         $record = array_shift($records);
         self::assertSame(
+            'Migrating configuration "101" of component "some-component"',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
             'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
             $record['message']
         );
         $record = array_shift($records);
         self::assertSame(
+            'Migrating configuration "102" of component "some-component"',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
             'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Migrating configuration "201" of component "another-component"',
             $record['message']
         );
         $record = array_shift($records);
@@ -540,10 +555,15 @@ class MigrateTest extends TestCase
             $logsHandler->getRecords(),
             fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
         );
-        self::assertCount(5, $records);
+        self::assertCount(8, $records);
 
         $record = array_shift($records);
         self::assertSame('Migrating configurations with secrets', $record['message']);
+        $record = array_shift($records);
+        self::assertSame(
+            'Migrating configuration "101" of component "keboola.wr-db-snowflake"',
+            $record['message']
+        );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
@@ -551,7 +571,17 @@ class MigrateTest extends TestCase
         );
         $record = array_shift($records);
         self::assertSame(
+            'Migrating configuration "102" of component "keboola.wr-db-snowflake"',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
             'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Migrating configuration "103" of component "keboola.wr-db-snowflake"',
             $record['message']
         );
         $record = array_shift($records);

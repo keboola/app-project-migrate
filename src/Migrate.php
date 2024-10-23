@@ -206,6 +206,15 @@ class Migrate
             }
 
             foreach ($component['configurations'] as $config) {
+                $this->logger->info(
+                    sprintf(
+                        '%sMigrating configuration "%s" of component "%s"',
+                        $this->dryRun ? '[dry-run] ' : '',
+                        $config['id'],
+                        $component['id'],
+                    ),
+                    ['secrets'],
+                );
                 $response = $this->migrationsClient
                     ->migrateConfiguration(
                         $this->sourceProjectToken,
