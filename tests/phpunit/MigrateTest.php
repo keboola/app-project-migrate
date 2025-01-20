@@ -13,6 +13,7 @@ use Keboola\AppProjectMigrate\JobRunner\QueueV2JobRunner;
 use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Component\UserException;
+use Keboola\EncryptionApiClient\Exception\ClientException as EncryptionClientException;
 use Keboola\EncryptionApiClient\Migrations;
 use Keboola\StorageApi\Client as StorageClient;
 use Keboola\Syrup\ClientException;
@@ -609,6 +610,172 @@ class MigrateTest extends TestCase
                     'workspace' => 'USER_01',
                     'configId' => '103',
                     'componentId' => 'keboola.wr-db-snowflake',
+                ],
+            ]),
+        );
+        self::assertTrue(
+            $logsHandler->hasInfo('Configuration with ID \'103\' successfully migrated to stack \'dest-stack\'.'),
+        );
+    }
+
+    public function testMigrateShouldHandleEncryptionApiErrorResponse(): void
+    {
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        // generate credentials
+        $this->mockAddMethodGenerateAbsReadCredentials($sourceJobRunnerMock);
+        $this->mockAddMethodBackupProject(
+            $sourceJobRunnerMock,
+            [
+                'id' => '222',
+                'status' => 'success',
+            ],
+            true
+        );
+
+        $destJobRunnerMock->method('runJob')
+            ->willReturn([
+                'id' => '222',
+                'status' => 'success',
+            ]);
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'xyz',
+                    'migrateSecrets' => true,
+                    '#sourceManageToken' => 'manage-token',
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $logsHandler = new TestHandler();
+        $logger = new Logger('tests', [$logsHandler]);
+
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock
+            ->method('apiGet')
+            ->willReturnMap([
+                [
+                    'dev-branches/', null, [],
+                    [
+                        [
+                            'id' => '123',
+                            'name' => 'default',
+                            'isDefault' => true,
+                        ],
+                    ],
+                ],
+                [
+                    'components?include=', null, [],
+                    [
+                        [
+                            'id' => 'some-component',
+                            'configurations' => [
+                                [
+                                    'id' => '101',
+                                ],
+                                [
+                                    'id' => '666',
+                                ],
+                                [
+                                    'id' => '103',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ])
+        ;
+        $sourceClientMock
+            ->method('getServiceUrl')
+            ->with('encryption')
+            ->willReturn('https://encryption.keboola.com')
+        ;
+
+        $destClientMock = $this->createMock(StorageClient::class);
+
+        $encryptionApiException = new EncryptionClientException('Something went wrong');
+
+        $migrationsClientMock = $this->createMock(Migrations::class);
+        $migrationsClientMock
+            ->expects(self::exactly(3))
+            ->method('migrateConfiguration')
+            ->willReturnCallback(function (...$args) use ($encryptionApiException) {
+                [, $destinationStack, , , $configId] = $args;
+                if ($configId === '666') {
+                    throw $encryptionApiException;
+                }
+                return [
+                    'message' => "Configuration with ID '$configId' successfully " .
+                        "migrated to stack '$destinationStack'.",
+                    'data' => [],
+                ];
+            });
+
+        /** @var JobRunner $sourceJobRunnerMock */
+        /** @var JobRunner $destJobRunnerMock */
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            $logger,
+        );
+
+        $migrate->run();
+
+        self::assertTrue(
+            $logsHandler->hasInfo('Migrating configurations with secrets'),
+        );
+
+        self::assertTrue(
+            $logsHandler->hasInfo([
+                'message' => 'Migrating configuration "{configId}" of component "{componentId}"',
+                'context' => [
+                    'configId' => '101',
+                    'componentId' => 'some-component',
+                ],
+            ]),
+        );
+        self::assertTrue(
+            $logsHandler->hasInfo('Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.'),
+        );
+
+        self::assertTrue(
+            $logsHandler->hasInfo([
+                'message' => 'Migrating configuration "{configId}" of component "{componentId}"',
+                'context' => [
+                    'configId' => '666',
+                    'componentId' => 'some-component',
+                ],
+            ]),
+        );
+        self::assertTrue(
+            $logsHandler->hasError([
+                'message' => 'Migrating configuration "{configId}" of component "{componentId}" failed: {message}',
+                'context' => [
+                    'configId' => '666',
+                    'componentId' => 'some-component',
+                    'message' => 'Something went wrong',
+                    'exception' => $encryptionApiException,
+                ],
+            ]),
+        );
+
+        self::assertTrue(
+            $logsHandler->hasInfo([
+                'message' => 'Migrating configuration "{configId}" of component "{componentId}"',
+                'context' => [
+                    'configId' => '103',
+                    'componentId' => 'some-component',
                 ],
             ]),
         );
