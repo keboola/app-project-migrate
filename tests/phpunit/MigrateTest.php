@@ -331,45 +331,56 @@ class MigrateTest extends TestCase
 
         $migrate->run();
 
-        $records = array_filter(
-            $logsHandler->getRecords(),
-            fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
+        self::assertTrue(
+            $logsHandler->hasInfo('Migrating configurations with secrets'),
         );
-        self::assertCount(8, $records);
 
-        $record = array_shift($records);
-        self::assertSame('Migrating configurations with secrets', $record['message']);
-        $record = array_shift($records);
-        self::assertSame('Components "gooddata-writer" is obsolete, skipping migration...', $record['message']);
-        $record = array_shift($records);
-        self::assertSame(
-            'Migrating configuration "101" of component "some-component"',
-            $record['message']
+        self::assertTrue(
+            $logsHandler->hasInfo([
+                'message' => 'Components "{componentId}" is obsolete, skipping migration...',
+                'context' => [
+                    'componentId' => 'gooddata-writer',
+                ],
+            ]),
         );
-        $record = array_shift($records);
-        self::assertSame(
-            'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+
+        self::assertTrue(
+            $logsHandler->hasInfo([
+                'message' => 'Migrating configuration "{configId}" of component "{componentId}"',
+                'context' => [
+                    'configId' => '101',
+                    'componentId' => 'some-component',
+                ],
+            ]),
         );
-        $record = array_shift($records);
-        self::assertSame(
-            'Migrating configuration "102" of component "some-component"',
-            $record['message']
+        self::assertTrue(
+            $logsHandler->hasInfo('Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.'),
         );
-        $record = array_shift($records);
-        self::assertSame(
-            'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+
+        self::assertTrue(
+            $logsHandler->hasInfo([
+                'message' => 'Migrating configuration "{configId}" of component "{componentId}"',
+                'context' => [
+                    'configId' => '102',
+                    'componentId' => 'some-component',
+                ],
+            ]),
         );
-        $record = array_shift($records);
-        self::assertSame(
-            'Migrating configuration "201" of component "another-component"',
-            $record['message']
+        self::assertTrue(
+            $logsHandler->hasInfo('Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.'),
         );
-        $record = array_shift($records);
-        self::assertSame(
-            'Configuration with ID \'201\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+
+        self::assertTrue(
+            $logsHandler->hasInfo([
+                'message' => 'Migrating configuration "{configId}" of component "{componentId}"',
+                'context' => [
+                    'configId' => '201',
+                    'componentId' => 'another-component',
+                ],
+            ]),
+        );
+        self::assertTrue(
+            $logsHandler->hasInfo('Configuration with ID \'201\' successfully migrated to stack \'dest-stack\'.'),
         );
     }
 
@@ -551,49 +562,58 @@ class MigrateTest extends TestCase
 
         $migrate->run();
 
-        $records = array_filter(
-            $logsHandler->getRecords(),
-            fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
+        self::assertTrue(
+            $logsHandler->hasInfo('Migrating configurations with secrets'),
         );
-        self::assertCount(8, $records);
 
-        $record = array_shift($records);
-        self::assertSame('Migrating configurations with secrets', $record['message']);
-        $record = array_shift($records);
-        self::assertSame(
-            'Migrating configuration "101" of component "keboola.wr-db-snowflake"',
-            $record['message']
+        self::assertTrue(
+            $logsHandler->hasInfo([
+                'message' => 'Migrating configuration "{configId}" of component "{componentId}"',
+                'context' => [
+                    'configId' => '101',
+                    'componentId' => 'keboola.wr-db-snowflake',
+                ],
+            ]),
         );
-        $record = array_shift($records);
-        self::assertSame(
-            'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+        self::assertTrue(
+            $logsHandler->hasInfo('Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.'),
         );
-        $record = array_shift($records);
-        self::assertSame(
-            'Migrating configuration "102" of component "keboola.wr-db-snowflake"',
-            $record['message']
+
+        self::assertTrue(
+            $logsHandler->hasInfo([
+                'message' => 'Migrating configuration "{configId}" of component "{componentId}"',
+                'context' => [
+                    'configId' => '102',
+                    'componentId' => 'keboola.wr-db-snowflake',
+                ],
+            ]),
         );
-        $record = array_shift($records);
-        self::assertSame(
-            'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+        self::assertTrue(
+            $logsHandler->hasInfo('Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.'),
         );
-        $record = array_shift($records);
-        self::assertSame(
-            'Migrating configuration "103" of component "keboola.wr-db-snowflake"',
-            $record['message']
+
+        self::assertTrue(
+            $logsHandler->hasInfo([
+                'message' => 'Migrating configuration "{configId}" of component "{componentId}"',
+                'context' => [
+                    'configId' => '102',
+                    'componentId' => 'keboola.wr-db-snowflake',
+                ],
+            ]),
         );
-        $record = array_shift($records);
-        self::assertSame(
-            'Used existing Snowflake workspace \'USER_01\' for configuration with ID \'103\' '
-            . '(keboola.wr-db-snowflake).',
-            $record['message']
+        self::assertTrue(
+            $logsHandler->hasInfo([
+                'message' => 'Used existing Snowflake workspace "{workspace}" for configuration '
+                    . 'with ID "{configId}" ({componentId}).',
+                'context' => [
+                    'workspace' => 'USER_01',
+                    'configId' => '103',
+                    'componentId' => 'keboola.wr-db-snowflake',
+                ],
+            ]),
         );
-        $record = array_shift($records);
-        self::assertSame(
-            'Configuration with ID \'103\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+        self::assertTrue(
+            $logsHandler->hasInfo('Configuration with ID \'103\' successfully migrated to stack \'dest-stack\'.'),
         );
     }
 

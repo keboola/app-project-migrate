@@ -183,7 +183,7 @@ class Migrate
 
     private function migrateSecrets(): void
     {
-        $this->logger->info('Migrating configurations with secrets', ['secrets']);
+        $this->logger->info('Migrating configurations with secrets');
 
         $sourceDevBranches = new DevBranches($this->sourceProjectStorageClient);
         $sourceBranches = $sourceDevBranches->listBranches();
@@ -192,28 +192,28 @@ class Migrate
         $sourceComponentsApi = new Components($this->sourceProjectStorageClient);
         $components = $sourceComponentsApi->listComponents();
         if (!$components) {
-            $this->logger->info('There are no components to migrate.', ['secrets']);
+            $this->logger->info('There are no components to migrate.');
             return;
         }
 
         foreach ($components as $component) {
             if (in_array($component['id'], self::OBSOLETE_COMPONENTS, true)) {
-                $this->logger->info(
-                    sprintf('Components "%s" is obsolete, skipping migration...', $component['id']),
-                    ['secrets']
-                );
+                $this->logger->info('Components "{componentId}" is obsolete, skipping migration...', [
+                    'componentId' => $component['id'],
+                ]);
                 continue;
             }
 
             foreach ($component['configurations'] as $config) {
                 $this->logger->info(
                     sprintf(
-                        '%sMigrating configuration "%s" of component "%s"',
+                        '%sMigrating configuration "{configId}" of component "{componentId}"',
                         $this->dryRun ? '[dry-run] ' : '',
-                        $config['id'],
-                        $component['id'],
                     ),
-                    ['secrets'],
+                    [
+                        'configId' => $config['id'],
+                        'componentId' => $component['id'],
+                    ],
                 );
                 $response = $this->migrationsClient
                     ->migrateConfiguration(
@@ -240,11 +240,11 @@ class Migrate
                     $message = '[dry-run] ' . $message;
                 }
 
-                $this->logger->info($message, ['secrets']);
+                $this->logger->info($message);
 
                 if (isset($response['warnings']) && is_array($response['warnings'])) {
                     foreach ($response['warnings'] as $warning) {
-                        $this->logger->warning($warning, ['secrets']);
+                        $this->logger->warning($warning);
                     }
                 }
             }
@@ -383,15 +383,12 @@ class Migrate
 
             $destinationComponentsApi->updateConfiguration($destinationConfiguration);
 
-            $this->logger->info(
-                sprintf(
-                    "Used existing Snowflake workspace '%s' for configuration with ID '%s' (%s).",
-                    $migratedWorkspaceParameters['user'],
-                    $destinationConfigurationId,
-                    $destinationComponentId,
-                ),
-                ['secrets']
-            );
+            $this->logger->info('Used existing Snowflake workspace "{workspace}" '
+                . 'for configuration with ID "{configId}" ({componentId}).', [
+                'workspace' => $migratedWorkspaceParameters['user'],
+                'configId' => $destinationConfigurationId,
+                'componentId' => $destinationComponentId,
+            ]);
             return;
         }
 
