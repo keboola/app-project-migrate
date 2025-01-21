@@ -215,16 +215,32 @@ class Migrate
                     ),
                     ['secrets'],
                 );
-                $response = $this->migrationsClient
-                    ->migrateConfiguration(
-                        $this->sourceProjectToken,
-                        Utils::getStackFromProjectUrl($this->destinationProjectUrl),
-                        $this->destinationProjectToken,
-                        $component['id'],
-                        $config['id'],
-                        (string) $defaultSourceBranch['id'],
-                        $this->dryRun
+
+                try {
+                    $response = $this->migrationsClient
+                        ->migrateConfiguration(
+                            $this->sourceProjectToken,
+                            Utils::getStackFromProjectUrl($this->destinationProjectUrl),
+                            $this->destinationProjectToken,
+                            $component['id'],
+                            $config['id'],
+                            (string) $defaultSourceBranch['id'],
+                            $this->dryRun
+                        );
+                } catch (EncryptionClientException $e) {
+                    $this->logger->error(
+                        sprintf(
+                            'Migrating configuration "%s" of component "%s" failed: %s',
+                            $config['id'],
+                            $component['id'],
+                            $e->getMessage()
+                        ),
+                        [
+                            'exception' => $e,
+                        ],
                     );
+                    continue;
+                }
 
                 if (in_array($component['id'], self::SNOWFLAKE_WRITER_COMPONENT_IDS, true)) {
                     $this->preserveProperSnowflakeWorkspace(
