@@ -45,6 +45,8 @@ class MigrateTest extends TestCase
         // generate credentials
         if (array_key_exists('abs', $expectedCredentialsData)) {
             $this->mockAddMethodGenerateAbsReadCredentials($sourceJobRunnerMock);
+        } elseif (array_key_exists('gcs', $expectedCredentialsData)) {
+            $this->mockAddMethodGenerateGcsReadCredentials($sourceJobRunnerMock);
         } else {
             $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
         }
@@ -192,6 +194,11 @@ class MigrateTest extends TestCase
             ->willReturn('https://encryption.keboola.com')
         ;
 
+        $sourceClientMock
+            ->method('generateId')
+            ->willReturn('123')
+        ;
+
         $destClientMock = $this->createMock(StorageClient::class);
 
         $migrationsClientMock = $this->createMock(Migrations::class);
@@ -298,6 +305,11 @@ class MigrateTest extends TestCase
             ->method('getServiceUrl')
             ->with('encryption')
             ->willReturn('https://encryption.keboola.com')
+        ;
+
+        $sourceClientMock
+            ->method('generateId')
+            ->willReturn('123')
         ;
 
         $destClientMock = $this->createMock(StorageClient::class);
@@ -535,6 +547,11 @@ class MigrateTest extends TestCase
                 ];
             });
 
+        $sourceClientMock
+            ->method('generateId')
+            ->willReturn('123')
+        ;
+
         /** @var JobRunner $sourceJobRunnerMock */
         /** @var JobRunner $destJobRunnerMock */
         $migrate = new Migrate(
@@ -606,7 +623,6 @@ class MigrateTest extends TestCase
         $migrationsClientMock = $this->createMock(Migrations::class);
 
         // generate credentials
-        $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
         $this->mockAddMethodBackupProject(
             $sourceJobRunnerMock,
             [
@@ -636,6 +652,11 @@ class MigrateTest extends TestCase
             ],
             new ConfigDefinition()
         );
+
+        $sourceClientMock
+            ->method('generateId')
+            ->willReturn('123')
+        ;
 
         $migrate = new Migrate(
             $config,
@@ -694,6 +715,11 @@ class MigrateTest extends TestCase
             new ConfigDefinition()
         );
 
+        $sourceClientMock
+            ->method('generateId')
+            ->willReturn('123')
+        ;
+
         $migrate = new Migrate(
             $config,
             $sourceJobRunnerMock,
@@ -744,6 +770,11 @@ class MigrateTest extends TestCase
             ],
             new ConfigDefinition()
         );
+
+        $sourceClientMock
+            ->method('generateId')
+            ->willReturn('123')
+        ;
 
         $migrate = new Migrate(
             $config,
@@ -928,7 +959,7 @@ class MigrateTest extends TestCase
                 'generate-read-credentials',
                 [
                     'parameters' => [
-                        'backupId' => null,
+                        'backupId' => '123',
                     ],
                 ]
             )
@@ -957,7 +988,7 @@ class MigrateTest extends TestCase
                 'generate-read-credentials',
                 [
                     'parameters' => [
-                        'backupId' => null,
+                        'backupId' => '123',
                     ],
                 ]
             )
@@ -967,6 +998,34 @@ class MigrateTest extends TestCase
                     'container' => 'abcdefgh',
                     'credentials' => [
                         'connectionString' => 'https://testConnectionString',
+                    ],
+                ]
+            )
+        ;
+    }
+
+    private function mockAddMethodGenerateGcsReadCredentials(MockObject $mockObject): void
+    {
+        $mockObject->expects($this->once())
+            ->method('runSyncAction')
+            ->with(
+                Config::PROJECT_BACKUP_COMPONENT,
+                'generate-read-credentials',
+                [
+                    'parameters' => [
+                        'backupId' => '123',
+                    ],
+                ]
+            )
+            ->willReturn(
+                [
+                    'projectId' => 'testProjectId',
+                    'bucket' => 'testBucket',
+                    'backupUri' => '/testBucket/backup',
+                    'credentials' => [
+                        'accessToken' => 'https://testConnectionString',
+                        'expiresIn' => '3599',
+                        'tokenType' => 'Bearer',
                     ],
                 ]
             )
@@ -1028,6 +1087,27 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
         ];
 
+        yield 'migrate-GCS-syrup' => [
+            'expectedCredentialsData' => [
+                'gcs' => [
+                    'projectId' => 'testProjectId',
+                    'bucket' => 'testBucket',
+                    'backupUri' => '/testBucket/backup',
+                    'credentials' => [
+                        'expiresIn' => '3599',
+                        'tokenType' => 'Bearer',
+                        '#accessToken' => 'https://testConnectionString',
+                    ],
+                ],
+            ],
+            'jobRunnerClass' => SyrupJobRunner::class,
+            'migrateDataOfTablesDirectly' => false,
+            'expectsRunJobs' => 3,
+            'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
+        ];
+
         yield 'migrate-S3-queuev2' => [
             'expectedCredentialsData' => [
                 's3' => [
@@ -1045,11 +1125,32 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
         ];
 
-        yield 'migrateABS-queuev2' => [
+        yield 'migrate-ABS-queuev2' => [
             'expectedCredentialsData' => [
                 'abs' => [
                     'container' => 'abcdefgh',
                     '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => false,
+            'expectsRunJobs' => 2,
+            'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
+        ];
+
+        yield 'migrate-GCS-queuev2' => [
+            'expectedCredentialsData' => [
+                'gcs' => [
+                    'projectId' => 'testProjectId',
+                    'bucket' => 'testBucket',
+                    'backupUri' => '/testBucket/backup',
+                    'credentials' => [
+                        'expiresIn' => '3599',
+                        'tokenType' => 'Bearer',
+                        '#accessToken' => 'https://testConnectionString',
+                    ],
                 ],
             ],
             'jobRunnerClass' => QueueV2JobRunner::class,
@@ -1075,11 +1176,32 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
         ];
 
-        yield 'migrateABS-queuev2-structure-only' => [
+        yield 'migrate-ABS-queuev2-structure-only' => [
             'expectedCredentialsData' => [
                 'abs' => [
                     'container' => 'abcdefgh',
                     '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => false,
+            'expectsRunJobs' => 2,
+            'restoreConfigs' => true,
+            'migrateStructureOnly' => true,
+            'restorePermanentFiles' => true,
+        ];
+
+        yield 'migrate-GCS-queuev2-structure-only' => [
+            'expectedCredentialsData' => [
+                'gcs' => [
+                    'projectId' => 'testProjectId',
+                    'bucket' => 'testBucket',
+                    'backupUri' => '/testBucket/backup',
+                    'credentials' => [
+                        'expiresIn' => '3599',
+                        'tokenType' => 'Bearer',
+                        '#accessToken' => 'https://testConnectionString',
+                    ],
                 ],
             ],
             'jobRunnerClass' => QueueV2JobRunner::class,
