@@ -59,6 +59,16 @@ class Config extends BaseConfig
         return $this->getValue(['parameters', 'migratePermanentFiles']);
     }
 
+    public function shouldMigrateTriggers(): bool
+    {
+        return $this->getValue(['parameters', 'migrateTriggers']);
+    }
+
+    public function shouldMigrateNotifications(): bool
+    {
+        return $this->getValue(['parameters', 'migrateNotifications']);
+    }
+
     public function shouldMigrateStructureOnly(): bool
     {
         return $this->getValue(['parameters', 'migrateStructureOnly']);

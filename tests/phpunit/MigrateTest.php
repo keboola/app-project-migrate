@@ -38,7 +38,9 @@ class MigrateTest extends TestCase
         int $expectsRunJobs,
         bool $restoreConfigs,
         bool $migrateStructureOnly,
-        bool $restorePermanentFiles
+        bool $restorePermanentFiles,
+        bool $restoreTriggers,
+        bool $restoreNotifications
     ): void {
         $sourceJobRunnerMock = $this->createMock($jobRunnerClass);
         $destJobRunnerMock = $this->createMock($jobRunnerClass);
@@ -76,6 +78,8 @@ class MigrateTest extends TestCase
                             'restoreConfigs' => $restoreConfigs,
                             'dryRun' => false,
                             'restorePermanentFiles' => $restorePermanentFiles,
+                            'restoreTriggers' => $restoreTriggers,
+                            'restoreNotifications' => $restoreNotifications,
                         ]
                     ),
                 ],
@@ -138,6 +142,8 @@ class MigrateTest extends TestCase
                     '#sourceManageToken' => 'manage-token',
                     'migrateStructureOnly' => $migrateStructureOnly,
                     'migratePermanentFiles' => $restorePermanentFiles,
+                    'migrateTriggers' => $restoreTriggers,
+                    'migrateNotifications' => $restoreNotifications,
                 ],
             ],
             new ConfigDefinition()
@@ -1221,6 +1227,8 @@ class MigrateTest extends TestCase
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => true,
         ];
 
         yield 'migrate-ABS-syrup' => [
@@ -1236,6 +1244,8 @@ class MigrateTest extends TestCase
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => true,
         ];
 
         yield 'migrate-GCS-syrup' => [
@@ -1257,6 +1267,8 @@ class MigrateTest extends TestCase
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => true,
         ];
 
         yield 'migrate-S3-queuev2' => [
@@ -1274,6 +1286,8 @@ class MigrateTest extends TestCase
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => true,
         ];
 
         yield 'migrate-ABS-queuev2' => [
@@ -1289,6 +1303,8 @@ class MigrateTest extends TestCase
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => true,
         ];
 
         yield 'migrate-GCS-queuev2' => [
@@ -1310,6 +1326,8 @@ class MigrateTest extends TestCase
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => true,
         ];
 
         yield 'migrateABS-queuev2-data-directly' => [
@@ -1325,6 +1343,8 @@ class MigrateTest extends TestCase
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => true,
         ];
 
         yield 'migrate-ABS-queuev2-structure-only' => [
@@ -1340,6 +1360,8 @@ class MigrateTest extends TestCase
             'restoreConfigs' => true,
             'migrateStructureOnly' => true,
             'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => true,
         ];
 
         yield 'migrate-GCS-queuev2-structure-only' => [
@@ -1361,6 +1383,8 @@ class MigrateTest extends TestCase
             'restoreConfigs' => true,
             'migrateStructureOnly' => true,
             'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => true,
         ];
 
         yield 'migrate-secrets-false' => [
@@ -1376,6 +1400,8 @@ class MigrateTest extends TestCase
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => true,
         ];
 
         yield 'migrate-permanentFiles-false' => [
@@ -1391,6 +1417,42 @@ class MigrateTest extends TestCase
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => false,
+            'restoreTriggers' => true,
+            'restoreNotifications' => true,
+        ];
+
+        yield 'migrate-triggers-false' => [
+            'expectedCredentialsData' => [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => true,
+            'expectsRunJobs' => 3,
+            'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
+            'restoreTriggers' => false,
+            'restoreNotifications' => true,
+        ];
+
+        yield 'migrate-notifications-false' => [
+            'expectedCredentialsData' => [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => true,
+            'expectsRunJobs' => 3,
+            'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => false,
         ];
     }
 }

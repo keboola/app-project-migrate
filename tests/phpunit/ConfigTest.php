@@ -70,4 +70,52 @@ class ConfigTest extends TestCase
         $this->assertSame(true, $baseConfig->shouldMigrateSecrets());
         $this->assertEquals('manage-token', $baseConfig->getSourceManageToken());
     }
+
+    public function testDisabledMigrateNotifications(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'migrateNotifications' => false,
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $this->assertFalse($config->shouldMigrateNotifications());
+    }
+
+    public function testDisabledMigrateTriggers(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'migrateTriggers' => false,
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $this->assertFalse($config->shouldMigrateTriggers());
+    }
+
+    public function testDisabledMigratePermanentFiles(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'migratePermanentFiles' => false,
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $this->assertFalse($config->shouldMigratePermanentFiles());
+    }
 }
