@@ -713,6 +713,11 @@ class MigrateTest extends TestCase
                 ];
             });
 
+        $sourceClientMock
+            ->method('generateId')
+            ->willReturn('123')
+        ;
+
         /** @var JobRunner $sourceJobRunnerMock */
         /** @var JobRunner $destJobRunnerMock */
         $migrate = new Migrate(
