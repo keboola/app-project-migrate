@@ -100,9 +100,11 @@ class Migrate
 
     public function run(): void
     {
-        $restoreCredentials = $this->generateBackupCredentials();
         try {
-            $this->backupSourceProject($restoreCredentials['backupId']);
+            $backupId = (string) $this->sourceProjectStorageClient->generateId();
+            $this->backupSourceProject($backupId);
+            $restoreCredentials = $this->generateBackupCredentials($backupId);
+
             $this->restoreDestinationProject($restoreCredentials);
 
             if ($this->migrateSecrets) {
@@ -129,7 +131,7 @@ class Migrate
         }
     }
 
-    private function generateBackupCredentials(): array
+    private function generateBackupCredentials(string $backupId): array
     {
         $this->logger->info('Creating backup credentials');
 
@@ -138,9 +140,9 @@ class Migrate
             'generate-read-credentials',
             [
                 'parameters' => [
-                    'backupId' => null,
+                    'backupId' => $backupId,
                 ],
-            ]
+            ],
         );
     }
 
@@ -155,7 +157,7 @@ class Migrate
                     'backupId' => $backupId,
                     'exportStructureOnly' => $this->directDataMigration || $this->migrateStructureOnly,
                 ],
-            ]
+            ],
         );
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
             throw new UserException('Project snapshot create error: ' . $job['result']['message']);
@@ -172,7 +174,7 @@ class Migrate
 
         $job = $this->destJobRunner->runJob(
             Config::PROJECT_RESTORE_COMPONENT,
-            $configData
+            $configData,
         );
 
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
@@ -323,7 +325,7 @@ class Migrate
                     '#sourceKbcToken' => $this->sourceProjectToken,
                     'dryRun' => $this->dryRun,
                 ],
-            ]
+            ],
         );
 
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
@@ -354,6 +356,24 @@ class Migrate
                     'abs' => [
                         'container' => $restoreCredentials['container'],
                         '#connectionString' => $restoreCredentials['credentials']['connectionString'],
+                    ],
+                    'useDefaultBackend' => true,
+                    'restoreConfigs' => $this->migrateSecrets === false,
+                    'restorePermanentFiles' => $this->migratePermanentFiles,
+                ],
+            ];
+        } elseif (isset($restoreCredentials['credentials']['accessToken'])) {
+            return [
+                'parameters' => [
+                    'gcs' => [
+                        'projectId' => $restoreCredentials['projectId'],
+                        'bucket' => $restoreCredentials['bucket'],
+                        'backupUri' => $restoreCredentials['backupUri'],
+                        'credentials' => [
+                            '#accessToken' => $restoreCredentials['credentials']['accessToken'],
+                            'expiresIn' => $restoreCredentials['credentials']['expiresIn'],
+                            'tokenType' => $restoreCredentials['credentials']['tokenType'],
+                        ],
                     ],
                     'useDefaultBackend' => true,
                     'restoreConfigs' => $this->migrateSecrets === false,
