@@ -48,6 +48,10 @@ class Migrate
 
     private bool $migratePermanentFiles;
 
+    private bool $migrateTriggers;
+
+    private bool $migrateNotifications;
+
     private bool $migrateStructureOnly;
 
     public const OBSOLETE_COMPONENTS = [
@@ -92,6 +96,8 @@ class Migrate
         $this->directDataMigration = $config->directDataMigration();
         $this->migrateSecrets = $config->shouldMigrateSecrets();
         $this->migratePermanentFiles = $config->shouldMigratePermanentFiles();
+        $this->migrateTriggers = $config->shouldMigrateTriggers();
+        $this->migrateNotifications = $config->shouldMigrateNotifications();
         $this->migrateStructureOnly = $config->shouldMigrateStructureOnly();
         $this->logger = $logger;
         $this->migrateDataMode = $config->getMigrateDataMode();
@@ -348,6 +354,8 @@ class Migrate
                     'useDefaultBackend' => true,
                     'restoreConfigs' => $this->migrateSecrets === false,
                     'restorePermanentFiles' => $this->migratePermanentFiles,
+                    'restoreTriggers' => $this->migrateTriggers,
+                    'restoreNotifications' => $this->migrateNotifications,
                 ],
             ];
         } elseif (isset($restoreCredentials['credentials']['connectionString'])) {
@@ -360,6 +368,8 @@ class Migrate
                     'useDefaultBackend' => true,
                     'restoreConfigs' => $this->migrateSecrets === false,
                     'restorePermanentFiles' => $this->migratePermanentFiles,
+                    'restoreTriggers' => $this->migrateTriggers,
+                    'restoreNotifications' => $this->migrateNotifications,
                 ],
             ];
         } elseif (isset($restoreCredentials['credentials']['accessToken'])) {
@@ -378,6 +388,8 @@ class Migrate
                     'useDefaultBackend' => true,
                     'restoreConfigs' => $this->migrateSecrets === false,
                     'restorePermanentFiles' => $this->migratePermanentFiles,
+                    'restoreTriggers' => $this->migrateTriggers,
+                    'restoreNotifications' => $this->migrateNotifications,
                 ],
             ];
         } else {
