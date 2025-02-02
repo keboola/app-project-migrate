@@ -118,4 +118,35 @@ class ConfigTest extends TestCase
 
         $this->assertFalse($config->shouldMigratePermanentFiles());
     }
+
+    public function testSkipRegionValidation(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'skipRegionValidation' => true,
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $this->assertTrue($config->shouldSkipRegionValidation());
+    }
+
+    public function testSkipRegionValidationDefaultValue(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $this->assertFalse($config->shouldSkipRegionValidation());
+    }
 }
