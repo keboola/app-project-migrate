@@ -73,4 +73,9 @@ class Config extends BaseConfig
     {
         return $this->getValue(['parameters', 'migrateStructureOnly']);
     }
+
+    public function shouldSkipRegionValidation(): bool
+    {
+        return $this->getValue(['parameters', 'skipRegionValidation']);
+    }
 }

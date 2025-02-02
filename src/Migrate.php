@@ -54,6 +54,8 @@ class Migrate
 
     private bool $migrateStructureOnly;
 
+    private bool $skipRegionValidation;
+
     public const OBSOLETE_COMPONENTS = [
         'orchestrator',
         'gooddata-writer',
@@ -99,6 +101,7 @@ class Migrate
         $this->migrateTriggers = $config->shouldMigrateTriggers();
         $this->migrateNotifications = $config->shouldMigrateNotifications();
         $this->migrateStructureOnly = $config->shouldMigrateStructureOnly();
+        $this->skipRegionValidation = $config->shouldSkipRegionValidation();
         $this->logger = $logger;
         $this->migrateDataMode = $config->getMigrateDataMode();
         $this->db = $config->getDb();
@@ -162,6 +165,7 @@ class Migrate
                 'parameters' => [
                     'backupId' => $backupId,
                     'exportStructureOnly' => $this->directDataMigration || $this->migrateStructureOnly,
+                    'skipRegionValidation' => $this->skipRegionValidation,
                 ],
             ],
         );

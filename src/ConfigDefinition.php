@@ -32,6 +32,7 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->booleanNode('migrateNotifications')->defaultTrue()->end()
                 ->booleanNode('migrateStructureOnly')->defaultFalse()->end()
                 ->booleanNode('migrateSecrets')->defaultFalse()->end()
+                ->booleanNode('skipRegionValidation')->defaultFalse()->end()
                 ->enumNode('dataMode')->values(['sapi', 'database'])->defaultValue('sapi')->end()
                 ->arrayNode('db')
                     ->children()
