@@ -42,7 +42,9 @@ class MigrateTest extends TestCase
         bool $restoreTriggers,
         bool $restoreNotifications
     ): void {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
         $sourceJobRunnerMock = $this->createMock($jobRunnerClass);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
         $destJobRunnerMock = $this->createMock($jobRunnerClass);
 
         // generate credentials
@@ -152,6 +154,7 @@ class MigrateTest extends TestCase
         $logsHandler = new TestHandler();
         $logger = new Logger('tests', [$logsHandler]);
 
+        /** @var StorageClient&MockObject $sourceClientMock */
         $sourceClientMock = $this->createMock(StorageClient::class);
         $sourceClientMock
             ->method('apiGet')
@@ -206,8 +209,10 @@ class MigrateTest extends TestCase
             ->willReturn('123')
         ;
 
+        /** @var StorageClient&MockObject $destClientMock */
         $destClientMock = $this->createMock(StorageClient::class);
 
+        /** @var Migrations&MockObject $migrationsClientMock */
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock->expects(self::never())->method('migrateConfiguration');
 
@@ -230,7 +235,9 @@ class MigrateTest extends TestCase
 
     public function testMigrateSecretsSuccess(): void
     {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
         $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
         $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
 
         // generate credentials
@@ -265,6 +272,7 @@ class MigrateTest extends TestCase
         $logsHandler = new TestHandler();
         $logger = new Logger('tests', [$logsHandler]);
 
+        /** @var StorageClient&MockObject $sourceClientMock */
         $sourceClientMock = $this->createMock(StorageClient::class);
         $sourceClientMock
             ->method('apiGet')
@@ -319,8 +327,10 @@ class MigrateTest extends TestCase
             ->willReturn('123')
         ;
 
+        /** @var StorageClient&MockObject $destClientMock */
         $destClientMock = $this->createMock(StorageClient::class);
 
+        /** @var Migrations&MockObject $migrationsClientMock */
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock
             ->expects(self::exactly(3))
@@ -394,7 +404,9 @@ class MigrateTest extends TestCase
 
     public function testMigrateSnowflakeWritersWithSharedWorkspacesSuccess(): void
     {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
         $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
         $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
 
         // generate credentials
@@ -492,6 +504,7 @@ class MigrateTest extends TestCase
             ],
         ];
 
+        /** @var StorageClient&MockObject $sourceClientMock */
         $sourceClientMock = $this->createMock(StorageClient::class);
         $sourceClientMock
             ->method('apiGet')
@@ -526,6 +539,7 @@ class MigrateTest extends TestCase
             ->willReturn('https://encryption.keboola.com')
         ;
 
+        /** @var StorageClient&MockObject $destClientMock */
         $destClientMock = $this->createMock(StorageClient::class);
         $destClientMock
             ->method('apiGet')
@@ -536,6 +550,7 @@ class MigrateTest extends TestCase
             })
         ;
 
+        /** @var Migrations&MockObject $migrationsClientMock */
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock
             ->expects(self::exactly(3))
@@ -1193,21 +1208,87 @@ class MigrateTest extends TestCase
         MockObject $mockObject,
         array $return,
         bool $migrateDataOfTablesDirectly,
-        bool $exportStructureOnly = false
+        bool $exportStructureOnly = false,
+        bool $skipRegionValidation = false
     ): void {
-        $mockObject
+        $mockObject->expects($this->once())
             ->method('runJob')
             ->with(
                 Config::PROJECT_BACKUP_COMPONENT,
                 [
                     'parameters' => [
                         'backupId' => '123',
-                        'exportStructureOnly' => $exportStructureOnly || $migrateDataOfTablesDirectly,
+                        'exportStructureOnly' => $migrateDataOfTablesDirectly || $exportStructureOnly,
+                        'skipRegionValidation' => $skipRegionValidation,
                     ],
                 ]
             )
-            ->willReturn($return)
-        ;
+            ->willReturn($return);
+    }
+
+    public function testSkipRegionValidation(): void
+    {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        // generate credentials
+        $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
+        $this->mockAddMethodBackupProject(
+            $sourceJobRunnerMock,
+            [
+                'id' => '222',
+                'status' => 'success',
+            ],
+            false,
+            false,
+            true
+        );
+
+        $destJobRunnerMock->method('runJob')
+            ->willReturn([
+                'id' => '222',
+                'status' => 'success',
+            ]);
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'skipRegionValidation' => true,
+                    'directDataMigration' => false,
+                    'migrateStructureOnly' => false,
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        /** @var StorageClient&MockObject $sourceClientMock */
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock->method('generateId')->willReturn('123');
+        $sourceClientMock->method('apiGet')->willReturn([]);
+        $sourceClientMock->method('getServiceUrl')->willReturn('https://encryption.keboola.com');
+
+        /** @var StorageClient&MockObject $destClientMock */
+        $destClientMock = $this->createMock(StorageClient::class);
+        /** @var Migrations&MockObject $migrationsClientMock */
+        $migrationsClientMock = $this->createMock(Migrations::class);
+
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            new NullLogger(),
+        );
+
+        $migrate->run();
     }
 
     public function successMigrateDataProvider(): Generator
