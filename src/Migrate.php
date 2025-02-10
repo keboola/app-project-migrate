@@ -418,7 +418,19 @@ class Migrate
         $destinationConfigurationData = (array) $destinationComponentsApi
             ->getConfiguration($destinationComponentId, $destinationConfigurationId);
 
-        $snowflakeUser = $sourceConfigurationData['configuration']['parameters']['db']['user'];
+        $snowflakeUser = $sourceConfigurationData['configuration']['parameters']['db']['user'] ?? null;
+        if ($snowflakeUser === null) {
+            $this->logger->info(
+                sprintf(
+                    "Configuration with ID '%s' (%s) does not have a Snowflake workspace.",
+                    $sourceConfigurationId,
+                    $sourceComponentId,
+                ),
+                ['secrets']
+            );
+            return;
+        }
+
         $migratedWorkspaceParameters = $this->migratedSnowflakeWorkspaces[$snowflakeUser] ?? null;
 
         if ($migratedWorkspaceParameters) {
