@@ -786,6 +786,171 @@ class MigrateTest extends TestCase
         );
     }
 
+    public function testMigrateShouldHandleMissingSnowflakeWorkspace(): void
+    {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        // generate credentials
+        $this->mockAddMethodGenerateAbsReadCredentials($sourceJobRunnerMock);
+        $this->mockAddMethodBackupProject(
+            $sourceJobRunnerMock,
+            [
+                'id' => '222',
+                'status' => 'success',
+            ],
+            true
+        );
+
+        $destJobRunnerMock->method('runJob')
+            ->willReturn([
+                'id' => '222',
+                'status' => 'success',
+            ]);
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'xyz',
+                    'migrateSecrets' => true,
+                    '#sourceManageToken' => 'manage-token',
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $logsHandler = new TestHandler();
+        $logger = new Logger('tests', [$logsHandler]);
+
+        $testConfigurations = [
+            [
+                'id' => '104',
+                'name' => 'My Snowflake Data Destination #4',
+                'description' => '',
+                'isDisabled' => false,
+                'configuration' => [
+                    'parameters' => [],
+                ],
+            ],
+        ];
+
+        /** @var StorageClient&MockObject $sourceClientMock */
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock
+            ->method('apiGet')
+            ->willReturnCallback(function ($url) use ($testConfigurations) {
+                if ($url === 'dev-branches/') {
+                    return [
+                        [
+                            'id' => '123',
+                            'name' => 'default',
+                            'isDefault' => true,
+                        ],
+                    ];
+                }
+                if ($url === 'components?include=') {
+                    return [
+                        [
+                            'id' => 'keboola.wr-db-snowflake',
+                            'configurations' => $testConfigurations,
+                        ],
+                    ];
+                }
+                if (preg_match('~components/([^/]+)/configs/([^/]+)~', $url, $matches)) {
+                    [, , $configId] = $matches + [null, null, null];
+                    return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
+                }
+                throw new InvalidArgumentException(sprintf('Unexpected URL "%s"', $url));
+            })
+        ;
+        $sourceClientMock
+            ->method('getServiceUrl')
+            ->with('encryption')
+            ->willReturn('https://encryption.keboola.com')
+        ;
+
+        /** @var StorageClient&MockObject $destClientMock */
+        $destClientMock = $this->createMock(StorageClient::class);
+        $destClientMock
+            ->method('apiGet')
+            ->willReturnCallback(function ($url) use ($testConfigurations): ?array {
+                preg_match('~components/([^/]+)/configs/([^/]+)~', $url, $matches);
+                [, , $configId] = $matches + [null, null, null];
+                return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
+            })
+        ;
+
+        /** @var Migrations&MockObject $migrationsClientMock */
+        $migrationsClientMock = $this->createMock(Migrations::class);
+        $migrationsClientMock
+            ->expects(self::exactly(1))
+            ->method('migrateConfiguration')
+            ->willReturnCallback(function (...$args) {
+                [, $destinationStack, , $componentId, $configId, $branchId] = $args;
+                return [
+                    'message' => "Configuration with ID '$configId' successfully " .
+                        "migrated to stack '$destinationStack'.",
+                    'data' => [
+                        'destinationStack' => $destinationStack,
+                        'componentId' => $componentId,
+                        'configId' => $configId,
+                        'branchId' => $branchId,
+                    ],
+                ];
+            });
+
+        $sourceClientMock
+            ->method('generateId')
+            ->willReturn('123')
+        ;
+
+        /** @var JobRunner $sourceJobRunnerMock */
+        /** @var JobRunner $destJobRunnerMock */
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            $logger,
+        );
+
+        $migrate->run();
+
+        $records = array_filter(
+            $logsHandler->getRecords(),
+            fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
+        );
+        self::assertCount(4, $records);
+
+        $record = array_shift($records);
+        self::assertSame(
+            'Migrating configurations with secrets',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Migrating configuration "104" of component "keboola.wr-db-snowflake"',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Configuration with ID \'104\' (keboola.wr-db-snowflake) does not have a Snowflake workspace.',
+            $record['message']
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Configuration with ID \'104\' successfully migrated to stack \'dest-stack\'.',
+            $record['message']
+        );
+    }
+
     public function testShouldFailOnSnapshotError(): void
     {
         $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
