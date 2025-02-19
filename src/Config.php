@@ -84,14 +84,14 @@ class Config extends BaseConfig
         return $this->getValue(['parameters', 'preserveTimestamp']);
     }
 
-    public function sourceByodb(): string
+    public function getSourceByodb(): ?string
     {
-        return $this->getStringValue(['parameters', 'preserveTimestamp']);
+        return $this->getValue(['parameters', 'preserveTimestamp']);
     }
 
     public function getIncludeWorkspaceSchemas(): array
     {
-        return $this->getArrayValue(['parameters', 'preserveTimestamp']);
+        return (array) $this->getValue(['parameters', 'preserveTimestamp']);
     }
 
     public function preserveTimestamp(): bool
