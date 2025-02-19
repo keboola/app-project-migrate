@@ -58,7 +58,7 @@ class Migrate
 
     private bool $isSourceByodb;
 
-    private string $sourceByodb;
+    private ?string $sourceByodb;
 
     private array $includeWorkspaceSchemas;
 
