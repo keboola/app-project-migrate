@@ -78,4 +78,24 @@ class Config extends BaseConfig
     {
         return $this->getValue(['parameters', 'skipRegionValidation']);
     }
+
+    public function isSourceByodb(): bool
+    {
+        return $this->getValue(['parameters', 'preserveTimestamp']);
+    }
+
+    public function sourceByodb(): string
+    {
+        return $this->getStringValue(['parameters', 'preserveTimestamp']);
+    }
+
+    public function getIncludeWorkspaceSchemas(): array
+    {
+        return $this->getArrayValue(['parameters', 'preserveTimestamp']);
+    }
+
+    public function preserveTimestamp(): bool
+    {
+        return $this->getValue(['parameters', 'preserveTimestamp']);
+    }
 }
