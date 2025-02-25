@@ -149,4 +149,47 @@ class ConfigTest extends TestCase
 
         $this->assertFalse($config->shouldSkipRegionValidation());
     }
+
+    public function testAdditionalMigrationParametersSapiMode(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'dataMode' => 'sapi',
+                    'preserveTimestamp' => true,
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $this->assertTrue($config->preserveTimestamp());
+    }
+
+    public function testAdditionalMigrationParametersDbMode(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'dataMode' => 'database',
+                    'isSourceByodb' => true,
+                    'sourceByodb'=> 'test',
+                    'includeWorkspaceSchemas' => ['workspace1', 'workspace2'],
+                    'db' => [
+                        'host' => 'host',
+                        'username' => 'username',
+                        '#password' => 'password',
+                        'warehouse' => 'warehouse',
+                    ],
+                ],
+            ],
+            new ConfigDefinition()
+        );
+
+        $this->assertEquals(2, count($config->getIncludeWorkspaceSchemas()));
+        $this->assertEquals('test', $config->getSourceByodb());
+    }
 }

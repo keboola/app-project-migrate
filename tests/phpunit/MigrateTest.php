@@ -98,6 +98,10 @@ class MigrateTest extends TestCase
                         'sourceKbcUrl' => $sourceProjectUrl,
                         '#sourceKbcToken' => $sourceProjectToken,
                         'dryRun' => false,
+                        'isSourceByodb' => false,
+                        'sourceByodb' => '',
+                        'includeWorkspaceSchemas' => [],
+                        'preserveTimestamp' => false,
                     ],
                 ],
             ];

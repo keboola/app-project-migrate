@@ -56,6 +56,14 @@ class Migrate
 
     private bool $skipRegionValidation;
 
+    private bool $isSourceByodb;
+
+    private string $sourceByodb;
+
+    private array $includeWorkspaceSchemas;
+
+    private bool $preserveTimestamp;
+
     public const OBSOLETE_COMPONENTS = [
         'orchestrator',
         'gooddata-writer',
@@ -102,6 +110,10 @@ class Migrate
         $this->migrateNotifications = $config->shouldMigrateNotifications();
         $this->migrateStructureOnly = $config->shouldMigrateStructureOnly();
         $this->skipRegionValidation = $config->shouldSkipRegionValidation();
+        $this->isSourceByodb = $config->isSourceByodb();
+        $this->sourceByodb = $config->getSourceByodb();
+        $this->includeWorkspaceSchemas = $config->getIncludeWorkspaceSchemas();
+        $this->preserveTimestamp = $config->preserveTimestamp();
         $this->logger = $logger;
         $this->migrateDataMode = $config->getMigrateDataMode();
         $this->db = $config->getDb();
@@ -288,6 +300,10 @@ class Migrate
             'sourceKbcUrl' => $this->sourceProjectUrl,
             '#sourceKbcToken' => $this->sourceProjectToken,
             'dryRun' => $this->dryRun,
+            'isSourceByodb' => $this->isSourceByodb,
+            'sourceByodb' => $this->sourceByodb,
+            'includeWorkspaceSchemas' => $this->includeWorkspaceSchemas,
+            'preserveTimestamp' => $this->preserveTimestamp,
         ];
 
         if ($this->migrateDataMode === 'database' && !empty($this->db)) {
