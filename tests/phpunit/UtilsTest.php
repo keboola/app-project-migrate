@@ -48,28 +48,87 @@ class UtilsTest extends TestCase
         yield 'non-empty component configs' => [
             [
                 [
-                    [
-                        'id' => 'keboola.ex-db-mssql',
-                        'type' => 'extractor',
-                        'name' => 'Microsoft SQL Server',
-                        'configurations' => [
-                            [
-                                'id' => '672381894',
-                                'created' => '2021-02-02T15:04:12+0100',
-                                'creatorToken' => [
-                                    'id' => 157401,
-                                    'description' => 'ondrej.jodas@keboola.com',
-                                ],
-                                'version' => 1,
-                                'changeDescription' => 'Configuration created',
-                                'isDeleted' => false,
+                    'id' => 'keboola.ex-db-mssql',
+                    'type' => 'extractor',
+                    'name' => 'Microsoft SQL Server',
+                    'configurations' => [
+                        [
+                            'id' => '672381894',
+                            'created' => '2021-02-02T15:04:12+0100',
+                            'creatorToken' => [
+                                'id' => 157401,
+                                'description' => 'ondrej.jodas@keboola.com',
                             ],
+                            'version' => 1,
+                            'changeDescription' => 'Configuration created',
+                            'isDeleted' => false,
                         ],
                     ],
                 ],
             ],
             [],
             false,
+        ];
+
+        yield 'only contains migration configs' => [
+            [
+                [
+                    'id' => 'keboola.app-project-migrate-large-tables',
+                    'type' => 'app',
+                    'name' => 'Migration App',
+                    'configurations' => [
+                        [
+                            'id' => '672381894',
+                            'created' => '2021-02-02T15:04:12+0100',
+                            'creatorToken' => [
+                                'id' => 157401,
+                                'description' => 'ondrej.jodas@keboola.com',
+                            ],
+                            'version' => 1,
+                            'changeDescription' => 'Configuration created',
+                            'isDeleted' => false,
+                        ],
+                    ],
+                ],
+                [
+                    'id' => 'keboola.app-project-migrate',
+                    'type' => 'app',
+                    'name' => 'Migrate Tables App',
+                    'configurations' => [
+                        [
+                            'id' => '672381894',
+                            'created' => '2021-02-02T15:04:12+0100',
+                            'creatorToken' => [
+                                'id' => 157401,
+                                'description' => 'ondrej.jodas@keboola.com',
+                            ],
+                            'version' => 1,
+                            'changeDescription' => 'Configuration created',
+                            'isDeleted' => false,
+                        ],
+                    ],
+                ],
+                [
+                    'id' => 'keboola.orchestrator',
+                    'type' => 'app',
+                    'name' => 'Flow',
+                    'configurations' => [
+                        [
+                            'id' => '672381894',
+                            'created' => '2021-02-02T15:04:12+0100',
+                            'creatorToken' => [
+                                'id' => 157401,
+                                'description' => 'ondrej.jodas@keboola.com',
+                            ],
+                            'version' => 1,
+                            'changeDescription' => 'Configuration created',
+                            'isDeleted' => false,
+                        ],
+                    ],
+                ],
+            ],
+            [],
+            true,
         ];
 
         yield 'non-empty storage buckets' => [
