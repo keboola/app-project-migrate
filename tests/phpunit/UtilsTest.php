@@ -108,6 +108,24 @@ class UtilsTest extends TestCase
                         ],
                     ],
                 ],
+                [
+                    'id' => 'keboola.orchestrator',
+                    'type' => 'app',
+                    'name' => 'Flow',
+                    'configurations' => [
+                        [
+                            'id' => '672381894',
+                            'created' => '2021-02-02T15:04:12+0100',
+                            'creatorToken' => [
+                                'id' => 157401,
+                                'description' => 'ondrej.jodas@keboola.com',
+                            ],
+                            'version' => 1,
+                            'changeDescription' => 'Configuration created',
+                            'isDeleted' => false,
+                        ],
+                    ],
+                ],
             ],
             [],
             true,

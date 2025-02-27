@@ -14,7 +14,11 @@ use Symfony\Component\Validator\Validation;
 
 class Utils
 {
-    private const IGNORED_COMPONENTS = ['keboola.app-project-migrate-large-tables', 'keboola.app-project-migrate'];
+    private const IGNORED_COMPONENTS = [
+        'keboola.app-project-migrate-large-tables',
+        'keboola.app-project-migrate',
+        'keboola.orchestrator',
+    ];
 
     public static function checkIfProjectEmpty(Client $client, Components $componentsClient): bool
     {
