@@ -14,11 +14,21 @@ use Symfony\Component\Validator\Validation;
 
 class Utils
 {
+    private const IGNORED_COMPONENTS = [
+        'keboola.app-project-migrate-large-tables',
+        'keboola.app-project-migrate',
+        'keboola.orchestrator',
+    ];
+
     public static function checkIfProjectEmpty(Client $client, Components $componentsClient): bool
     {
         $listOfComponents = $componentsClient->listComponents();
         if (!empty($listOfComponents)) {
-            return false;
+            foreach ($listOfComponents as $component) {
+                if (!in_array($component['id'], self::IGNORED_COMPONENTS)) {
+                    return false;
+                }
+            }
         }
 
         $listOfBuckets = $client->listBuckets();
