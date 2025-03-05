@@ -162,6 +162,7 @@ class Migrate
             [
                 'parameters' => [
                     'backupId' => $backupId,
+                    'skipRegionValidation' => $this->skipRegionValidation,
                 ],
             ],
         );
