@@ -47,25 +47,47 @@ curl -X POST \
     "parameters": {
       "sourceKbcUrl": "https://connection.keboola.com",
       "#sourceKbcToken": "SOURCE_PROJECT_SAPI_TOKEN",
+      "directDataMigration": true,
       "dryRun": false,
+      "dataMode": "sapi",
       "directDataMigration": true,
       "migrateSecrets": false,
+      "migratePermanentFiles": false,
+      "migrateTriggers": true,
+      "migrateNotifications": true,
+      "migrateStructureOnly": true,
+      "migrateSecrets": true,
+      "migrateBuckets": true,
+      "migrateTables": true,
+      "migrateProjectMetadata": true,
+      "skipRegionValidation": true,
       "#sourceManageToken": "SOURCE_MANAGE_API_TOKEN"
     }
   }
 }'
 ```
 
-### Queue v1 (deprecated)
+#### Parameters Description
 
-```shell
-curl -X POST \
- https://docker-runner.eu-central-1.keboola.com/docker/keboola.app-project-migrate/run \
- -H 'X-StorageApi-Token: DEST_PROJECT_SAPI_TOKEN' \
- -d '{"configData": {"parameters": {"sourceKbcUrl": "https://connection.keboola.com", "#sourceKbcToken":"SOURCE_PROJECT_SAPI_TOKEN"}}}'
-```
+The request contains the following parameters:
 
-### Dry-run mode
+- `sourceKbcUrl`: URL of the source Keboola Connection project
+- `#sourceKbcToken`: Token for accessing the source project
+- `#sourceManageToken`: Manage API token with super admin rights from the source stack
+- `dataMode`: "sapi" - Data transfer mode via Storage API
+- `directDataMigration`: Enables direct data migration between projects
+- `dryRun`: When set to true, performs a test run without actual migration
+- `migrateSecrets`: Enables migration of secrets and passwords
+- `migratePermanentFiles`: Controls migration of permanent files
+- `migrateTriggers`: Enables migration of triggers
+- `migrateNotifications`: Enables migration of notifications
+- `migrateStructureOnly`: When true, migrates only the project structure
+- `migrateBuckets`: Enables migration of buckets
+- `migrateTables`: Enables migration of tables
+- `migrateProjectMetadata`: Enables migration of project metadata
+- `skipRegionValidation`: Skips validation of regions during migration
+
+#### Dry-run mode
 
 If you want to save some time and check that everything is set correctly, you can use the dry-run
 mode. Just set `configData.parameters.dryRun` on `true` in your request payload.

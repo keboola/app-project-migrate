@@ -79,6 +79,27 @@ class Config extends BaseConfig
         return $this->getValue(['parameters', 'skipRegionValidation']);
     }
 
+    public function shouldMigrateBuckets(): bool
+    {
+        /** @var bool $value */
+        $value = $this->getValue(['parameters', 'migrateBuckets']);
+        return $value;
+    }
+
+    public function shouldMigrateTables(): bool
+    {
+        /** @var bool $value */
+        $value = $this->getValue(['parameters', 'migrateTables']);
+        return $value;
+    }
+
+    public function shouldMigrateProjectMetadata(): bool
+    {
+        /** @var bool $value */
+        $value = $this->getValue(['parameters', 'migrateProjectMetadata']);
+        return $value;
+    }
+
     public function isSourceByodb(): bool
     {
         return $this->getValue(['parameters', 'isSourceByodb']);

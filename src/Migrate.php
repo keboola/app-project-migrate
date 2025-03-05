@@ -52,6 +52,12 @@ class Migrate
 
     private bool $migrateNotifications;
 
+    private bool $migrateBuckets;
+
+    private bool $migrateTables;
+
+    private bool $migrateProjectMetadata;
+
     private bool $migrateStructureOnly;
 
     private bool $skipRegionValidation;
@@ -109,6 +115,9 @@ class Migrate
         $this->migrateTriggers = $config->shouldMigrateTriggers();
         $this->migrateNotifications = $config->shouldMigrateNotifications();
         $this->migrateStructureOnly = $config->shouldMigrateStructureOnly();
+        $this->migrateBuckets = $config->shouldMigrateBuckets();
+        $this->migrateTables = $config->shouldMigrateTables();
+        $this->migrateProjectMetadata = $config->shouldMigrateProjectMetadata();
         $this->skipRegionValidation = $config->shouldSkipRegionValidation();
         $this->isSourceByodb = $config->isSourceByodb();
         $this->sourceByodb = $config->getSourceByodb();
@@ -132,7 +141,11 @@ class Migrate
                 $this->migrateSecrets();
             }
 
-            if ($this->directDataMigration && !$this->migrateStructureOnly) {
+            if ($this->migrateBuckets &&
+                $this->migrateTables &&
+                $this->directDataMigration &&
+                !$this->migrateStructureOnly
+            ) {
                 $this->migrateDataOfTablesDirectly();
             }
 
@@ -376,6 +389,9 @@ class Migrate
                     'restorePermanentFiles' => $this->migratePermanentFiles,
                     'restoreTriggers' => $this->migrateTriggers,
                     'restoreNotifications' => $this->migrateNotifications,
+                    'restoreBuckets' => $this->migrateBuckets,
+                    'restoreTables' => $this->migrateTables,
+                    'restoreProjectMetadata' => $this->migrateProjectMetadata,
                 ],
             ];
         } elseif (isset($restoreCredentials['credentials']['connectionString'])) {
@@ -390,6 +406,9 @@ class Migrate
                     'restorePermanentFiles' => $this->migratePermanentFiles,
                     'restoreTriggers' => $this->migrateTriggers,
                     'restoreNotifications' => $this->migrateNotifications,
+                    'restoreBuckets' => $this->migrateBuckets,
+                    'restoreTables' => $this->migrateTables,
+                    'restoreProjectMetadata' => $this->migrateProjectMetadata,
                 ],
             ];
         } elseif (isset($restoreCredentials['credentials']['accessToken'])) {
@@ -410,6 +429,9 @@ class Migrate
                     'restorePermanentFiles' => $this->migratePermanentFiles,
                     'restoreTriggers' => $this->migrateTriggers,
                     'restoreNotifications' => $this->migrateNotifications,
+                    'restoreBuckets' => $this->migrateBuckets,
+                    'restoreTables' => $this->migrateTables,
+                    'restoreProjectMetadata' => $this->migrateProjectMetadata,
                 ],
             ];
         } else {

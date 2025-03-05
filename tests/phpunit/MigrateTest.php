@@ -40,7 +40,10 @@ class MigrateTest extends TestCase
         bool $migrateStructureOnly,
         bool $restorePermanentFiles,
         bool $restoreTriggers,
-        bool $restoreNotifications
+        bool $restoreNotifications,
+        bool $restoreBuckets,
+        bool $restoreTables,
+        bool $restoreProjectMetadata
     ): void {
         /** @var JobRunner&MockObject $sourceJobRunnerMock */
         $sourceJobRunnerMock = $this->createMock($jobRunnerClass);
@@ -82,6 +85,9 @@ class MigrateTest extends TestCase
                             'restorePermanentFiles' => $restorePermanentFiles,
                             'restoreTriggers' => $restoreTriggers,
                             'restoreNotifications' => $restoreNotifications,
+                            'restoreBuckets' => $restoreBuckets,
+                            'restoreTables' => $restoreTables,
+                            'restoreProjectMetadata' => $restoreProjectMetadata,
                         ]
                     ),
                 ],
@@ -89,7 +95,7 @@ class MigrateTest extends TestCase
         ];
 
         // migrate data of tables
-        if ($migrateDataOfTablesDirectly) {
+        if ($migrateDataOfTablesDirectly && $restoreBuckets && $restoreTables) {
             $destinationMockJobs[] = [
                 Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
                 [
@@ -150,6 +156,9 @@ class MigrateTest extends TestCase
                     'migratePermanentFiles' => $restorePermanentFiles,
                     'migrateTriggers' => $restoreTriggers,
                     'migrateNotifications' => $restoreNotifications,
+                    'migrateBuckets' => $restoreBuckets,
+                    'migrateTables' => $restoreTables,
+                    'migrateProjectMetadata' => $restoreProjectMetadata,
                 ],
             ],
             new ConfigDefinition()
@@ -1479,6 +1488,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => true,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrate-ABS-syrup' => [
@@ -1496,6 +1508,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => true,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrate-GCS-syrup' => [
@@ -1519,6 +1534,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => true,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrate-S3-queuev2' => [
@@ -1538,6 +1556,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => true,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrate-ABS-queuev2' => [
@@ -1555,6 +1576,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => true,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrate-GCS-queuev2' => [
@@ -1578,6 +1602,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => true,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrateABS-queuev2-data-directly' => [
@@ -1595,6 +1622,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => true,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrate-ABS-queuev2-structure-only' => [
@@ -1612,6 +1642,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => true,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrate-GCS-queuev2-structure-only' => [
@@ -1635,6 +1668,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => true,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrate-secrets-false' => [
@@ -1652,6 +1688,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => true,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrate-permanentFiles-false' => [
@@ -1669,6 +1708,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => false,
             'restoreTriggers' => true,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrate-triggers-false' => [
@@ -1686,6 +1728,9 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => false,
             'restoreNotifications' => true,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
         ];
 
         yield 'migrate-notifications-false' => [
@@ -1703,6 +1748,69 @@ class MigrateTest extends TestCase
             'restorePermanentFiles' => true,
             'restoreTriggers' => true,
             'restoreNotifications' => false,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
+        ];
+
+        yield 'migrate-buckets-false' => [
+            'expectedCredentialsData' => [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => true,
+            'expectsRunJobs' => 2,
+            'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => false,
+            'restoreBuckets' => false,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => true,
+        ];
+
+        yield 'migrate-tables-false' => [
+            'expectedCredentialsData' => [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => true,
+            'expectsRunJobs' => 2,
+            'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => false,
+            'restoreBuckets' => true,
+            'restoreTables' => false,
+            'restoreProjectMetadata' => true,
+        ];
+
+        yield 'migrate-projectMetadata-false' => [
+            'expectedCredentialsData' => [
+                'abs' => [
+                    'container' => 'abcdefgh',
+                    '#connectionString' => 'https://testConnectionString',
+                ],
+            ],
+            'jobRunnerClass' => QueueV2JobRunner::class,
+            'migrateDataOfTablesDirectly' => true,
+            'expectsRunJobs' => 3,
+            'restoreConfigs' => true,
+            'migrateStructureOnly' => false,
+            'restorePermanentFiles' => true,
+            'restoreTriggers' => true,
+            'restoreNotifications' => false,
+            'restoreBuckets' => true,
+            'restoreTables' => true,
+            'restoreProjectMetadata' => false,
         ];
     }
 }
