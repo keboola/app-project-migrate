@@ -76,11 +76,15 @@ class Migrate
         'keboola.wr-db-snowflake-gcs-s3', // gcp with s3
     ];
 
+    public const ORCHESTRATOR_COMPONENT_ID = 'keboola.orchestrator';
+
     private string $migrateDataMode;
 
     private array $db;
 
     private array $migratedSnowflakeWorkspaces = [];
+
+    private bool $disableOrchestrations;
 
     public function __construct(
         Config $config,
@@ -114,6 +118,7 @@ class Migrate
         $this->sourceByodb = $config->getSourceByodb();
         $this->includeWorkspaceSchemas = $config->getIncludeWorkspaceSchemas();
         $this->preserveTimestamp = $config->preserveTimestamp();
+        $this->disableOrchestrations = $config->disableOrchestrations();
         $this->logger = $logger;
         $this->migrateDataMode = $config->getMigrateDataMode();
         $this->db = $config->getDb();
@@ -251,6 +256,12 @@ class Migrate
                             (string) $defaultSourceBranch['id'],
                             $this->dryRun
                         );
+                    if ($this->disableOrchestrations && $component['id'] == self::ORCHESTRATOR_COMPONENT_ID) {
+                        $destComponentsClient = new Components($this->destProjectStorageClient);
+                        $orchestration = $destComponentsClient->getConfiguration($component['id'], $config['id']);
+                        $orchestration->setIsDisabled(true);
+                        $destComponentsClient->updateConfiguration($orchestration);
+                    }
                 } catch (EncryptionClientException $e) {
                     $this->logger->error(
                         sprintf(

@@ -38,6 +38,7 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->scalarNode('sourceByodb')->end()
                 ->arrayNode('includeWorkspaceSchemas')->prototype('scalar')->end()->end()
                 ->booleanNode('preserveTimestamp')->defaultFalse()->end()
+                ->booleanNode('disableOrchestrations')->defaultFalse()->end()
                 ->arrayNode('db')
                     ->children()
                         ->scalarNode('host')->isRequired()->cannotBeEmpty()->end()
