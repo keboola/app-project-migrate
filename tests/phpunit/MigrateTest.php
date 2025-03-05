@@ -1291,8 +1291,10 @@ class MigrateTest extends TestCase
         ];
     }
 
-    private function mockAddMethodGenerateS3ReadCredentials(MockObject $mockObject): void
-    {
+    private function mockAddMethodGenerateS3ReadCredentials(
+        MockObject $mockObject,
+        bool $skipRegionValidation = false
+    ): void {
         $mockObject->expects($this->once())
             ->method('runSyncAction')
             ->with(
@@ -1301,6 +1303,7 @@ class MigrateTest extends TestCase
                 [
                     'parameters' => [
                         'backupId' => '123',
+                        'skipRegionValidation' => $skipRegionValidation,
                     ],
                 ]
             )
@@ -1330,6 +1333,7 @@ class MigrateTest extends TestCase
                 [
                     'parameters' => [
                         'backupId' => '123',
+                        'skipRegionValidation' => false,
                     ],
                 ]
             )
@@ -1355,6 +1359,7 @@ class MigrateTest extends TestCase
                 [
                     'parameters' => [
                         'backupId' => '123',
+                        'skipRegionValidation' => false,
                     ],
                 ]
             )
@@ -1403,7 +1408,7 @@ class MigrateTest extends TestCase
         $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
 
         // generate credentials
-        $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
+        $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock, true);
         $this->mockAddMethodBackupProject(
             $sourceJobRunnerMock,
             [
