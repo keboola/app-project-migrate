@@ -99,4 +99,9 @@ class Config extends BaseConfig
     {
         return $this->getValue(['parameters', 'preserveTimestamp']);
     }
+
+    public function disableOrchestrations(): bool
+    {
+        return $this->getValue(['parameters', 'disableOrchestrations']);
+    }
 }
