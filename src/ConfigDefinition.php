@@ -47,6 +47,7 @@ class ConfigDefinition extends BaseConfigDefinition
                         ->scalarNode('username')->isRequired()->cannotBeEmpty()->end()
                         ->scalarNode('#password')->isRequired()->cannotBeEmpty()->end()
                         ->scalarNode('warehouse')->isRequired()->cannotBeEmpty()->end()
+                        ->enumNode('warehouse_size')->values(['SMALL', 'MEDIUM', 'LARGE'])->defaultValue('SMALL')->end()
                     ->end()
                 ->end()
                 ->scalarNode('#sourceManageToken')->defaultNull()->end()
