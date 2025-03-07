@@ -64,6 +64,8 @@ class Migrate
 
     private bool $isSourceByodb;
 
+    private bool $checkEmptyProject;
+
     private string $sourceByodb;
 
     private array $includeWorkspaceSchemas;
@@ -123,6 +125,7 @@ class Migrate
         $this->sourceByodb = $config->getSourceByodb();
         $this->includeWorkspaceSchemas = $config->getIncludeWorkspaceSchemas();
         $this->preserveTimestamp = $config->preserveTimestamp();
+        $this->checkEmptyProject = $config->checkEmptyProject();
         $this->logger = $logger;
         $this->migrateDataMode = $config->getMigrateDataMode();
         $this->db = $config->getDb();
@@ -393,6 +396,7 @@ class Migrate
                     'restoreBuckets' => $this->migrateBuckets,
                     'restoreTables' => $this->migrateTables,
                     'restoreProjectMetadata' => $this->migrateProjectMetadata,
+                    'checkEmptyProject' => $this->checkEmptyProject,
                 ],
             ];
         } elseif (isset($restoreCredentials['credentials']['connectionString'])) {
@@ -410,6 +414,7 @@ class Migrate
                     'restoreBuckets' => $this->migrateBuckets,
                     'restoreTables' => $this->migrateTables,
                     'restoreProjectMetadata' => $this->migrateProjectMetadata,
+                    'checkEmptyProject' => $this->checkEmptyProject,
                 ],
             ];
         } elseif (isset($restoreCredentials['credentials']['accessToken'])) {
@@ -433,6 +438,7 @@ class Migrate
                     'restoreBuckets' => $this->migrateBuckets,
                     'restoreTables' => $this->migrateTables,
                     'restoreProjectMetadata' => $this->migrateProjectMetadata,
+                    'checkEmptyProject' => $this->checkEmptyProject,
                 ],
             ];
         } else {

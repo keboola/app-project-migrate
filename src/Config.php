@@ -120,4 +120,9 @@ class Config extends BaseConfig
     {
         return $this->getValue(['parameters', 'preserveTimestamp']);
     }
+
+    public function checkEmptyProject(): bool
+    {
+        return $this->getValue(['parameters', 'checkEmptyProject']);
+    }
 }

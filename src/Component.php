@@ -48,7 +48,9 @@ class Component extends BaseComponent
 
         Utils::checkMigrationApps($sourceProjectClient, $destProjectClient);
 
-        if (!Utils::checkIfProjectEmpty($destProjectClient, new Components($destProjectClient))) {
+        if ($config->checkEmptyProject() &&
+            !Utils::checkIfProjectEmpty($destProjectClient, new Components($destProjectClient))
+        ) {
             throw new UserException(
                 sprintf(
                     'Destination project "%s" is not empty.',
