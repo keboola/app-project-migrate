@@ -125,4 +125,31 @@ class Config extends BaseConfig
     {
         return $this->getValue(['parameters', 'checkEmptyProject']);
     }
+
+    public function getAppBackupTag(): ?string
+    {
+        $value =  $this->getValue(['parameters', 'componentsDevTag', 'backup'], false);
+        if (!$value) {
+            return null;
+        }
+        return $value;
+    }
+
+    public function getAppRestoreTag(): ?string
+    {
+        $value =  $this->getValue(['parameters', 'componentsDevTag', 'restore'], false);
+        if (!$value) {
+            return null;
+        }
+        return $value;
+    }
+
+    public function getAppTablesDataTag(): ?string
+    {
+        $value =  $this->getValue(['parameters', 'componentsDevTag', 'tables-data'], false);
+        if (!$value) {
+            return null;
+        }
+        return $value;
+    }
 }

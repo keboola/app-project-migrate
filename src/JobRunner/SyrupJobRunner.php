@@ -8,7 +8,7 @@ use Keboola\Syrup\Client;
 
 class SyrupJobRunner extends JobRunner
 {
-    public function runJob(string $componentId, array $data): array
+    public function runJob(string $componentId, array $data, ?string $tag = null): array
     {
         return $this->getSyrupClient()->runJob(
             $componentId,
@@ -16,7 +16,7 @@ class SyrupJobRunner extends JobRunner
         );
     }
 
-    public function runSyncAction(string $componentId, string $action, array $data): array
+    public function runSyncAction(string $componentId, string $action, array $data, ?string $tag = null): array
     {
         return $this->getSyrupClient(1)->runSyncAction(
             $this->getServiceUrl('docker-runner'),
