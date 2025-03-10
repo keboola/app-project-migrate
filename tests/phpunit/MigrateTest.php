@@ -88,6 +88,7 @@ class MigrateTest extends TestCase
                             'restoreBuckets' => $restoreBuckets,
                             'restoreTables' => $restoreTables,
                             'restoreProjectMetadata' => $restoreProjectMetadata,
+                            'checkEmptyProject' => true,
                         ]
                     ),
                 ],

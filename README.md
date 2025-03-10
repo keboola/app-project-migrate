@@ -59,6 +59,7 @@ curl -X POST \
       "migrateTables": true,
       "migrateProjectMetadata": true,
       "skipRegionValidation": true,
+      "checkEmptyProject": true,
       "#sourceManageToken": "SOURCE_MANAGE_API_TOKEN"
     }
   }
@@ -83,6 +84,7 @@ The request contains the following parameters:
 - `migrateBuckets`: Enables migration of buckets
 - `migrateTables`: Enables migration of tables
 - `migrateProjectMetadata`: Enables migration of project metadata
+- `checkEmptyProject`: Check if the destination project is empty before migration
 - `skipRegionValidation`: Skips validation of regions during migration
 
 #### Dry-run mode
