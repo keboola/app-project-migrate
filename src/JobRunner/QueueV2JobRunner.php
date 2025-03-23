@@ -13,9 +13,16 @@ class QueueV2JobRunner extends JobRunner
 {
     private const MAX_DELAY = 10;
 
-    public function runJob(string $componentId, array $data): array
+    public function runJob(string $componentId, array $data, ?string $tag = null): array
     {
-        $jobData = new JobData($componentId, null, $data);
+        $jobData = new JobData(
+            $componentId,
+            null,
+            $data,
+            'run',
+            [],
+            $tag
+        );
         $response = $this->getQueueClient()->createJob($jobData);
 
         $attempt = 0;
@@ -30,11 +37,11 @@ class QueueV2JobRunner extends JobRunner
         return $job;
     }
 
-    public function runSyncAction(string $componentId, string $action, array $data): array
+    public function runSyncAction(string $componentId, string $action, array $data, ?string $tag = null): array
     {
         $client = $this->getSyncActionsClient();
 
-        $data = new ActionData($componentId, $action, $data);
+        $data = new ActionData($componentId, $action, $data, $tag);
 
         return $client->callAction($data);
     }

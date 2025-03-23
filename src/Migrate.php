@@ -72,6 +72,12 @@ class Migrate
 
     private bool $preserveTimestamp;
 
+    private ?string $appBackupTag = null;
+
+    private ?string $appRestoreTag = null;
+
+    private ?string $appTablesDataTag = null;
+
     public const OBSOLETE_COMPONENTS = [
         'orchestrator',
         'gooddata-writer',
@@ -129,6 +135,9 @@ class Migrate
         $this->logger = $logger;
         $this->migrateDataMode = $config->getMigrateDataMode();
         $this->db = $config->getDb();
+        $this->appBackupTag = $config->getAppBackupTag();
+        $this->appRestoreTag = $config->getAppRestoreTag();
+        $this->appTablesDataTag = $config->getAppTablesDataTag();
     }
 
     public function run(): void
@@ -181,6 +190,7 @@ class Migrate
                     'skipRegionValidation' => $this->skipRegionValidation,
                 ],
             ],
+            $this->appBackupTag,
         );
     }
 
@@ -197,6 +207,7 @@ class Migrate
                     'skipRegionValidation' => $this->skipRegionValidation,
                 ],
             ],
+            $this->appBackupTag,
         );
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
             throw new UserException('Project snapshot create error: ' . $job['result']['message']);
@@ -214,6 +225,7 @@ class Migrate
         $job = $this->destJobRunner->runJob(
             Config::PROJECT_RESTORE_COMPONENT,
             $configData,
+            $this->appRestoreTag,
         );
 
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
@@ -331,7 +343,8 @@ class Migrate
             Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
             [
                 'parameters' => $parameters,
-            ]
+            ],
+            $this->appTablesDataTag,
         );
 
         $this->logger->info('Data of tables has been migrated.');
