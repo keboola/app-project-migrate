@@ -6,6 +6,7 @@ namespace Keboola\AppProjectMigrate;
 
 use Keboola\Component\Config\BaseConfigDefinition;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 
 class ConfigDefinition extends BaseConfigDefinition
 {
@@ -50,10 +51,24 @@ class ConfigDefinition extends BaseConfigDefinition
                     ->end()
                 ->end()
                 ->arrayNode('db')
+                    ->validate()->always(function ($v) {
+                        if (!empty($v['#privateKey']) && !empty($v['#password'])) {
+                            throw new InvalidConfigurationException(
+                                'You can use either privateKey or password, not both.',
+                            );
+                        }
+                        if (empty($v['#privateKey']) && empty($v['#password'])) {
+                            throw new InvalidConfigurationException(
+                                'You must provide either privateKey or password.',
+                            );
+                        }
+                        return $v;
+                    })->end()
                     ->children()
                         ->scalarNode('host')->isRequired()->cannotBeEmpty()->end()
                         ->scalarNode('username')->isRequired()->cannotBeEmpty()->end()
-                        ->scalarNode('#password')->isRequired()->cannotBeEmpty()->end()
+                        ->scalarNode('#password')->end()
+                        ->scalarNode('#keyPair')->end()
                         ->scalarNode('warehouse')->isRequired()->cannotBeEmpty()->end()
                         ->enumNode('warehouse_size')->values(['SMALL', 'MEDIUM', 'LARGE'])->defaultValue('SMALL')->end()
                     ->end()
