@@ -192,4 +192,81 @@ class ConfigTest extends TestCase
         $this->assertEquals(2, count($config->getIncludeWorkspaceSchemas()));
         $this->assertEquals('test', $config->getSourceByodb());
     }
+
+    public function testDbWithPrivateKey(): void
+    {
+        self::expectNotToPerformAssertions();
+
+        new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'dataMode' => 'database',
+                    'isSourceByodb' => true,
+                    'sourceByodb'=> 'test',
+                    'includeWorkspaceSchemas' => ['workspace1', 'workspace2'],
+                    'db' => [
+                        'host' => 'host',
+                        'username' => 'username',
+                        '#privateKey' => 'SOME_PRIVATE_KEY',
+                        'warehouse' => 'warehouse',
+                    ],
+                ],
+            ],
+            new ConfigDefinition()
+        );
+    }
+
+    public function testDbPrivateKeyAndPasswordInvalid(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage('You can use either privateKey or password, not both.');
+
+        new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'dataMode' => 'database',
+                    'isSourceByodb' => true,
+                    'sourceByodb'=> 'test',
+                    'includeWorkspaceSchemas' => ['workspace1', 'workspace2'],
+                    'db' => [
+                        'host' => 'host',
+                        'username' => 'username',
+                        '#password' => 'somePassw0rd',
+                        '#privateKey' => 'SOME_PRIVATE_KEY',
+                        'warehouse' => 'warehouse',
+                    ],
+                ],
+            ],
+            new ConfigDefinition()
+        );
+    }
+
+    public function testDbPrivateKeyAndPasswordMustBeSpecified(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage('You must provide either privateKey or password.');
+
+        new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'dataMode' => 'database',
+                    'isSourceByodb' => true,
+                    'sourceByodb'=> 'test',
+                    'includeWorkspaceSchemas' => ['workspace1', 'workspace2'],
+                    'db' => [
+                        'host' => 'host',
+                        'username' => 'username',
+                        'warehouse' => 'warehouse',
+                    ],
+                ],
+            ],
+            new ConfigDefinition()
+        );
+    }
 }
