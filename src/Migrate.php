@@ -18,65 +18,17 @@ use Psr\Log\LoggerInterface;
 
 class Migrate
 {
+    private Config $config;
     private const JOB_STATUS_SUCCESS = 'success';
-
     private JobRunner $sourceJobRunner;
-
     private JobRunner $destJobRunner;
-
     private StorageClient $sourceProjectStorageClient;
-
     private StorageClient $destProjectStorageClient;
-
     private MigrationsClient $migrationsClient;
-
-    private string $sourceProjectUrl;
-
-    private string $sourceProjectToken;
-
     private string $destinationProjectUrl;
-
     private string $destinationProjectToken;
-
     private LoggerInterface $logger;
-
-    private bool $dryRun;
-
-    private bool $directDataMigration;
-
-    private bool $migrateSecrets;
-
-    private bool $migratePermanentFiles;
-
-    private bool $migrateTriggers;
-
-    private bool $migrateNotifications;
-
-    private bool $migrateBuckets;
-
-    private bool $migrateTables;
-
-    private bool $migrateProjectMetadata;
-
-    private bool $migrateStructureOnly;
-
-    private bool $skipRegionValidation;
-
-    private bool $isSourceByodb;
-
-    private bool $checkEmptyProject;
-
-    private string $sourceByodb;
-
-    private array $includeWorkspaceSchemas;
-
-    private bool $preserveTimestamp;
-
-    private ?string $appBackupTag = null;
-
-    private ?string $appRestoreTag = null;
-
-    private ?string $appTablesDataTag = null;
+    private array $migratedSnowflakeWorkspaces = [];
 
     public const OBSOLETE_COMPONENTS = [
         'orchestrator',
@@ -90,12 +42,6 @@ class Migrate
         'keboola.wr-db-snowflake-gcs-s3', // gcp with s3
     ];
 
-    private string $migrateDataMode;
-
-    private array $db;
-
-    private array $migratedSnowflakeWorkspaces = [];
-
     public function __construct(
         Config $config,
         JobRunner $sourceJobRunner,
@@ -107,37 +53,15 @@ class Migrate
         string $destinationProjectToken,
         LoggerInterface $logger
     ) {
+        $this->config = $config;
         $this->sourceJobRunner = $sourceJobRunner;
         $this->destJobRunner = $destJobRunner;
         $this->sourceProjectStorageClient = $sourceProjectStorageClient;
         $this->destProjectStorageClient = $destProjectStorageClient;
         $this->migrationsClient = $migrationsClient;
-        $this->sourceProjectUrl = $config->getSourceProjectUrl();
-        $this->sourceProjectToken = $config->getSourceProjectToken();
         $this->destinationProjectUrl = $destinationProjectUrl;
         $this->destinationProjectToken = $destinationProjectToken;
-        $this->dryRun = $config->isDryRun();
-        $this->directDataMigration = $config->directDataMigration();
-        $this->migrateSecrets = $config->shouldMigrateSecrets();
-        $this->migratePermanentFiles = $config->shouldMigratePermanentFiles();
-        $this->migrateTriggers = $config->shouldMigrateTriggers();
-        $this->migrateNotifications = $config->shouldMigrateNotifications();
-        $this->migrateStructureOnly = $config->shouldMigrateStructureOnly();
-        $this->migrateBuckets = $config->shouldMigrateBuckets();
-        $this->migrateTables = $config->shouldMigrateTables();
-        $this->migrateProjectMetadata = $config->shouldMigrateProjectMetadata();
-        $this->skipRegionValidation = $config->shouldSkipRegionValidation();
-        $this->isSourceByodb = $config->isSourceByodb();
-        $this->sourceByodb = $config->getSourceByodb();
-        $this->includeWorkspaceSchemas = $config->getIncludeWorkspaceSchemas();
-        $this->preserveTimestamp = $config->preserveTimestamp();
-        $this->checkEmptyProject = $config->checkEmptyProject();
         $this->logger = $logger;
-        $this->migrateDataMode = $config->getMigrateDataMode();
-        $this->db = $config->getDb();
-        $this->appBackupTag = $config->getAppBackupTag();
-        $this->appRestoreTag = $config->getAppRestoreTag();
-        $this->appTablesDataTag = $config->getAppTablesDataTag();
     }
 
     public function run(): void
@@ -149,19 +73,19 @@ class Migrate
 
             $this->restoreDestinationProject($restoreCredentials);
 
-            if ($this->migrateSecrets) {
+            if ($this->config->shouldMigrateSecrets()) {
                 $this->migrateSecrets();
             }
 
-            if ($this->migrateBuckets &&
-                $this->migrateTables &&
-                $this->directDataMigration &&
-                !$this->migrateStructureOnly
+            if ($this->config->shouldMigrateBuckets() &&
+                $this->config->shouldMigrateTables() &&
+                $this->config->directDataMigration() &&
+                !$this->config->shouldMigrateStructureOnly()
             ) {
                 $this->migrateDataOfTablesDirectly();
             }
 
-            if (!$this->migrateSecrets) {
+            if (!$this->config->shouldMigrateSecrets()) {
                 // We want to migrate Snowflake writers only if we are not migrating secrets, because when migrating
                 // secrets, Snowflake writers will be migrated by the encryption-api.
                 $this->migrateSnowflakeWriters();
@@ -187,10 +111,10 @@ class Migrate
             [
                 'parameters' => [
                     'backupId' => $backupId,
-                    'skipRegionValidation' => $this->skipRegionValidation,
+                    'skipRegionValidation' => $this->config->shouldSkipRegionValidation(),
                 ],
             ],
-            $this->appBackupTag,
+            $this->config->getAppBackupTag(),
         );
     }
 
@@ -203,11 +127,12 @@ class Migrate
             [
                 'parameters' => [
                     'backupId' => $backupId,
-                    'exportStructureOnly' => $this->directDataMigration || $this->migrateStructureOnly,
-                    'skipRegionValidation' => $this->skipRegionValidation,
+                    'exportStructureOnly' => $this->config->directDataMigration() ||
+                        $this->config->shouldMigrateStructureOnly(),
+                    'skipRegionValidation' => $this->config->shouldSkipRegionValidation(),
                 ],
             ],
-            $this->appBackupTag,
+            $this->config->getAppBackupTag(),
         );
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
             throw new UserException('Project snapshot create error: ' . $job['result']['message']);
@@ -220,12 +145,12 @@ class Migrate
         $this->logger->info('Restoring current project from snapshot');
 
         $configData = $this->getRestoreConfigData($restoreCredentials);
-        $configData['parameters']['dryRun'] = $this->dryRun;
+        $configData['parameters']['dryRun'] = $this->config->isDryRun();
 
         $job = $this->destJobRunner->runJob(
             Config::PROJECT_RESTORE_COMPONENT,
             $configData,
-            $this->appRestoreTag,
+            $this->config->getAppRestoreTag(),
         );
 
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
@@ -262,7 +187,7 @@ class Migrate
                 $this->logger->info(
                     sprintf(
                         '%sMigrating configuration "%s" of component "%s"',
-                        $this->dryRun ? '[dry-run] ' : '',
+                        $this->config->isDryRun() ? '[dry-run] ' : '',
                         $config['id'],
                         $component['id'],
                     ),
@@ -272,13 +197,13 @@ class Migrate
                 try {
                     $response = $this->migrationsClient
                         ->migrateConfiguration(
-                            $this->sourceProjectToken,
+                            $this->config->getSourceProjectToken(),
                             Utils::getStackFromProjectUrl($this->destinationProjectUrl),
                             $this->destinationProjectToken,
                             $component['id'],
                             $config['id'],
                             (string) $defaultSourceBranch['id'],
-                            $this->dryRun
+                            $this->config->isDryRun()
                         );
                 } catch (EncryptionClientException $e) {
                     $this->logger->error(
@@ -305,7 +230,7 @@ class Migrate
                 }
 
                 $message = $response['message'];
-                if ($this->dryRun) {
+                if ($this->config->isDryRun()) {
                     $message = '[dry-run] ' . $message;
                 }
 
@@ -325,18 +250,18 @@ class Migrate
         $this->logger->info('Migrate data of tables directly.');
 
         $parameters = [
-            'mode' => $this->migrateDataMode,
-            'sourceKbcUrl' => $this->sourceProjectUrl,
-            '#sourceKbcToken' => $this->sourceProjectToken,
-            'dryRun' => $this->dryRun,
-            'isSourceByodb' => $this->isSourceByodb,
-            'sourceByodb' => $this->sourceByodb,
-            'includeWorkspaceSchemas' => $this->includeWorkspaceSchemas,
-            'preserveTimestamp' => $this->preserveTimestamp,
+            'mode' => $this->config->getMigrateDataMode(),
+            'sourceKbcUrl' => $this->config->getSourceProjectUrl(),
+            '#sourceKbcToken' => $this->config->getSourceProjectToken(),
+            'dryRun' => $this->config->isDryRun(),
+            'isSourceByodb' => $this->config->isSourceByodb(),
+            'sourceByodb' => $this->config->getSourceByodb(),
+            'includeWorkspaceSchemas' => $this->config->getIncludeWorkspaceSchemas(),
+            'preserveTimestamp' => $this->config->preserveTimestamp(),
         ];
 
-        if ($this->migrateDataMode === 'database' && !empty($this->db)) {
-            $parameters['db'] = $this->db;
+        if ($this->config->getMigrateDataMode() === 'database' && !empty($this->config->getDb())) {
+            $parameters['db'] = $this->config->getDb();
         }
 
         $this->destJobRunner->runJob(
@@ -344,7 +269,7 @@ class Migrate
             [
                 'parameters' => $parameters,
             ],
-            $this->appTablesDataTag,
+            $this->config->getAppTablesDataTag(),
         );
 
         $this->logger->info('Data of tables has been migrated.');
@@ -358,8 +283,8 @@ class Migrate
             Config::ORCHESTRATOR_MIGRATE_COMPONENT,
             [
                 'parameters' => [
-                    'sourceKbcUrl' => $this->sourceProjectUrl,
-                    '#sourceKbcToken' => $this->sourceProjectToken,
+                    'sourceKbcUrl' => $this->config->getSourceProjectUrl(),
+                    '#sourceKbcToken' => $this->config->getSourceProjectToken(),
                 ],
             ]
         );
@@ -377,9 +302,9 @@ class Migrate
             Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
             [
                 'parameters' => [
-                    'sourceKbcUrl' => $this->sourceProjectUrl,
-                    '#sourceKbcToken' => $this->sourceProjectToken,
-                    'dryRun' => $this->dryRun,
+                    'sourceKbcUrl' => $this->config->getSourceProjectUrl(),
+                    '#sourceKbcToken' => $this->config->getSourceProjectToken(),
+                    'dryRun' => $this->config->isDryRun(),
                 ],
             ],
         );
@@ -402,14 +327,14 @@ class Migrate
                         '#sessionToken' => $restoreCredentials['credentials']['sessionToken'],
                     ],
                     'useDefaultBackend' => true,
-                    'restoreConfigs' => $this->migrateSecrets === false,
-                    'restorePermanentFiles' => $this->migratePermanentFiles,
-                    'restoreTriggers' => $this->migrateTriggers,
-                    'restoreNotifications' => $this->migrateNotifications,
-                    'restoreBuckets' => $this->migrateBuckets,
-                    'restoreTables' => $this->migrateTables,
-                    'restoreProjectMetadata' => $this->migrateProjectMetadata,
-                    'checkEmptyProject' => $this->checkEmptyProject,
+                    'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
+                    'restorePermanentFiles' => $this->config->shouldMigratePermanentFiles(),
+                    'restoreTriggers' => $this->config->shouldMigrateTriggers(),
+                    'restoreNotifications' => $this->config->shouldMigrateNotifications(),
+                    'restoreBuckets' => $this->config->shouldMigrateBuckets(),
+                    'restoreTables' => $this->config->shouldMigrateTables(),
+                    'restoreProjectMetadata' => $this->config->shouldMigrateProjectMetadata(),
+                    'checkEmptyProject' => $this->config->checkEmptyProject(),
                 ],
             ];
         } elseif (isset($restoreCredentials['credentials']['connectionString'])) {
@@ -420,14 +345,14 @@ class Migrate
                         '#connectionString' => $restoreCredentials['credentials']['connectionString'],
                     ],
                     'useDefaultBackend' => true,
-                    'restoreConfigs' => $this->migrateSecrets === false,
-                    'restorePermanentFiles' => $this->migratePermanentFiles,
-                    'restoreTriggers' => $this->migrateTriggers,
-                    'restoreNotifications' => $this->migrateNotifications,
-                    'restoreBuckets' => $this->migrateBuckets,
-                    'restoreTables' => $this->migrateTables,
-                    'restoreProjectMetadata' => $this->migrateProjectMetadata,
-                    'checkEmptyProject' => $this->checkEmptyProject,
+                    'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
+                    'restorePermanentFiles' => $this->config->shouldMigratePermanentFiles(),
+                    'restoreTriggers' => $this->config->shouldMigrateTriggers(),
+                    'restoreNotifications' => $this->config->shouldMigrateNotifications(),
+                    'restoreBuckets' => $this->config->shouldMigrateBuckets(),
+                    'restoreTables' => $this->config->shouldMigrateTables(),
+                    'restoreProjectMetadata' => $this->config->shouldMigrateProjectMetadata(),
+                    'checkEmptyProject' => $this->config->checkEmptyProject(),
                 ],
             ];
         } elseif (isset($restoreCredentials['credentials']['accessToken'])) {
@@ -444,14 +369,14 @@ class Migrate
                         ],
                     ],
                     'useDefaultBackend' => true,
-                    'restoreConfigs' => $this->migrateSecrets === false,
-                    'restorePermanentFiles' => $this->migratePermanentFiles,
-                    'restoreTriggers' => $this->migrateTriggers,
-                    'restoreNotifications' => $this->migrateNotifications,
-                    'restoreBuckets' => $this->migrateBuckets,
-                    'restoreTables' => $this->migrateTables,
-                    'restoreProjectMetadata' => $this->migrateProjectMetadata,
-                    'checkEmptyProject' => $this->checkEmptyProject,
+                    'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
+                    'restorePermanentFiles' => $this->config->shouldMigratePermanentFiles(),
+                    'restoreTriggers' => $this->config->shouldMigrateTriggers(),
+                    'restoreNotifications' => $this->config->shouldMigrateNotifications(),
+                    'restoreBuckets' => $this->config->shouldMigrateBuckets(),
+                    'restoreTables' => $this->config->shouldMigrateTables(),
+                    'restoreProjectMetadata' => $this->config->shouldMigrateProjectMetadata(),
+                    'checkEmptyProject' => $this->config->checkEmptyProject(),
                 ],
             ];
         } else {
@@ -465,7 +390,7 @@ class Migrate
         string $destinationComponentId,
         string $destinationConfigurationId
     ): void {
-        if ($this->dryRun) {
+        if ($this->config->isDryRun()) {
             return;
         }
         $sourceComponentsApi = new Components($this->sourceProjectStorageClient);
