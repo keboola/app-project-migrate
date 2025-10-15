@@ -183,7 +183,7 @@ class UtilsTest extends TestCase
                     'components' => [
                         ['id' => 'keboola.project-backup'],
                     ],
-                ]
+                ],
             );
 
         $destClientMock
@@ -194,7 +194,7 @@ class UtilsTest extends TestCase
                         ['id' => 'keboola.app-orchestrator-migrate'],
                         ['id' => 'keboola.app-snowflake-writer-migrate'],
                     ],
-                ]
+                ],
             );
 
         $this->expectException(UserException::class);
@@ -206,17 +206,17 @@ class UtilsTest extends TestCase
     {
         self::assertSame(
             'connection.europe-west3.gcp.keboola.com',
-            Utils::getStackFromProjectUrl('https://connection.europe-west3.gcp.keboola.com/')
+            Utils::getStackFromProjectUrl('https://connection.europe-west3.gcp.keboola.com/'),
         );
 
         self::assertSame(
             'connection.europe-west3.gcp.keboola.com',
-            Utils::getStackFromProjectUrl('https://connection.europe-west3.gcp.keboola.com/')
+            Utils::getStackFromProjectUrl('https://connection.europe-west3.gcp.keboola.com/'),
         );
 
         self::assertSame(
             'connection.e2e.us-east-1.aws.keboola.dev',
-            Utils::getStackFromProjectUrl('https://connection.e2e.us-east-1.aws.keboola.dev')
+            Utils::getStackFromProjectUrl('https://connection.e2e.us-east-1.aws.keboola.dev'),
         );
     }
 

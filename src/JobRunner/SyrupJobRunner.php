@@ -12,7 +12,7 @@ class SyrupJobRunner extends JobRunner
     {
         return $this->getSyrupClient()->runJob(
             $componentId,
-            ['configData' => $data]
+            ['configData' => $data],
         );
     }
 
@@ -22,7 +22,7 @@ class SyrupJobRunner extends JobRunner
             $this->getServiceUrl('docker-runner'),
             $componentId,
             $action,
-            $data
+            $data,
         );
     }
 

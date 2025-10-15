@@ -6,9 +6,9 @@ namespace Keboola\AppProjectMigrate\Tests;
 
 use Keboola\AppProjectMigrate\DockerRunnerClient;
 use Keboola\Syrup\Client;
+use Keboola\Syrup\Client as SyrupClient;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Keboola\Syrup\Client as SyrupClient;
 
 class DockerRunnerClientTest extends TestCase
 {
@@ -21,7 +21,7 @@ class DockerRunnerClientTest extends TestCase
             ->method('runJob')
             ->with(
                 'migrate',
-                ['config' => '123']
+                ['config' => '123'],
             )
             ->willReturn([
                 'id' => '222',
@@ -36,7 +36,7 @@ class DockerRunnerClientTest extends TestCase
                 'id' => '222',
                 'status' => 'success',
             ],
-            $job
+            $job,
         );
     }
 
@@ -50,7 +50,7 @@ class DockerRunnerClientTest extends TestCase
                 'https://sync-action.keboola.com',
                 'migrate',
                 'get-credentials',
-                ['config' => '123']
+                ['config' => '123'],
             )
             ->willReturn(['response' => '1']);
 
@@ -60,14 +60,14 @@ class DockerRunnerClientTest extends TestCase
             'get-credentials',
             [
                 'config' => '123',
-            ]
+            ],
         );
 
         $this->assertEquals(
             [
                 'response' => '1',
             ],
-            $job
+            $job,
         );
     }
 }

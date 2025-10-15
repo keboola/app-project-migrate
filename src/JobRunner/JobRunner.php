@@ -29,7 +29,7 @@ abstract class JobRunner
         string $componentId,
         string $action,
         array $data,
-        ?string $tag = null
+        ?string $tag = null,
     ): array;
 
     public function getServiceUrl(string $serviceId): string

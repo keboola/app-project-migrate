@@ -1,4 +1,16 @@
 <?xml version="1.0"?>
 <ruleset name="Project">
-    <rule ref="vendor/keboola/coding-standard/src/ruleset.xml"/>
+    <rule ref="vendor/keboola/coding-standard/src/ruleset.xml">
+        <!-- Exclude type hint rules that are too strict for this project -->
+
+        <!-- Return type hints -->
+        <exclude name="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingTraversableTypeHintSpecification" />
+        <exclude name="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingAnyTypeHint" />
+
+        <!-- Parameter type hints -->
+        <exclude name="SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingTraversableTypeHintSpecification" />
+
+        <!-- Property type hints -->
+        <exclude name="SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingTraversableTypeHintSpecification" />
+    </rule>
 </ruleset>

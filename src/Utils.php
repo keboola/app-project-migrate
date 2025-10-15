@@ -51,7 +51,7 @@ class Utils
         if ($missingSourceApp) {
             throw new UserException(sprintf(
                 'Missing "%s" application in the source project.',
-                implode(', ', $missingSourceApp)
+                implode(', ', $missingSourceApp),
             ));
         }
 
@@ -69,7 +69,7 @@ class Utils
         if ($missingDestinationApp) {
             throw new UserException(sprintf(
                 'Missing "%s" application in the destination project.',
-                implode(', ', $missingDestinationApp)
+                implode(', ', $missingDestinationApp),
             ));
         }
     }

@@ -51,7 +51,7 @@ class Migrate
         MigrationsClient $migrationsClient,
         string $destinationProjectUrl,
         string $destinationProjectToken,
-        LoggerInterface $logger
+        LoggerInterface $logger,
     ) {
         $this->config = $config;
         $this->sourceJobRunner = $sourceJobRunner;
@@ -178,7 +178,7 @@ class Migrate
             if (in_array($component['id'], self::OBSOLETE_COMPONENTS, true)) {
                 $this->logger->info(
                     sprintf('Components "%s" is obsolete, skipping migration...', $component['id']),
-                    ['secrets']
+                    ['secrets'],
                 );
                 continue;
             }
@@ -203,7 +203,7 @@ class Migrate
                             $component['id'],
                             $config['id'],
                             (string) $defaultSourceBranch['id'],
-                            $this->config->isDryRun()
+                            $this->config->isDryRun(),
                         );
                 } catch (EncryptionClientException $e) {
                     $this->logger->error(
@@ -211,7 +211,7 @@ class Migrate
                             'Migrating configuration "%s" of component "%s" failed: %s',
                             $config['id'],
                             $component['id'],
-                            $e->getMessage()
+                            $e->getMessage(),
                         ),
                         [
                             'exception' => $e,
@@ -225,7 +225,7 @@ class Migrate
                         $component['id'],
                         $config['id'],
                         $response['data']['componentId'],
-                        $response['data']['configId']
+                        $response['data']['configId'],
                     );
                 }
 
@@ -286,7 +286,7 @@ class Migrate
                     'sourceKbcUrl' => $this->config->getSourceProjectUrl(),
                     '#sourceKbcToken' => $this->config->getSourceProjectToken(),
                 ],
-            ]
+            ],
         );
 
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
@@ -384,7 +384,7 @@ class Migrate
         string $sourceComponentId,
         string $sourceConfigurationId,
         string $destinationComponentId,
-        string $destinationConfigurationId
+        string $destinationConfigurationId,
     ): void {
         if ($this->config->isDryRun()) {
             return;
@@ -405,7 +405,7 @@ class Migrate
                     $sourceConfigurationId,
                     $sourceComponentId,
                 ),
-                ['secrets']
+                ['secrets'],
             );
             return;
         }
@@ -433,7 +433,7 @@ class Migrate
                     $destinationConfigurationId,
                     $destinationComponentId,
                 ),
-                ['secrets']
+                ['secrets'],
             );
             return;
         }

@@ -15,7 +15,7 @@ class ConfigTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
         $this->expectExceptionMessage(
-            'Parameter "#sourceManageToken" is required when "migrateSecrets" is set to true.'
+            'Parameter "#sourceManageToken" is required when "migrateSecrets" is set to true.',
         );
 
         new Config(
@@ -26,7 +26,7 @@ class ConfigTest extends TestCase
                     'migrateSecrets' => true,
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
     }
 
@@ -49,7 +49,7 @@ class ConfigTest extends TestCase
                     ],
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
     }
 
@@ -64,7 +64,7 @@ class ConfigTest extends TestCase
                     '#sourceManageToken' => 'manage-token',
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $this->assertSame(true, $baseConfig->shouldMigrateSecrets());
@@ -81,7 +81,7 @@ class ConfigTest extends TestCase
                     'migrateNotifications' => false,
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $this->assertFalse($config->shouldMigrateNotifications());
@@ -97,7 +97,7 @@ class ConfigTest extends TestCase
                     'migrateTriggers' => false,
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $this->assertFalse($config->shouldMigrateTriggers());
@@ -113,7 +113,7 @@ class ConfigTest extends TestCase
                     'migratePermanentFiles' => false,
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $this->assertFalse($config->shouldMigratePermanentFiles());
@@ -129,7 +129,7 @@ class ConfigTest extends TestCase
                     'skipRegionValidation' => true,
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $this->assertTrue($config->shouldSkipRegionValidation());
@@ -144,7 +144,7 @@ class ConfigTest extends TestCase
                     '#sourceKbcToken' => 'token',
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $this->assertFalse($config->shouldSkipRegionValidation());
@@ -161,7 +161,7 @@ class ConfigTest extends TestCase
                     'preserveTimestamp' => true,
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $this->assertTrue($config->preserveTimestamp());
@@ -186,7 +186,7 @@ class ConfigTest extends TestCase
                     ],
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $this->assertEquals(2, count($config->getIncludeWorkspaceSchemas()));
@@ -214,7 +214,7 @@ class ConfigTest extends TestCase
                     ],
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
     }
 
@@ -241,7 +241,7 @@ class ConfigTest extends TestCase
                     ],
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
     }
 
@@ -266,7 +266,7 @@ class ConfigTest extends TestCase
                     ],
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
     }
 }

@@ -43,7 +43,7 @@ class MigrateTest extends TestCase
         bool $restoreNotifications,
         bool $restoreBuckets,
         bool $restoreTables,
-        bool $restoreProjectMetadata
+        bool $restoreProjectMetadata,
     ): void {
         /** @var JobRunner&MockObject $sourceJobRunnerMock */
         $sourceJobRunnerMock = $this->createMock($jobRunnerClass);
@@ -89,7 +89,7 @@ class MigrateTest extends TestCase
                             'restoreTables' => $restoreTables,
                             'restoreProjectMetadata' => $restoreProjectMetadata,
                             'checkEmptyProject' => true,
-                        ]
+                        ],
                     ),
                 ],
             ],
@@ -162,7 +162,7 @@ class MigrateTest extends TestCase
                     'migrateProjectMetadata' => $restoreProjectMetadata,
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $logsHandler = new TestHandler();
@@ -262,7 +262,7 @@ class MigrateTest extends TestCase
                 'id' => '222',
                 'status' => 'success',
             ],
-            true
+            true,
         );
 
         $destJobRunnerMock->method('runJob')
@@ -280,7 +280,7 @@ class MigrateTest extends TestCase
                     '#sourceManageToken' => 'manage-token',
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $logsHandler = new TestHandler();
@@ -376,7 +376,7 @@ class MigrateTest extends TestCase
 
         $records = array_filter(
             $logsHandler->getRecords(),
-            fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
+            fn(array $record) => in_array('secrets', $record['context'] ?? [], true),
         );
         self::assertCount(8, $records);
 
@@ -387,32 +387,32 @@ class MigrateTest extends TestCase
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "101" of component "some-component"',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "102" of component "some-component"',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "201" of component "another-component"',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'201\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+            $record['message'],
         );
     }
 
@@ -431,7 +431,7 @@ class MigrateTest extends TestCase
                 'id' => '222',
                 'status' => 'success',
             ],
-            true
+            true,
         );
 
         $destJobRunnerMock->method('runJob')
@@ -449,7 +449,7 @@ class MigrateTest extends TestCase
                     '#sourceManageToken' => 'manage-token',
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $logsHandler = new TestHandler();
@@ -606,7 +606,7 @@ class MigrateTest extends TestCase
 
         $records = array_filter(
             $logsHandler->getRecords(),
-            fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
+            fn(array $record) => in_array('secrets', $record['context'] ?? [], true),
         );
         self::assertCount(8, $records);
 
@@ -615,38 +615,38 @@ class MigrateTest extends TestCase
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "101" of component "keboola.wr-db-snowflake"',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "102" of component "keboola.wr-db-snowflake"',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "103" of component "keboola.wr-db-snowflake"',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Used existing Snowflake workspace \'USER_01\' for configuration with ID \'103\' '
             . '(keboola.wr-db-snowflake).',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'103\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+            $record['message'],
         );
     }
 
@@ -663,7 +663,7 @@ class MigrateTest extends TestCase
                 'id' => '222',
                 'status' => 'success',
             ],
-            true
+            true,
         );
 
         $destJobRunnerMock->method('runJob')
@@ -681,7 +681,7 @@ class MigrateTest extends TestCase
                     '#sourceManageToken' => 'manage-token',
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $logsHandler = new TestHandler();
@@ -815,7 +815,7 @@ class MigrateTest extends TestCase
                 'id' => '222',
                 'status' => 'success',
             ],
-            true
+            true,
         );
 
         $destJobRunnerMock->method('runJob')
@@ -833,7 +833,7 @@ class MigrateTest extends TestCase
                     '#sourceManageToken' => 'manage-token',
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $logsHandler = new TestHandler();
@@ -939,29 +939,29 @@ class MigrateTest extends TestCase
 
         $records = array_filter(
             $logsHandler->getRecords(),
-            fn(array $record) => in_array('secrets', $record['context'] ?? [], true)
+            fn(array $record) => in_array('secrets', $record['context'] ?? [], true),
         );
         self::assertCount(4, $records);
 
         $record = array_shift($records);
         self::assertSame(
             'Migrating configurations with secrets',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "104" of component "keboola.wr-db-snowflake"',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'104\' (keboola.wr-db-snowflake) does not have a Snowflake workspace.',
-            $record['message']
+            $record['message'],
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'104\' successfully migrated to stack \'dest-stack\'.',
-            $record['message']
+            $record['message'],
         );
     }
 
@@ -983,7 +983,7 @@ class MigrateTest extends TestCase
                     'message' => 'Cannot snapshot project',
                 ],
             ],
-            false
+            false,
         );
 
         $destJobRunnerMock->expects($this->never())
@@ -1001,7 +1001,7 @@ class MigrateTest extends TestCase
                     'directDataMigration' => false,
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $sourceClientMock
@@ -1038,7 +1038,7 @@ class MigrateTest extends TestCase
             'id' => '222',
                 'status' => 'success',
             ],
-            false
+            false,
         );
 
         $destJobRunnerMock
@@ -1063,7 +1063,7 @@ class MigrateTest extends TestCase
                     'directDataMigration' => false,
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $sourceClientMock
@@ -1100,13 +1100,13 @@ class MigrateTest extends TestCase
                 'id' => '222',
                 'status' => 'success',
             ],
-            false
+            false,
         );
 
         $destJobRunnerMock
             ->method('runJob')
             ->willThrowException(
-                new ClientException('Test ClientException', 401)
+                new ClientException('Test ClientException', 401),
             )
         ;
 
@@ -1119,7 +1119,7 @@ class MigrateTest extends TestCase
                     'directDataMigration' => false,
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $sourceClientMock
@@ -1154,7 +1154,7 @@ class MigrateTest extends TestCase
         string $jobRunnerClass,
         bool $migrateSecrets,
         bool $directDataMigration,
-        array $expectedEntriesInDryRunMode
+        array $expectedEntriesInDryRunMode,
     ): void {
         /** @var JobRunner&MockObject $sourceJobRunnerMock */
         $sourceJobRunnerMock = $this->createMock($jobRunnerClass);
@@ -1247,7 +1247,7 @@ class MigrateTest extends TestCase
                     '#sourceManageToken' => 'manage-token',
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         $migrate = new Migrate(
@@ -1303,7 +1303,7 @@ class MigrateTest extends TestCase
 
     private function mockAddMethodGenerateS3ReadCredentials(
         MockObject $mockObject,
-        bool $skipRegionValidation = false
+        bool $skipRegionValidation = false,
     ): void {
         $mockObject->expects($this->once())
             ->method('runSyncAction')
@@ -1315,7 +1315,7 @@ class MigrateTest extends TestCase
                         'backupId' => '123',
                         'skipRegionValidation' => $skipRegionValidation,
                     ],
-                ]
+                ],
             )
             ->willReturn(
                 [
@@ -1328,7 +1328,7 @@ class MigrateTest extends TestCase
                         'sessionToken' => 'zzz',
                         'expiration' => '2018-05-23T10:49:02+00:00',
                     ],
-                ]
+                ],
             )
         ;
     }
@@ -1345,7 +1345,7 @@ class MigrateTest extends TestCase
                         'backupId' => '123',
                         'skipRegionValidation' => false,
                     ],
-                ]
+                ],
             )
             ->willReturn(
                 [
@@ -1354,7 +1354,7 @@ class MigrateTest extends TestCase
                     'credentials' => [
                         'connectionString' => 'https://testConnectionString',
                     ],
-                ]
+                ],
             )
         ;
     }
@@ -1371,7 +1371,7 @@ class MigrateTest extends TestCase
                         'backupId' => '123',
                         'skipRegionValidation' => false,
                     ],
-                ]
+                ],
             )
             ->willReturn(
                 [
@@ -1383,7 +1383,7 @@ class MigrateTest extends TestCase
                         'expiresIn' => '3599',
                         'tokenType' => 'Bearer',
                     ],
-                ]
+                ],
             )
         ;
     }
@@ -1393,7 +1393,7 @@ class MigrateTest extends TestCase
         array $return,
         bool $migrateDataOfTablesDirectly,
         bool $exportStructureOnly = false,
-        bool $skipRegionValidation = false
+        bool $skipRegionValidation = false,
     ): void {
         $mockObject->expects($this->once())
             ->method('runJob')
@@ -1405,7 +1405,7 @@ class MigrateTest extends TestCase
                         'exportStructureOnly' => $migrateDataOfTablesDirectly || $exportStructureOnly,
                         'skipRegionValidation' => $skipRegionValidation,
                     ],
-                ]
+                ],
             )
             ->willReturn($return);
     }
@@ -1427,7 +1427,7 @@ class MigrateTest extends TestCase
             ],
             false,
             false,
-            true
+            true,
         );
 
         $destJobRunnerMock->method('runJob')
@@ -1446,7 +1446,7 @@ class MigrateTest extends TestCase
                     'migrateStructureOnly' => false,
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
 
         /** @var StorageClient&MockObject $sourceClientMock */

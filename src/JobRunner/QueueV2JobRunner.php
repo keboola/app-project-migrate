@@ -21,7 +21,7 @@ class QueueV2JobRunner extends JobRunner
             $data,
             'run',
             [],
-            $tag
+            $tag,
         );
         $response = $this->getQueueClient()->createJob($jobData);
 
@@ -51,7 +51,7 @@ class QueueV2JobRunner extends JobRunner
         return new Client(
             $this->logger,
             $this->getServiceUrl('queue'),
-            $this->storageApiClient->getTokenString()
+            $this->storageApiClient->getTokenString(),
         );
     }
 
@@ -62,7 +62,7 @@ class QueueV2JobRunner extends JobRunner
             $this->storageApiClient->getTokenString(),
             [
                 'backoffMaxTries' => $backoffMaxTries,
-            ]
+            ],
         );
     }
 }

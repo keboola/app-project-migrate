@@ -52,7 +52,7 @@ class AfterMigration
                         $bucket['name'],
                         $table['name'],
                         $sourceTable['rowsCount'],
-                        $table['rowsCount']
+                        $table['rowsCount'],
                     ));
                 }
             }

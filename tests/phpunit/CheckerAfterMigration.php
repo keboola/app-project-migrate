@@ -51,14 +51,14 @@ class CheckerAfterMigration extends TestCase
         Assert::assertTrue(
             $testLogger->hasWarning(
                 'Bad row count: Bucket "testBucket", Table "table1". ' .
-                'Source table rows: "1234567890"; Destination table rows: "12345".'
-            )
+                'Source table rows: "1234567890"; Destination table rows: "12345".',
+            ),
         );
         Assert::assertTrue(
             $testLogger->hasWarning(
                 'Bad row count: Bucket "testBucket", Table "table2". ' .
-                'Source table rows: "987654321"; Destination table rows: "67890".'
-            )
+                'Source table rows: "987654321"; Destination table rows: "67890".',
+            ),
         );
     }
 

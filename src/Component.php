@@ -54,8 +54,8 @@ class Component extends BaseComponent
             throw new UserException(
                 sprintf(
                     'Destination project "%s" is not empty.',
-                    $destinationTokenInfo['owner']['name']
-                )
+                    $destinationTokenInfo['owner']['name'],
+                ),
             );
         }
 
@@ -63,7 +63,7 @@ class Component extends BaseComponent
             'Restoring current project from project %s (%d) at %s',
             $sourceTokenInfo['owner']['name'],
             $sourceTokenInfo['owner']['id'],
-            $config->getSourceProjectUrl()
+            $config->getSourceProjectUrl(),
         ));
 
         $sourceJobRunner = JobRunnerFactory::create($sourceProjectClient, $logger);

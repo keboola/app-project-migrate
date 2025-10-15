@@ -8,11 +8,9 @@ use Keboola\Syrup\Client as SyrupClient;
 
 class DockerRunnerClient
 {
-    /** @var SyrupClient  */
-    private $syrupClient;
+    private SyrupClient $syrupClient;
 
-    /** @var string  */
-    private $syncActionBaseUrl;
+    private string $syncActionBaseUrl;
 
     public function __construct(SyrupClient $syrupClient, string $syncActionBaseUrl)
     {
@@ -31,7 +29,7 @@ class DockerRunnerClient
             $this->syncActionBaseUrl,
             $component,
             $action,
-            $configData
+            $configData,
         );
     }
 }
