@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate;
 
+use InvalidArgumentException;
 use Keboola\Component\Config\BaseConfig;
 
 class Config extends BaseConfig
@@ -16,27 +17,27 @@ class Config extends BaseConfig
 
     public function getSourceProjectUrl(): string
     {
-        return $this->getValue(['parameters', 'sourceKbcUrl']);
+        return $this->getStringValue(['parameters', 'sourceKbcUrl']);
     }
 
     public function getSourceProjectToken(): string
     {
-        return $this->getValue(['parameters', '#sourceKbcToken']);
+        return $this->getStringValue(['parameters', '#sourceKbcToken']);
     }
 
     public function isDryRun(): bool
     {
-        return $this->getValue(['parameters', 'dryRun']);
+        return $this->getBoolValue(['parameters', 'dryRun']);
     }
 
     public function directDataMigration(): bool
     {
-        return $this->getValue(['parameters', 'directDataMigration']);
+        return $this->getBoolValue(['parameters', 'directDataMigration']);
     }
 
     public function shouldMigrateSecrets(): bool
     {
-        return $this->getValue(['parameters', 'migrateSecrets']);
+        return $this->getBoolValue(['parameters', 'migrateSecrets']);
     }
 
     public function getSourceManageToken(): ?string
@@ -46,110 +47,116 @@ class Config extends BaseConfig
 
     public function getMigrateDataMode(): string
     {
-        return $this->getValue(['parameters', 'dataMode']);
+        return $this->getStringValue(['parameters', 'dataMode']);
     }
 
     public function getDb(): array
     {
-        return (array) $this->getValue(['parameters', 'db'], []);
+        return $this->getArrayValue(['parameters', 'db'], []);
     }
 
     public function shouldMigratePermanentFiles(): bool
     {
-        return $this->getValue(['parameters', 'migratePermanentFiles']);
+        return $this->getBoolValue(['parameters', 'migratePermanentFiles']);
     }
 
     public function shouldMigrateTriggers(): bool
     {
-        return $this->getValue(['parameters', 'migrateTriggers']);
+        return $this->getBoolValue(['parameters', 'migrateTriggers']);
     }
 
     public function shouldMigrateNotifications(): bool
     {
-        return $this->getValue(['parameters', 'migrateNotifications']);
+        return $this->getBoolValue(['parameters', 'migrateNotifications']);
     }
 
     public function shouldMigrateStructureOnly(): bool
     {
-        return $this->getValue(['parameters', 'migrateStructureOnly']);
+        return $this->getBoolValue(['parameters', 'migrateStructureOnly']);
     }
 
     public function shouldSkipRegionValidation(): bool
     {
-        return $this->getValue(['parameters', 'skipRegionValidation']);
+        return $this->getBoolValue(['parameters', 'skipRegionValidation']);
     }
 
     public function shouldMigrateBuckets(): bool
     {
         /** @var bool $value */
-        $value = $this->getValue(['parameters', 'migrateBuckets']);
+        $value = $this->getBoolValue(['parameters', 'migrateBuckets']);
         return $value;
     }
 
     public function shouldMigrateTables(): bool
     {
         /** @var bool $value */
-        $value = $this->getValue(['parameters', 'migrateTables']);
+        $value = $this->getBoolValue(['parameters', 'migrateTables']);
         return $value;
     }
 
     public function shouldMigrateProjectMetadata(): bool
     {
-        /** @var bool $value */
-        $value = $this->getValue(['parameters', 'migrateProjectMetadata']);
+        $value = $this->getBoolValue(['parameters', 'migrateProjectMetadata']);
         return $value;
     }
 
     public function isSourceByodb(): bool
     {
-        return $this->getValue(['parameters', 'isSourceByodb']);
+        return $this->getBoolValue(['parameters', 'isSourceByodb']);
     }
 
     public function getSourceByodb(): string
     {
-        return (string) $this->getValue(['parameters', 'sourceByodb'], '');
+        return $this->getStringValue(['parameters', 'sourceByodb'], '');
     }
 
     public function getIncludeWorkspaceSchemas(): array
     {
-        $value = $this->getValue(['parameters', 'includeWorkspaceSchemas'], []);
-        return empty($value) ? [] : (array) $value;
+        $value = $this->getArrayValue(['parameters', 'includeWorkspaceSchemas'], []);
+        return empty($value) ? [] : $value;
     }
 
     public function preserveTimestamp(): bool
     {
-        return $this->getValue(['parameters', 'preserveTimestamp']);
+        return $this->getBoolValue(['parameters', 'preserveTimestamp']);
     }
 
     public function checkEmptyProject(): bool
     {
-        return $this->getValue(['parameters', 'checkEmptyProject']);
+        return $this->getBoolValue(['parameters', 'checkEmptyProject']);
     }
 
     public function getAppBackupTag(): ?string
     {
-        $value =  $this->getValue(['parameters', 'componentsDevTag', 'backup'], false);
-        if (!$value) {
+        try {
+            return $this->getStringValue(['parameters', 'componentsDevTag', 'backup']);
+        } catch (InvalidArgumentException) {
             return null;
         }
-        return $value;
     }
 
     public function getAppRestoreTag(): ?string
     {
-        $value =  $this->getValue(['parameters', 'componentsDevTag', 'restore'], false);
-        if (!$value) {
+        try {
+            return $this->getStringValue(['parameters', 'componentsDevTag', 'restore']);
+        } catch (InvalidArgumentException) {
             return null;
         }
-        return $value;
     }
 
     public function getAppTablesDataTag(): ?string
     {
-        $value =  $this->getValue(['parameters', 'componentsDevTag', 'tables-data'], false);
-        if (!$value) {
+        try {
+            return $this->getStringValue(['parameters', 'componentsDevTag', 'tables-data']);
+        } catch (InvalidArgumentException) {
             return null;
         }
+    }
+
+    public function getBoolValue(array $keys, mixed $default = null): bool
+    {
+        /** @var bool $value */
+        $value = $this->getValue($keys, $default);
         return $value;
     }
 }

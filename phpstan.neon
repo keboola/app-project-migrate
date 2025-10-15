@@ -1,5 +1,10 @@
+includes:
+    - phpstan-baseline.neon
 parameters:
-    checkMissingIterableValueType: false
     ignoreErrors:
-        - '#Parameter \#1 \$object of function get_class expects object, Throwable\|null given.#'
-        - '#Cannot call method scalarNode\(\) on Symfony\\Component\\Config\\Definition\\Builder\\NodeParentInterface\|null.#'
+        - identifier: missingType.iterableValue
+        - '#Call to an undefined method Symfony\\Component\\Config\\Definition\\Builder\\NodeParentInterface::scalarNode\(\).#'
+        - path: src/ConfigDefinition.php
+          message: '#Cannot call method .* on mixed.#'
+        - path: src/ConfigDefinition.php
+          message: '#Cannot access offset .* on mixed.#'

@@ -16,9 +16,11 @@ use Keboola\Component\UserException;
 use Keboola\EncryptionApiClient\Exception\ClientException as EncryptionClientException;
 use Keboola\EncryptionApiClient\Migrations;
 use Keboola\StorageApi\Client as StorageClient;
+use Keboola\StorageApi\Components;
 use Keboola\Syrup\ClientException;
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -184,7 +186,7 @@ class MigrateTest extends TestCase
                     ],
                 ],
                 [
-                    'components?include=', null, [],
+                    'branch/default/components?include=', null, [],
                     [
                         [
                             'id' => 'gooddata-writer', // should be skipped
@@ -302,7 +304,7 @@ class MigrateTest extends TestCase
                     ],
                 ],
                 [
-                    'components?include=', null, [],
+                    'branch/default/components?include=', null, [],
                     [
                         [
                             'id' => 'gooddata-writer', // should be skipped
@@ -376,7 +378,7 @@ class MigrateTest extends TestCase
 
         $records = array_filter(
             $logsHandler->getRecords(),
-            fn(array $record) => in_array('secrets', $record['context'] ?? [], true),
+            fn(LogRecord $record) => in_array('secrets', $record->context ?? [], true),
         );
         self::assertCount(8, $records);
 
@@ -532,7 +534,7 @@ class MigrateTest extends TestCase
                         ],
                     ];
                 }
-                if ($url === 'components?include=') {
+                if ($url === 'branch/default/components?include=') {
                     return [
                         [
                             'id' => 'keboola.wr-db-snowflake',
@@ -606,7 +608,7 @@ class MigrateTest extends TestCase
 
         $records = array_filter(
             $logsHandler->getRecords(),
-            fn(array $record) => in_array('secrets', $record['context'] ?? [], true),
+            fn(LogRecord $record) => in_array('secrets', $record->context ?? [], true),
         );
         self::assertCount(8, $records);
 
@@ -702,7 +704,7 @@ class MigrateTest extends TestCase
                     ],
                 ],
                 [
-                    'components?include=', null, [],
+                    'branch/default/components?include=', null, [],
                     [
                         [
                             'id' => 'some-component',
@@ -865,7 +867,7 @@ class MigrateTest extends TestCase
                         ],
                     ];
                 }
-                if ($url === 'components?include=') {
+                if ($url === 'branch/default/components?include=') {
                     return [
                         [
                             'id' => 'keboola.wr-db-snowflake',
@@ -939,7 +941,7 @@ class MigrateTest extends TestCase
 
         $records = array_filter(
             $logsHandler->getRecords(),
-            fn(array $record) => in_array('secrets', $record['context'] ?? [], true),
+            fn(LogRecord $record) => in_array('secrets', $record->context ?? [], true),
         );
         self::assertCount(4, $records);
 
@@ -1210,7 +1212,7 @@ class MigrateTest extends TestCase
                     ],
                 ],
                 [
-                    'components?include=', null, [],
+                    'branch/default/components?include=', null, [],
                     [
                         [
                             'id' => 'some-component',

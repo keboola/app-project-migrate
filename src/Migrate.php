@@ -135,7 +135,9 @@ class Migrate
             $this->config->getAppBackupTag(),
         );
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
-            throw new UserException('Project snapshot create error: ' . $job['result']['message']);
+            /** @var array{message: string} $result */
+            $result = $job['result'];
+            throw new UserException('Project snapshot create error: ' . $result['message']);
         }
         $this->logger->info('Source project snapshot created');
     }
@@ -154,7 +156,9 @@ class Migrate
         );
 
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
-            throw new UserException('Project restore error: ' . $job['result']['message']);
+            /** @var array{message: string} $result */
+            $result = $job['result'];
+            throw new UserException('Project restore error: ' . $result['message']);
         }
         $this->logger->info('Current project restored');
     }
@@ -165,7 +169,15 @@ class Migrate
 
         $sourceDevBranches = new DevBranches($this->sourceProjectStorageClient);
         $sourceBranches = $sourceDevBranches->listBranches();
-        $defaultSourceBranch = current(array_filter($sourceBranches, fn($b) => $b['isDefault'] === true));
+        /** @var array{id: string, isDefault: bool}|false $defaultSourceBranch */
+        $defaultSourceBranch = current(array_filter($sourceBranches, function ($b) {
+            /** @var array{isDefault: bool} $b */
+            return $b['isDefault'] === true;
+        }));
+
+        if ($defaultSourceBranch === false) {
+            throw new UserException('No default branch found in source project');
+        }
 
         $sourceComponentsApi = new Components($this->sourceProjectStorageClient);
         $components = $sourceComponentsApi->listComponents();
@@ -175,6 +187,7 @@ class Migrate
         }
 
         foreach ($components as $component) {
+            /** @var array{id: string, configurations: array} $component */
             if (in_array($component['id'], self::OBSOLETE_COMPONENTS, true)) {
                 $this->logger->info(
                     sprintf('Components "%s" is obsolete, skipping migration...', $component['id']),
@@ -184,6 +197,7 @@ class Migrate
             }
 
             foreach ($component['configurations'] as $config) {
+                /** @var array{id: string} $config */
                 $this->logger->info(
                     sprintf(
                         '%sMigrating configuration "%s" of component "%s"',
@@ -202,7 +216,7 @@ class Migrate
                             $this->destinationProjectToken,
                             $component['id'],
                             $config['id'],
-                            (string) $defaultSourceBranch['id'],
+                            $defaultSourceBranch['id'],
                             $this->config->isDryRun(),
                         );
                 } catch (EncryptionClientException $e) {
@@ -221,6 +235,7 @@ class Migrate
                 }
 
                 if (in_array($component['id'], self::SNOWFLAKE_WRITER_COMPONENT_IDS, true)) {
+                    /** @var array{data: array{componentId: string, configId: string}} $response */
                     $this->preserveProperSnowflakeWorkspace(
                         $component['id'],
                         $config['id'],
@@ -229,6 +244,7 @@ class Migrate
                     );
                 }
 
+                /** @var array{message: string, warnings?: array<string>} $response */
                 $message = $response['message'];
                 if ($this->config->isDryRun()) {
                     $message = '[dry-run] ' . $message;
@@ -236,10 +252,8 @@ class Migrate
 
                 $this->logger->info($message, ['secrets']);
 
-                if (isset($response['warnings']) && is_array($response['warnings'])) {
-                    foreach ($response['warnings'] as $warning) {
-                        $this->logger->warning($warning, ['secrets']);
-                    }
+                foreach ($response['warnings'] ?? [] as $warning) {
+                    $this->logger->warning($warning, ['secrets']);
                 }
             }
         }
@@ -290,7 +304,9 @@ class Migrate
         );
 
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
-            throw new UserException('Orchestrations migration error: ' . $job['result']['message']);
+            /** @var array{message: string} $result */
+            $result = $job['result'];
+            throw new UserException('Orchestrations migration error: ' . $result['message']);
         }
         $this->logger->info('Orchestrations migrated');
     }
@@ -310,24 +326,111 @@ class Migrate
         );
 
         if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
-            throw new UserException('Snowflake writers migration error: ' . $job['result']['message']);
+            /** @var array{message: string} $result */
+            $result = $job['result'];
+            throw new UserException('Snowflake writers migration error: ' . $result['message']);
         }
         $this->logger->info('Snowflake writers migrated');
     }
 
+    /**
+     * @return array{
+     *     parameters: array{
+     *          s3?: array{
+     *              backupUri: string,
+     *              accessKeyId: string,
+     *              "#secretAccessKey": string,
+     *              "#sessionToken": string
+     *          },
+     *          abs?: array{
+     *              container: string,
+     *              "#connectionString": string
+     *          },
+     *          gcs?: array{
+     *              projectId: string,
+     *              bucket: string,
+     *              backupUri: string,
+     *              credentials: array{
+     *                  "#accessToken": string,
+     *                  expiresIn: int,
+     *                  tokenType: string
+     *              },
+     *          },
+     *          useDefaultBackend: bool,
+     *          restoreConfigs: bool,
+     *          restorePermanentFiles: bool,
+     *          restoreTriggers: bool,
+     *          restoreNotifications: bool,
+     *          restoreBuckets: bool,
+     *          restoreTables: bool,
+     *          restoreProjectMetadata: bool,
+     *          checkEmptyProject: bool
+     *     }
+     * }
+     */
     private function getRestoreConfigData(array $restoreCredentials): array
     {
+        /** @var array{backupUri: string, container?: string, projectId?: string, bucket?: string, credentials: array{accessKeyId?: string, secretAccessKey?: string, sessionToken?: string, connectionString?: string, accessToken?: string, expiresIn?: int, tokenType?: string}} $restoreCredentials */
         $backendConfig = $this->getBackendConfig($restoreCredentials);
         $commonParameters = $this->getCommonRestoreParameters();
 
+        /** @var array{
+         *      s3?: array{
+         *          backupUri: string,
+         *          accessKeyId: string,
+         *          "#secretAccessKey": string,
+         *          "#sessionToken": string
+         *      },
+         *      abs?: array{
+         *          container: string,
+         *          "#connectionString": string
+         *      },
+         *      gcs?: array{
+         *          projectId: string,
+         *          bucket: string,
+         *          backupUri: string,
+         *          credentials: array{"#accessToken": string, expiresIn: int, tokenType: string}
+         *      },
+         *      useDefaultBackend: bool,
+         *      restoreConfigs: bool,
+         *      restorePermanentFiles: bool,
+         *      restoreTriggers: bool,
+         *      restoreNotifications: bool,
+         *      restoreBuckets: bool,
+         *      restoreTables: bool,
+         *      restoreProjectMetadata: bool,
+         *      checkEmptyProject: bool
+         * } $mergedParameters
+        **/
+        $mergedParameters = array_merge($backendConfig, $commonParameters);
+
         return [
-            'parameters' => array_merge($backendConfig, $commonParameters),
+            'parameters' => $mergedParameters,
         ];
     }
 
+    /**
+     * @param array{
+     *     backupUri?: string,
+     *     container?: string,
+     *     projectId?: string,
+     *     bucket?: string,
+     *     credentials: array{
+     *         accessKeyId?: string,
+     *         secretAccessKey?: string,
+     *         sessionToken?: string,
+     *         connectionString?: string,
+     *         accessToken?: string,
+     *         expiresIn?: int,
+     *         tokenType?: string
+     *     }
+     * } $restoreCredentials
+     */
     private function getBackendConfig(array $restoreCredentials): array
     {
+        /** @var array{backupUri: string, container?: string, projectId?: string, bucket?: string, credentials: array{accessKeyId?: string, secretAccessKey?: string, sessionToken?: string, connectionString?: string, accessToken?: string, expiresIn?: int, tokenType?: string}} $restoreCredentials */
         if (isset($restoreCredentials['credentials']['secretAccessKey'])) {
+            /** @var array{backupUri: string, credentials: array{accessKeyId: string, secretAccessKey: string, sessionToken: string}} $restoreCredentials */
             return [
                 's3' => [
                     'backupUri' => $restoreCredentials['backupUri'],
@@ -339,6 +442,10 @@ class Migrate
         }
 
         if (isset($restoreCredentials['credentials']['connectionString'])) {
+            /** @var array{
+             * container: string,
+             * credentials: array{connectionString: string}
+             * } $restoreCredentials */
             return [
                 'abs' => [
                     'container' => $restoreCredentials['container'],
@@ -348,6 +455,7 @@ class Migrate
         }
 
         if (isset($restoreCredentials['credentials']['accessToken'])) {
+            /** @var array{projectId: string, bucket: string, backupUri: string, credentials: array{accessToken: string, expiresIn: int, tokenType: string}} $restoreCredentials */
             return [
                 'gcs' => [
                     'projectId' => $restoreCredentials['projectId'],
@@ -397,6 +505,7 @@ class Migrate
         $destinationConfigurationData = (array) $destinationComponentsApi
             ->getConfiguration($destinationComponentId, $destinationConfigurationId);
 
+        /** @var array{configuration: array{parameters: array{db: array{user?: string}}}} $sourceConfigurationData */
         $snowflakeUser = $sourceConfigurationData['configuration']['parameters']['db']['user'] ?? null;
         if ($snowflakeUser === null) {
             $this->logger->info(
@@ -414,6 +523,7 @@ class Migrate
 
         if ($migratedWorkspaceParameters) {
             // Use the existing Snowflake workspace from a previous configuration that has the same source workspace
+            /** @var array{configuration: array{parameters: array{db: array}}, name: string, description: string, isDisabled: bool} $destinationConfigurationData */
             $destinationConfigurationData['configuration']['parameters']['db'] = $migratedWorkspaceParameters;
 
             $destinationConfiguration = (new Configuration())
@@ -426,6 +536,7 @@ class Migrate
 
             $destinationComponentsApi->updateConfiguration($destinationConfiguration);
 
+            /** @var array{user: string} $migratedWorkspaceParameters */
             $this->logger->info(
                 sprintf(
                     "Used existing Snowflake workspace '%s' for configuration with ID '%s' (%s).",
@@ -439,6 +550,7 @@ class Migrate
         }
 
         // Store Snowflake workspace for next configurations
+        /** @var array{configuration: array{parameters: array{db: array}}} $destinationConfigurationData */
         $workspaceParameters = $destinationConfigurationData['configuration']['parameters']['db'];
         $this->migratedSnowflakeWorkspaces[$snowflakeUser] = $workspaceParameters;
     }
