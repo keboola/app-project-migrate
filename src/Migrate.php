@@ -317,71 +317,67 @@ class Migrate
 
     private function getRestoreConfigData(array $restoreCredentials): array
     {
+        $backendConfig = $this->getBackendConfig($restoreCredentials);
+        $commonParameters = $this->getCommonRestoreParameters();
+
+        return [
+            'parameters' => array_merge($backendConfig, $commonParameters),
+        ];
+    }
+
+    private function getBackendConfig(array $restoreCredentials): array
+    {
         if (isset($restoreCredentials['credentials']['secretAccessKey'])) {
             return [
-                'parameters' => [
-                    's3' => [
-                        'backupUri' => $restoreCredentials['backupUri'],
-                        'accessKeyId' => $restoreCredentials['credentials']['accessKeyId'],
-                        '#secretAccessKey' => $restoreCredentials['credentials']['secretAccessKey'],
-                        '#sessionToken' => $restoreCredentials['credentials']['sessionToken'],
-                    ],
-                    'useDefaultBackend' => true,
-                    'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
-                    'restorePermanentFiles' => $this->config->shouldMigratePermanentFiles(),
-                    'restoreTriggers' => $this->config->shouldMigrateTriggers(),
-                    'restoreNotifications' => $this->config->shouldMigrateNotifications(),
-                    'restoreBuckets' => $this->config->shouldMigrateBuckets(),
-                    'restoreTables' => $this->config->shouldMigrateTables(),
-                    'restoreProjectMetadata' => $this->config->shouldMigrateProjectMetadata(),
-                    'checkEmptyProject' => $this->config->checkEmptyProject(),
+                's3' => [
+                    'backupUri' => $restoreCredentials['backupUri'],
+                    'accessKeyId' => $restoreCredentials['credentials']['accessKeyId'],
+                    '#secretAccessKey' => $restoreCredentials['credentials']['secretAccessKey'],
+                    '#sessionToken' => $restoreCredentials['credentials']['sessionToken'],
                 ],
             ];
-        } elseif (isset($restoreCredentials['credentials']['connectionString'])) {
-            return [
-                'parameters' => [
-                    'abs' => [
-                        'container' => $restoreCredentials['container'],
-                        '#connectionString' => $restoreCredentials['credentials']['connectionString'],
-                    ],
-                    'useDefaultBackend' => true,
-                    'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
-                    'restorePermanentFiles' => $this->config->shouldMigratePermanentFiles(),
-                    'restoreTriggers' => $this->config->shouldMigrateTriggers(),
-                    'restoreNotifications' => $this->config->shouldMigrateNotifications(),
-                    'restoreBuckets' => $this->config->shouldMigrateBuckets(),
-                    'restoreTables' => $this->config->shouldMigrateTables(),
-                    'restoreProjectMetadata' => $this->config->shouldMigrateProjectMetadata(),
-                    'checkEmptyProject' => $this->config->checkEmptyProject(),
-                ],
-            ];
-        } elseif (isset($restoreCredentials['credentials']['accessToken'])) {
-            return [
-                'parameters' => [
-                    'gcs' => [
-                        'projectId' => $restoreCredentials['projectId'],
-                        'bucket' => $restoreCredentials['bucket'],
-                        'backupUri' => $restoreCredentials['backupUri'],
-                        'credentials' => [
-                            '#accessToken' => $restoreCredentials['credentials']['accessToken'],
-                            'expiresIn' => $restoreCredentials['credentials']['expiresIn'],
-                            'tokenType' => $restoreCredentials['credentials']['tokenType'],
-                        ],
-                    ],
-                    'useDefaultBackend' => true,
-                    'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
-                    'restorePermanentFiles' => $this->config->shouldMigratePermanentFiles(),
-                    'restoreTriggers' => $this->config->shouldMigrateTriggers(),
-                    'restoreNotifications' => $this->config->shouldMigrateNotifications(),
-                    'restoreBuckets' => $this->config->shouldMigrateBuckets(),
-                    'restoreTables' => $this->config->shouldMigrateTables(),
-                    'restoreProjectMetadata' => $this->config->shouldMigrateProjectMetadata(),
-                    'checkEmptyProject' => $this->config->checkEmptyProject(),
-                ],
-            ];
-        } else {
-            throw new UserException('Unrecognized restore credentials.');
         }
+
+        if (isset($restoreCredentials['credentials']['connectionString'])) {
+            return [
+                'abs' => [
+                    'container' => $restoreCredentials['container'],
+                    '#connectionString' => $restoreCredentials['credentials']['connectionString'],
+                ],
+            ];
+        }
+
+        if (isset($restoreCredentials['credentials']['accessToken'])) {
+            return [
+                'gcs' => [
+                    'projectId' => $restoreCredentials['projectId'],
+                    'bucket' => $restoreCredentials['bucket'],
+                    'backupUri' => $restoreCredentials['backupUri'],
+                    'credentials' => [
+                        '#accessToken' => $restoreCredentials['credentials']['accessToken'],
+                        'expiresIn' => $restoreCredentials['credentials']['expiresIn'],
+                        'tokenType' => $restoreCredentials['credentials']['tokenType'],
+                    ],
+                ],
+            ];
+        }
+
+        throw new UserException('Unrecognized restore credentials.');
+    }
+
+    private function getCommonRestoreParameters(): array
+    {
+        return [
+            'useDefaultBackend' => true,
+            'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
+            'restorePermanentFiles' => $this->config->shouldMigratePermanentFiles(),
+            'restoreTriggers' => $this->config->shouldMigrateTriggers(),
+            'restoreNotifications' => $this->config->shouldMigrateNotifications(),
+            'restoreBuckets' => $this->config->shouldMigrateBuckets(),
+            'restoreTables' => $this->config->shouldMigrateTables(),
+            'restoreProjectMetadata' => $this->config->shouldMigrateProjectMetadata(),
+            'checkEmptyProject' => $this->config->checkEmptyProject(),
+        ];
     }
 
     private function preserveProperSnowflakeWorkspace(
