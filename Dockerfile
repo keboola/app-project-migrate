@@ -1,4 +1,4 @@
-FROM php:7.4-cli
+FROM php:8.4-cli
 
 ARG COMPOSER_FLAGS="--prefer-dist --no-interaction"
 ARG DEBIAN_FRONTEND=noninteractive
@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	&& chmod +x /tmp/composer-install.sh \
 	&& /tmp/composer-install.sh
 
-RUN pecl install xdebug-2.9.8 \
+RUN pecl install xdebug \
  && docker-php-ext-enable xdebug
 
 ## Composer - deps always cached unless changed

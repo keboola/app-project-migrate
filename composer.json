@@ -3,22 +3,22 @@
     "description": "Migrate project",
     "license": "MIT",
     "require": {
-        "PHP": "^7.4",
+        "php": "^8.4",
         "keboola/encryption-api-php-client": "^0.2.2",
-        "keboola/job-queue-api-php-client": "^0.4.1",
-        "keboola/php-component": "^8.3",
-        "keboola/storage-api-client": "^12.2",
-        "keboola/sync-actions-client": "1.0",
-        "keboola/syrup-php-client": "^5.1"
+        "keboola/job-queue-api-php-client": "^5.2",
+        "keboola/php-component": "^11.0",
+        "keboola/storage-api-client": "^18.4",
+        "keboola/sync-actions-client": "^3.0",
+        "keboola/syrup-php-client": "^6.0"
     },
     "require-dev": {
-        "keboola/coding-standard": "^11.0",
-        "keboola/datadir-tests": "^5.2",
-        "keboola/php-temp": "^2.0",
-        "php-parallel-lint/php-parallel-lint": "^1.3",
-        "phpstan/phpstan": "^0.12.84",
-        "phpunit/phpunit": "^9.5",
-        "symfony/process": "^5.2"
+      "keboola/coding-standard": "^16.0",
+      "keboola/datadir-tests": "^5.7",
+      "keboola/php-temp": "^2.0",
+      "php-parallel-lint/php-parallel-lint": "^1.4",
+      "phpstan/phpstan": "^2.1",
+      "phpunit/phpunit": "^9.6",
+      "symfony/process": "^7.3"
     },
     "autoload": {
         "psr-4": {
@@ -55,6 +55,9 @@
     },
     "config": {
         "sort-packages": true,
-        "optimize-autoloader": true
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }
