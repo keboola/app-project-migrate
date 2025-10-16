@@ -18,16 +18,7 @@ use Psr\Log\LoggerInterface;
 
 class Migrate
 {
-    private Config $config;
     private const JOB_STATUS_SUCCESS = 'success';
-    private JobRunner $sourceJobRunner;
-    private JobRunner $destJobRunner;
-    private StorageClient $sourceProjectStorageClient;
-    private StorageClient $destProjectStorageClient;
-    private MigrationsClient $migrationsClient;
-    private string $destinationProjectUrl;
-    private string $destinationProjectToken;
-    private LoggerInterface $logger;
     private array $migratedSnowflakeWorkspaces = [];
 
     public const OBSOLETE_COMPONENTS = [
@@ -43,34 +34,25 @@ class Migrate
     ];
 
     public function __construct(
-        Config $config,
-        JobRunner $sourceJobRunner,
-        JobRunner $destJobRunner,
-        StorageClient $sourceProjectStorageClient,
-        StorageClient $destProjectStorageClient,
-        MigrationsClient $migrationsClient,
-        string $destinationProjectUrl,
-        string $destinationProjectToken,
-        LoggerInterface $logger,
+        readonly Config $config,
+        readonly JobRunner $sourceJobRunner,
+        readonly JobRunner $destJobRunner,
+        readonly StorageClient $sourceProjectStorageClient,
+        readonly StorageClient $destProjectStorageClient,
+        readonly MigrationsClient $migrationsClient,
+        readonly string $destinationProjectUrl,
+        readonly string $destinationProjectToken,
+        readonly LoggerInterface $logger,
     ) {
-        $this->config = $config;
-        $this->sourceJobRunner = $sourceJobRunner;
-        $this->destJobRunner = $destJobRunner;
-        $this->sourceProjectStorageClient = $sourceProjectStorageClient;
-        $this->destProjectStorageClient = $destProjectStorageClient;
-        $this->migrationsClient = $migrationsClient;
-        $this->destinationProjectUrl = $destinationProjectUrl;
-        $this->destinationProjectToken = $destinationProjectToken;
-        $this->logger = $logger;
     }
 
     public function run(): void
     {
         try {
-            $backupId = (string) $this->sourceProjectStorageClient->generateId();
+            $backupId = $this->sourceProjectStorageClient->generateId();
             $this->backupSourceProject($backupId);
-            $restoreCredentials = $this->generateBackupCredentials($backupId);
 
+            $restoreCredentials = $this->generateBackupCredentials($backupId);
             $this->restoreDestinationProject($restoreCredentials);
 
             if ($this->config->shouldMigrateSecrets()) {
@@ -147,7 +129,6 @@ class Migrate
         $this->logger->info('Restoring current project from snapshot');
 
         $configData = $this->getRestoreConfigData($restoreCredentials);
-        $configData['parameters']['dryRun'] = $this->config->isDryRun();
 
         $job = $this->destJobRunner->runJob(
             Config::PROJECT_RESTORE_COMPONENT,
@@ -476,6 +457,7 @@ class Migrate
     private function getCommonRestoreParameters(): array
     {
         return [
+            'dryRun' => $this->config->isDryRun(),
             'useDefaultBackend' => true,
             'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
             'restorePermanentFiles' => $this->config->shouldMigratePermanentFiles(),

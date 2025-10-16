@@ -1198,6 +1198,7 @@ class MigrateTest extends TestCase
             });
 
         $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock->expects(self::once())->method('generateId')->willReturn('123');
         $sourceClientMock
             ->method('apiGet')
             ->willReturnMap([
