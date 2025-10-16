@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate;
 
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
-use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\Component\UserException;
 use Keboola\EncryptionApiClient\Exception\ClientException as EncryptionClientException;
 use Keboola\EncryptionApiClient\Migrations as MigrationsClient;
@@ -71,9 +70,6 @@ class Migrate
                 // We want to migrate Snowflake writers only if we are not migrating secrets, because when migrating
                 // secrets, Snowflake writers will be migrated by the encryption-api.
                 $this->migrateSnowflakeWriters();
-            }
-            if ($this->sourceJobRunner instanceof SyrupJobRunner) {
-                $this->migrateOrchestrations();
             }
         } catch (SyrupClientException|EncryptionClientException $e) {
             if ($e->getCode() >= 400 && $e->getCode() < 500) {
@@ -268,28 +264,6 @@ class Migrate
         );
 
         $this->logger->info('Data of tables has been migrated.');
-    }
-
-    private function migrateOrchestrations(): void
-    {
-        $this->logger->info('Migrating orchestrations');
-
-        $job = $this->destJobRunner->runJob(
-            Config::ORCHESTRATOR_MIGRATE_COMPONENT,
-            [
-                'parameters' => [
-                    'sourceKbcUrl' => $this->config->getSourceProjectUrl(),
-                    '#sourceKbcToken' => $this->config->getSourceProjectToken(),
-                ],
-            ],
-        );
-
-        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
-            /** @var array{message: string} $result */
-            $result = $job['result'];
-            throw new UserException('Orchestrations migration error: ' . $result['message']);
-        }
-        $this->logger->info('Orchestrations migrated');
     }
 
     private function migrateSnowflakeWriters(): void

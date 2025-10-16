@@ -128,17 +128,6 @@ class MigrateTest extends TestCase
             ],
         ];
 
-        // restore orchestrations
-        $destinationMockJobs[] = [
-            Config::ORCHESTRATOR_MIGRATE_COMPONENT,
-            [
-                'parameters' => [
-                    'sourceKbcUrl' => $sourceProjectUrl,
-                    '#sourceKbcToken' => $sourceProjectToken,
-                ],
-            ],
-        ];
-
         // run restore with credentials from step 1
         $destJobRunnerMock->expects($this->exactly($expectsRunJobs))
             ->method('runJob')
@@ -1491,7 +1480,7 @@ class MigrateTest extends TestCase
             ],
             'jobRunnerClass' => SyrupJobRunner::class,
             'migrateDataOfTablesDirectly' => false,
-            'expectsRunJobs' => 3,
+            'expectsRunJobs' => 2,
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => true,
@@ -1511,7 +1500,7 @@ class MigrateTest extends TestCase
             ],
             'jobRunnerClass' => SyrupJobRunner::class,
             'migrateDataOfTablesDirectly' => false,
-            'expectsRunJobs' => 3,
+            'expectsRunJobs' => 2,
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => true,
@@ -1537,7 +1526,7 @@ class MigrateTest extends TestCase
             ],
             'jobRunnerClass' => SyrupJobRunner::class,
             'migrateDataOfTablesDirectly' => false,
-            'expectsRunJobs' => 3,
+            'expectsRunJobs' => 2,
             'restoreConfigs' => true,
             'migrateStructureOnly' => false,
             'restorePermanentFiles' => true,

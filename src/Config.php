@@ -11,7 +11,6 @@ class Config extends BaseConfig
 {
     public const PROJECT_BACKUP_COMPONENT = 'keboola.project-backup';
     public const PROJECT_RESTORE_COMPONENT = 'keboola.project-restore';
-    public const ORCHESTRATOR_MIGRATE_COMPONENT = 'keboola.app-orchestrator-migrate';
     public const SNOWFLAKE_WRITER_MIGRATE_COMPONENT = 'keboola.app-snowflake-writer-migrate';
     public const DATA_OF_TABLES_MIGRATE_COMPONENT = 'keboola.app-project-migrate-large-tables';
 

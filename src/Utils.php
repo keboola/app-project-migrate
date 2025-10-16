@@ -61,7 +61,6 @@ class Utils
 
         $requiredDestinationApp = [
             Config::PROJECT_RESTORE_COMPONENT,
-            Config::ORCHESTRATOR_MIGRATE_COMPONENT,
             Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
         ];
 
