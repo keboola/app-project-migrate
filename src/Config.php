@@ -54,6 +54,11 @@ class Config extends BaseConfig
         return $this->getArrayValue(['parameters', 'db'], []);
     }
 
+    public function shouldMigrateConfigurations(): bool
+    {
+        return $this->getBoolValue(['parameters', 'migrateConfigurations']);
+    }
+
     public function shouldMigratePermanentFiles(): bool
     {
         return $this->getBoolValue(['parameters', 'migratePermanentFiles']);
