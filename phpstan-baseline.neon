@@ -163,12 +163,6 @@ parameters:
 			path: tests/phpunit/MigrateTest.php
 
 		-
-			message: '#^Offset ''message'' might not exist on Monolog\\LogRecord\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 20
-			path: tests/phpunit/MigrateTest.php
-
-		-
 			message: '#^PHPDoc tag @var with type Keboola\\AppProjectMigrate\\JobRunner\\JobRunner is not subtype of native type PHPUnit\\Framework\\MockObject\\MockObject\.$#'
 			identifier: varTag.nativeType
 			count: 2
@@ -190,18 +184,6 @@ parameters:
 			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, mixed given\.$#'
 			identifier: argument.type
 			count: 2
-			path: tests/phpunit/MigrateTest.php
-
-		-
-			message: '#^Part \$configId \(mixed\) of encapsed string cannot be cast to string\.$#'
-			identifier: encapsedStringPart.nonString
-			count: 4
-			path: tests/phpunit/MigrateTest.php
-
-		-
-			message: '#^Part \$destinationStack \(mixed\) of encapsed string cannot be cast to string\.$#'
-			identifier: encapsedStringPart.nonString
-			count: 4
 			path: tests/phpunit/MigrateTest.php
 
 		-

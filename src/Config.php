@@ -104,6 +104,16 @@ class Config extends BaseConfig
         return $value;
     }
 
+    public function getTablesToMigrate(): array
+    {
+        return $this->getArrayValue(['parameters', 'tablesToMigrate']);
+    }
+
+    public function getConfigurationsToMigrate(): array
+    {
+        return $this->getArrayValue(['parameters', 'configurationsToMigrate']);
+    }
+
     public function isSourceByodb(): bool
     {
         return $this->getBoolValue(['parameters', 'isSourceByodb']);

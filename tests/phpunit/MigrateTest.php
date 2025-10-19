@@ -95,6 +95,8 @@ class MigrateTest extends TestCase
                             'restoreBuckets' => $restoreBuckets,
                             'restoreTables' => $restoreTables,
                             'restoreProjectMetadata' => $restoreProjectMetadata,
+                            'configurationsToMigrate' => [],
+                            'tablesToMigrate' => [],
                             'checkEmptyProject' => true,
                         ],
                     ),
@@ -116,6 +118,7 @@ class MigrateTest extends TestCase
                         'sourceByodb' => '',
                         'includeWorkspaceSchemas' => [],
                         'preserveTimestamp' => false,
+                        'tables' => [],
                     ],
                 ],
             ];
@@ -411,6 +414,8 @@ class MigrateTest extends TestCase
             ->method('migrateConfiguration')
             ->willReturnCallback(function (...$args) {
                 [, $destinationStack, , , $configId] = $args;
+                /** @var string $configId */
+                /** @var string $destinationStack */
                 return [
                     'message' => "Configuration with ID '$configId' successfully " .
                         "migrated to stack '$destinationStack'.",
@@ -441,38 +446,212 @@ class MigrateTest extends TestCase
         self::assertCount(8, $records);
 
         $record = array_shift($records);
-        self::assertSame('Migrating configurations with secrets', $record['message']);
+        self::assertSame('Migrating configurations with secrets', $record?->message);
         $record = array_shift($records);
-        self::assertSame('Components "gooddata-writer" is obsolete, skipping migration...', $record['message']);
+        self::assertSame('Components "gooddata-writer" is obsolete, skipping migration...', $record?->message);
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "101" of component "some-component"',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "102" of component "some-component"',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "201" of component "another-component"',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'201\' successfully migrated to stack \'dest-stack\'.',
-            $record['message'],
+            $record?->message,
+        );
+    }
+
+    public function testMigrateSecretsWithConfigurationsFilter(): void
+    {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        // generate credentials
+        $this->mockAddMethodGenerateAbsReadCredentials($sourceJobRunnerMock);
+        $this->mockAddMethodBackupProject(
+            $sourceJobRunnerMock,
+            [
+                'id' => '222',
+                'status' => 'success',
+            ],
+            true,
+        );
+
+        $destJobRunnerMock->method('runJob')
+            ->willReturn([
+                'id' => '222',
+                'status' => 'success',
+            ]);
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'xyz',
+                    'migrateSecrets' => true,
+                    '#sourceManageToken' => 'manage-token',
+                    'configurationsToMigrate' => ['101', '201'], // Only migrate these configurations
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $logsHandler = new TestHandler();
+        $logger = new Logger('tests', [$logsHandler]);
+
+        /** @var StorageClient&MockObject $sourceClientMock */
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock
+            ->method('apiGet')
+            ->willReturnMap([
+                [
+                    'dev-branches/', null, [],
+                    [
+                        [
+                            'id' => '123',
+                            'name' => 'default',
+                            'isDefault' => true,
+                        ],
+                    ],
+                ],
+                [
+                    'branch/default/components?include=', null, [],
+                    [
+                        [
+                            'id' => 'some-component',
+                            'configurations' => [
+                                [
+                                    'id' => '101', // Should be migrated
+                                ],
+                                [
+                                    'id' => '102', // Should be skipped
+                                ],
+                            ],
+                        ],
+                        [
+                            'id' => 'another-component',
+                            'configurations' => [
+                                [
+                                    'id' => '201', // Should be migrated
+                                ],
+                                [
+                                    'id' => '202', // Should be skipped
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ])
+        ;
+        $sourceClientMock
+            ->method('getServiceUrl')
+            ->with('encryption')
+            ->willReturn('https://encryption.keboola.com')
+        ;
+
+        $sourceClientMock
+            ->method('generateId')
+            ->willReturn('123')
+        ;
+
+        /** @var StorageClient&MockObject $destClientMock */
+        $destClientMock = $this->createMock(StorageClient::class);
+
+        /** @var Migrations&MockObject $migrationsClientMock */
+        $migrationsClientMock = $this->createMock(Migrations::class);
+        $migrationsClientMock
+            ->expects(self::exactly(2)) // Only 2 configurations should be migrated
+            ->method('migrateConfiguration')
+            ->willReturnCallback(function (...$args) {
+                [, $destinationStack, , , $configId] = $args;
+                /** @var string $configId */
+                /** @var string $destinationStack */
+                return [
+                    'message' => "Configuration with ID '$configId' successfully " .
+                        "migrated to stack '$destinationStack'.",
+                    'data' => [],
+                ];
+            });
+
+        /** @var JobRunner $sourceJobRunnerMock */
+        /** @var JobRunner $destJobRunnerMock */
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            $logger,
+        );
+
+        $migrate->run();
+
+        $records = array_filter(
+            $logsHandler->getRecords(),
+            fn(LogRecord $record) => in_array('secrets', $record->context ?? [], true),
+        );
+        self::assertCount(7, $records); // 1 start + 2 skip + 2 migrate + 2 success messages
+
+        $record = array_shift($records);
+        self::assertSame('Migrating configurations with secrets', $record?->message);
+
+        $record = array_shift($records);
+        self::assertSame(
+            'Migrating configuration "101" of component "some-component"',
+            $record?->message,
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
+            $record?->message,
+        );
+
+        $record = array_shift($records);
+        self::assertSame(
+            'Skipping configuration "102" of component "some-component"',
+            $record?->message,
+        );
+
+        $record = array_shift($records);
+        self::assertSame(
+            'Migrating configuration "201" of component "another-component"',
+            $record?->message,
+        );
+        $record = array_shift($records);
+        self::assertSame(
+            'Configuration with ID \'201\' successfully migrated to stack \'dest-stack\'.',
+            $record?->message,
+        );
+
+        $record = array_shift($records);
+        self::assertSame(
+            'Skipping configuration "202" of component "another-component"',
+            $record?->message,
         );
     }
 
@@ -663,6 +842,8 @@ class MigrateTest extends TestCase
             ->method('migrateConfiguration')
             ->willReturnCallback(function (...$args) {
                 [, $destinationStack, , $componentId, $configId, $branchId] = $args;
+                /** @var string $configId */
+                /** @var string $destinationStack */
                 return [
                     'message' => "Configuration with ID '$configId' successfully " .
                         "migrated to stack '$destinationStack'.",
@@ -703,42 +884,42 @@ class MigrateTest extends TestCase
         self::assertCount(8, $records);
 
         $record = array_shift($records);
-        self::assertSame('Migrating configurations with secrets', $record['message']);
+        self::assertSame('Migrating configurations with secrets', $record?->message);
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "101" of component "keboola.wr-db-snowflake"',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "102" of component "keboola.wr-db-snowflake"',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "103" of component "keboola.wr-db-snowflake"',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Used existing Snowflake workspace \'USER_01\' for configuration with ID \'103\' '
             . '(keboola.wr-db-snowflake).',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'103\' successfully migrated to stack \'dest-stack\'.',
-            $record['message'],
+            $record?->message,
         );
     }
 
@@ -862,6 +1043,8 @@ class MigrateTest extends TestCase
             ->method('migrateConfiguration')
             ->willReturnCallback(function (...$args) use ($encryptionApiException) {
                 [, $destinationStack, , , $configId] = $args;
+                /** @var string $configId */
+                /** @var string $destinationStack */
                 if ($configId === '666') {
                     throw $encryptionApiException;
                 }
@@ -1060,6 +1243,8 @@ class MigrateTest extends TestCase
             ->method('migrateConfiguration')
             ->willReturnCallback(function (...$args) {
                 [, $destinationStack, , $componentId, $configId, $branchId] = $args;
+                /** @var string $configId */
+                /** @var string $destinationStack */
                 return [
                     'message' => "Configuration with ID '$configId' successfully " .
                         "migrated to stack '$destinationStack'.",
@@ -1102,22 +1287,22 @@ class MigrateTest extends TestCase
         $record = array_shift($records);
         self::assertSame(
             'Migrating configurations with secrets',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Migrating configuration "104" of component "keboola.wr-db-snowflake"',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'104\' (keboola.wr-db-snowflake) does not have a Snowflake workspace.',
-            $record['message'],
+            $record?->message,
         );
         $record = array_shift($records);
         self::assertSame(
             'Configuration with ID \'104\' successfully migrated to stack \'dest-stack\'.',
-            $record['message'],
+            $record?->message,
         );
     }
 
@@ -1765,6 +1950,120 @@ class MigrateTest extends TestCase
                     'skipRegionValidation' => true,
                     'directDataMigration' => false,
                     'migrateStructureOnly' => false,
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        /** @var StorageClient&MockObject $sourceClientMock */
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock->method('generateId')->willReturn('123');
+        $sourceClientMock->method('apiGet')->willReturn([]);
+        $sourceClientMock->method('getServiceUrl')->willReturn('https://encryption.keboola.com');
+
+        /** @var StorageClient&MockObject $destClientMock */
+        $destClientMock = $this->createMock(StorageClient::class);
+        /** @var Migrations&MockObject $migrationsClientMock */
+        $migrationsClientMock = $this->createMock(Migrations::class);
+
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            new NullLogger(),
+        );
+
+        $migrate->run();
+    }
+
+    public function testRestoreWithConfigurationsAndTablesFilter(): void
+    {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        // generate credentials
+        $this->mockAddMethodGenerateAbsReadCredentials($sourceJobRunnerMock);
+        $this->mockAddMethodBackupProject(
+            $sourceJobRunnerMock,
+            [
+                'id' => '222',
+                'status' => 'success',
+            ],
+            true, // directDataMigration is true, so exportStructureOnly will be true
+        );
+
+        $destJobRunnerMock
+            ->expects($this->exactly(3))
+            ->method('runJob')
+            ->willReturnCallback(function (string $componentId, array $data) {
+                if ($componentId === Config::PROJECT_RESTORE_COMPONENT) {
+                    $this->assertEquals([
+                        'parameters' => [
+                            'abs' => [
+                                'container' => 'abcdefgh',
+                                '#connectionString' => 'https://testConnectionString',
+                            ],
+                            'useDefaultBackend' => true,
+                            'restoreConfigs' => true,
+                            'dryRun' => false,
+                            'restorePermanentFiles' => true,
+                            'restoreTriggers' => true,
+                            'restoreNotifications' => true,
+                            'restoreBuckets' => true,
+                            'restoreTables' => true,
+                            'restoreProjectMetadata' => true,
+                            'configurationsToMigrate' => ['config1', 'config2'],
+                            'tablesToMigrate' => ['table1', 'table2'],
+                            'checkEmptyProject' => true,
+                        ],
+                    ], $data);
+                } elseif ($componentId === Config::DATA_OF_TABLES_MIGRATE_COMPONENT) {
+                    $this->assertEquals([
+                        'parameters' => [
+                            'mode' => 'sapi',
+                            'sourceKbcUrl' => 'https://connection.keboola.com',
+                            '#sourceKbcToken' => 'token',
+                            'dryRun' => false,
+                            'isSourceByodb' => false,
+                            'sourceByodb' => '',
+                            'includeWorkspaceSchemas' => [],
+                            'preserveTimestamp' => false,
+                            'tables' => ['table1', 'table2'],
+                        ],
+                    ], $data);
+                } elseif ($componentId === Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT) {
+                    $this->assertEquals([
+                        'parameters' => [
+                            'sourceKbcUrl' => 'https://connection.keboola.com',
+                            '#sourceKbcToken' => 'token',
+                            'dryRun' => false,
+                        ],
+                    ], $data);
+                }
+
+                return [
+                    'id' => '222',
+                    'status' => 'success',
+                ];
+            });
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'configurationsToMigrate' => ['config1', 'config2'],
+                    'tablesToMigrate' => ['table1', 'table2'],
+                    'directDataMigration' => true,
+                    'migrateBuckets' => true,
+                    'migrateTables' => true,
                 ],
             ],
             new ConfigDefinition(),
