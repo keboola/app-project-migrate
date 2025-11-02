@@ -71,9 +71,6 @@ class JobRunnerTest extends TestCase
 
         $queueV2Runner = new QueueV2JobRunner($storageClient, new NullLogger());
         self::assertEquals($expectedUrl, $queueV2Runner->getServiceUrl($service));
-
-        $syrupRunner = new SyrupJobRunner($storageClient, new NullLogger());
-        self::assertEquals($expectedUrl, $syrupRunner->getServiceUrl($service));
     }
 
     public function testServiceUrlNotFound(): void
@@ -97,11 +94,6 @@ class JobRunnerTest extends TestCase
     }
     public function jobRunnerFactoryDataProvider(): Generator
     {
-        yield 'syrup-runner' => [
-            [],
-            SyrupJobRunner::class,
-        ];
-
         yield 'queuev2-runner' => [
             [
                 'queuev2',
@@ -112,11 +104,6 @@ class JobRunnerTest extends TestCase
 
     public function serviceUrlDataProvider(): Generator
     {
-        yield 'syrup-url' => [
-            'syrup',
-            'https://syrup.keboola.com',
-        ];
-
         yield 'queue' => [
             'queue',
             'https://queue.keboola.com',

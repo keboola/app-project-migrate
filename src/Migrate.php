@@ -12,6 +12,7 @@ use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\Components;
 use Keboola\StorageApi\DevBranches;
 use Keboola\StorageApi\Options\Components\Configuration;
+use Keboola\SyncActionsClient\Model\ActionResponse;
 use Keboola\Syrup\ClientException as SyrupClientException;
 use Psr\Log\LoggerInterface;
 
@@ -79,7 +80,7 @@ class Migrate
         }
     }
 
-    private function generateBackupCredentials(string $backupId): array
+    private function generateBackupCredentials(string $backupId): ActionResponse
     {
         $this->logger->info('Creating backup credentials');
 
@@ -112,15 +113,15 @@ class Migrate
             ],
             $this->config->getAppBackupTag(),
         );
-        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
+        if ($job->status !== self::JOB_STATUS_SUCCESS) {
             /** @var array{message: string} $result */
-            $result = $job['result'];
+            $result = $job->result;
             throw new UserException('Project snapshot create error: ' . $result['message']);
         }
         $this->logger->info('Source project snapshot created');
     }
 
-    private function restoreDestinationProject(array $restoreCredentials): void
+    private function restoreDestinationProject(ActionResponse $restoreCredentials): void
     {
         $this->logger->info('Restoring current project from snapshot');
 
@@ -132,9 +133,9 @@ class Migrate
             $this->config->getAppRestoreTag(),
         );
 
-        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
+        if ($job->status !== self::JOB_STATUS_SUCCESS) {
             /** @var array{message: string} $result */
-            $result = $job['result'];
+            $result = $job->result;
             throw new UserException('Project restore error: ' . $result['message']);
         }
         $this->logger->info('Current project restored');
@@ -280,9 +281,9 @@ class Migrate
             ],
         );
 
-        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
+        if ($job->status !== self::JOB_STATUS_SUCCESS) {
             /** @var array{message: string} $result */
-            $result = $job['result'];
+            $result = $job->result;
             throw new UserException('Snowflake writers migration error: ' . $result['message']);
         }
         $this->logger->info('Snowflake writers migrated');
@@ -323,10 +324,13 @@ class Migrate
      *     }
      * }
      */
-    private function getRestoreConfigData(array $restoreCredentials): array
+    private function getRestoreConfigData(ActionResponse $restoreCredentials): array
     {
-        /** @var array{backupUri: string, container?: string, projectId?: string, bucket?: string, credentials: array{accessKeyId?: string, secretAccessKey?: string, sessionToken?: string, connectionString?: string, accessToken?: string, expiresIn?: int, tokenType?: string}} $restoreCredentials */
-        $backendConfig = $this->getBackendConfig($restoreCredentials);
+        $json = json_encode($restoreCredentials->data);
+        assert(is_string($json));
+        /** @var array{backupUri: string, container?: string, projectId?: string, bucket?: string, credentials: array{accessKeyId?: string, secretAccessKey?: string, sessionToken?: string, connectionString?: string, accessToken?: string, expiresIn?: int, tokenType?: string}} $restoreData */
+        $restoreData = json_decode($json, true);
+        $backendConfig = $this->getBackendConfig($restoreData);
         $commonParameters = $this->getCommonRestoreParameters();
 
         /** @var array{

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate\JobRunner;
 
 use Exception;
+use Keboola\JobQueueClient\DTO\Job;
 use Keboola\StorageApi\Client;
 use Keboola\StorageApi\Options\IndexOptions;
+use Keboola\SyncActionsClient\Model\ActionResponse;
 use Psr\Log\LoggerInterface;
 
 abstract class JobRunner
@@ -23,14 +25,14 @@ abstract class JobRunner
         $this->logger = $logger;
     }
 
-    abstract public function runJob(string $componentId, array $data, ?string $tag = null): array;
+    abstract public function runJob(string $componentId, array $data, ?string $tag = null): Job;
 
     abstract public function runSyncAction(
         string $componentId,
         string $action,
         array $data,
         ?string $tag = null,
-    ): array;
+    ): ActionResponse;
 
     public function getServiceUrl(string $serviceId): string
     {

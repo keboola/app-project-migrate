@@ -15,8 +15,12 @@ use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Component\UserException;
 use Keboola\EncryptionApiClient\Exception\ClientException as EncryptionClientException;
 use Keboola\EncryptionApiClient\Migrations;
+use Keboola\JobQueueClient\DTO\Job;
+use Keboola\JobQueueClient\DTO\Project;
+use Keboola\JobQueueClient\DTO\Token;
 use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\Components;
+use Keboola\SyncActionsClient\Model\ActionResponse;
 use Keboola\Syrup\ClientException;
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
@@ -24,6 +28,7 @@ use Monolog\LogRecord;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use stdClass;
 
 class MigrateTest extends TestCase
 {
@@ -131,10 +136,42 @@ class MigrateTest extends TestCase
         // run restore with credentials from step 1
         $destJobRunnerMock->expects($this->exactly($expectsRunJobs))
             ->method('runJob')
-            ->withConsecutive(...$destinationMockJobs)->willReturn([
+            ->withConsecutive(...$destinationMockJobs)->willReturn(Job::fromApiResponse([
                 'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
                 'status' => 'success',
-            ]);
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
 
         $config = new Config(
             [
@@ -257,10 +294,42 @@ class MigrateTest extends TestCase
         );
 
         $destJobRunnerMock->method('runJob')
-            ->willReturn([
+            ->willReturn(Job::fromApiResponse([
                 'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
                 'status' => 'success',
-            ]);
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
 
         $config = new Config(
             [
@@ -426,10 +495,42 @@ class MigrateTest extends TestCase
         );
 
         $destJobRunnerMock->method('runJob')
-            ->willReturn([
+            ->willReturn(Job::fromApiResponse([
                 'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
                 'status' => 'success',
-            ]);
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
 
         $config = new Config(
             [
@@ -658,10 +759,42 @@ class MigrateTest extends TestCase
         );
 
         $destJobRunnerMock->method('runJob')
-            ->willReturn([
+            ->willReturn(Job::fromApiResponse([
                 'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
                 'status' => 'success',
-            ]);
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
 
         $config = new Config(
             [
@@ -810,10 +943,42 @@ class MigrateTest extends TestCase
         );
 
         $destJobRunnerMock->method('runJob')
-            ->willReturn([
+            ->willReturn(Job::fromApiResponse([
                 'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
                 'status' => 'success',
-            ]);
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
 
         $config = new Config(
             [
@@ -958,8 +1123,8 @@ class MigrateTest extends TestCase
 
     public function testShouldFailOnSnapshotError(): void
     {
-        $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
-        $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
         $sourceClientMock = $this->createMock(StorageClient::class);
         $destClientMock = $this->createMock(StorageClient::class);
         $migrationsClientMock = $this->createMock(Migrations::class);
@@ -1016,8 +1181,8 @@ class MigrateTest extends TestCase
 
     public function testShouldFailOnRestoreError(): void
     {
-        $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
-        $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
         $sourceClientMock = $this->createMock(StorageClient::class);
         $destClientMock = $this->createMock(StorageClient::class);
         $migrationsClientMock = $this->createMock(Migrations::class);
@@ -1034,13 +1199,44 @@ class MigrateTest extends TestCase
 
         $destJobRunnerMock
             ->method('runJob')
-            ->willReturn([
+            ->willReturn(Job::fromApiResponse([
                 'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
                 'status' => 'error',
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
                 'result' => [
                     'message' => 'Cannot restore project',
                 ],
-            ]);
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
 
         $this->expectException(UserException::class);
         $this->expectExceptionMessageMatches('/Cannot restore project/');
@@ -1078,8 +1274,8 @@ class MigrateTest extends TestCase
 
     public function testCatchSyrupClientException(): void
     {
-        $sourceJobRunnerMock = $this->createMock(SyrupJobRunner::class);
-        $destJobRunnerMock = $this->createMock(SyrupJobRunner::class);
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
         $sourceClientMock = $this->createMock(StorageClient::class);
         $destClientMock = $this->createMock(StorageClient::class);
         $migrationsClientMock = $this->createMock(Migrations::class);
@@ -1156,13 +1352,13 @@ class MigrateTest extends TestCase
             ->method('runSyncAction')
             ->willReturnCallback(function (string $componentId, string $action) {
                 if ($componentId === Config::PROJECT_BACKUP_COMPONENT && $action === 'generate-read-credentials') {
-                    return [
+                    return new ActionResponse($this->arrayToStdClass([
                         'backupId' => '123',
                         'container' => 'container',
                         'credentials' => [
                             'connectionString' => '###',
                         ],
-                    ];
+                    ]));
                 }
                 return null;
             });
@@ -1173,17 +1369,83 @@ class MigrateTest extends TestCase
             ->method('runJob')
             ->willReturnCallback(function (string $componentId, array $data) use (&$actualEntriesInDryRunMode) {
                 $actualEntriesInDryRunMode[$componentId] = $data['parameters']['dryRun'] ?? false;
-                return [
+                return Job::fromApiResponse([
+                    'id' => '222',
+                    'runId' => 'run-123',
+                    'parentRunId' => 'parent-123',
+                    'project' => ['id' => '123'],
+                    'token' => ['id' => 'token-123', 'description' => null],
                     'status' => 'success',
-                ];
+                    'desiredStatus' => 'processing',
+                    'mode' => 'run',
+                    'component' => 'test-component',
+                    'config' => null,
+                    'configData' => null,
+                    'configRowIds' => null,
+                    'tag' => null,
+                    'createdTime' => '2024-01-01T00:00:00+00:00',
+                    'startTime' => '2024-01-01T00:00:00+00:00',
+                    'endTime' => '2024-01-01T00:00:00+00:00',
+                    'durationSeconds' => null,
+                    'result' => null,
+                    'usageData' => null,
+                    'isFinished' => true,
+                    'url' => 'https://example.com',
+                    'branchId' => null,
+                    'variableValuesId' => null,
+                    'variableValuesData' => [],
+                    'backend' => [],
+                    'executor' => null,
+                    'metrics' => null,
+                    'behavior' => [],
+                    'parallelism' => null,
+                    'type' => 'container',
+                    'orchestrationJobId' => null,
+                    'orchestrationTaskId' => null,
+                    'onlyOrchestrationTaskIds' => null,
+                    'previousJobId' => null,
+                ]);
             });
         $destJobRunnerMock
             ->method('runJob')
             ->willReturnCallback(function (string $componentId, array $data) use (&$actualEntriesInDryRunMode) {
                 $actualEntriesInDryRunMode[$componentId] = $data['parameters']['dryRun'] ?? false;
-                return [
+                return Job::fromApiResponse([
+                    'id' => '222',
+                    'runId' => 'run-123',
+                    'parentRunId' => 'parent-123',
+                    'project' => ['id' => '123'],
+                    'token' => ['id' => 'token-123', 'description' => null],
                     'status' => 'success',
-                ];
+                    'desiredStatus' => 'processing',
+                    'mode' => 'run',
+                    'component' => 'test-component',
+                    'config' => null,
+                    'configData' => null,
+                    'configRowIds' => null,
+                    'tag' => null,
+                    'createdTime' => '2024-01-01T00:00:00+00:00',
+                    'startTime' => '2024-01-01T00:00:00+00:00',
+                    'endTime' => '2024-01-01T00:00:00+00:00',
+                    'durationSeconds' => null,
+                    'result' => null,
+                    'usageData' => null,
+                    'isFinished' => true,
+                    'url' => 'https://example.com',
+                    'branchId' => null,
+                    'variableValuesId' => null,
+                    'variableValuesData' => [],
+                    'backend' => [],
+                    'executor' => null,
+                    'metrics' => null,
+                    'behavior' => [],
+                    'parallelism' => null,
+                    'type' => 'container',
+                    'orchestrationJobId' => null,
+                    'orchestrationTaskId' => null,
+                    'onlyOrchestrationTaskIds' => null,
+                    'previousJobId' => null,
+                ]);
             });
 
         $sourceClientMock = $this->createMock(StorageClient::class);
@@ -1283,7 +1545,7 @@ class MigrateTest extends TestCase
             ],
         ];
         yield 'Syrup without secrets & direct data migration' => [
-            'jobRunnerClass' => SyrupJobRunner::class,
+            'jobRunnerClass' => QueueV2JobRunner::class,
             'migrateSecrets' => false,
             'directDataMigration' => false,
             'expectedEntriesInDryRunMode' => [
@@ -1310,7 +1572,7 @@ class MigrateTest extends TestCase
                 ],
             )
             ->willReturn(
-                [
+                new ActionResponse($this->arrayToStdClass([
                     'backupId' => '123',
                     'backupUri' => 'https://kbc.s3.amazonaws.com/data-takeout/us-east-1/4788/395904684/',
                     'region' => 'us-east-1',
@@ -1320,7 +1582,7 @@ class MigrateTest extends TestCase
                         'sessionToken' => 'zzz',
                         'expiration' => '2018-05-23T10:49:02+00:00',
                     ],
-                ],
+                ],),),
             )
         ;
     }
@@ -1340,13 +1602,13 @@ class MigrateTest extends TestCase
                 ],
             )
             ->willReturn(
-                [
+                new ActionResponse($this->arrayToStdClass([
                     'backupId' => '123',
                     'container' => 'abcdefgh',
                     'credentials' => [
                         'connectionString' => 'https://testConnectionString',
                     ],
-                ],
+                ],),),
             )
         ;
     }
@@ -1366,7 +1628,7 @@ class MigrateTest extends TestCase
                 ],
             )
             ->willReturn(
-                [
+                new ActionResponse($this->arrayToStdClass([
                     'projectId' => 'testProjectId',
                     'bucket' => 'testBucket',
                     'backupUri' => '/testBucket/backup',
@@ -1375,7 +1637,7 @@ class MigrateTest extends TestCase
                         'expiresIn' => '3599',
                         'tokenType' => 'Bearer',
                     ],
-                ],
+                ],),),
             )
         ;
     }
@@ -1399,7 +1661,42 @@ class MigrateTest extends TestCase
                     ],
                 ],
             )
-            ->willReturn($return);
+            ->willReturn(Job::fromApiResponse(array_merge([
+                'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
+                'status' => 'success',
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ], $return)));
     }
 
     public function testSkipRegionValidation(): void
@@ -1423,10 +1720,42 @@ class MigrateTest extends TestCase
         );
 
         $destJobRunnerMock->method('runJob')
-            ->willReturn([
+            ->willReturn(Job::fromApiResponse([
                 'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
                 'status' => 'success',
-            ]);
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
 
         $config = new Config(
             [
@@ -1478,7 +1807,7 @@ class MigrateTest extends TestCase
                     '#sessionToken' => 'zzz',
                 ],
             ],
-            'jobRunnerClass' => SyrupJobRunner::class,
+            'jobRunnerClass' => QueueV2JobRunner::class,
             'migrateDataOfTablesDirectly' => false,
             'expectsRunJobs' => 2,
             'restoreConfigs' => true,
@@ -1498,7 +1827,7 @@ class MigrateTest extends TestCase
                     '#connectionString' => 'https://testConnectionString',
                 ],
             ],
-            'jobRunnerClass' => SyrupJobRunner::class,
+            'jobRunnerClass' => QueueV2JobRunner::class,
             'migrateDataOfTablesDirectly' => false,
             'expectsRunJobs' => 2,
             'restoreConfigs' => true,
@@ -1524,7 +1853,7 @@ class MigrateTest extends TestCase
                     ],
                 ],
             ],
-            'jobRunnerClass' => SyrupJobRunner::class,
+            'jobRunnerClass' => QueueV2JobRunner::class,
             'migrateDataOfTablesDirectly' => false,
             'expectsRunJobs' => 2,
             'restoreConfigs' => true,
@@ -1810,5 +2139,14 @@ class MigrateTest extends TestCase
             'restoreTables' => true,
             'restoreProjectMetadata' => false,
         ];
+    }
+
+    private function arrayToStdClass(array $data): stdClass
+    {
+        $json = json_encode($data);
+        assert(is_string($json));
+        $result = json_decode($json, false);
+        assert($result instanceof stdClass);
+        return $result;
     }
 }
