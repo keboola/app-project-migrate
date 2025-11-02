@@ -2049,10 +2049,42 @@ class MigrateTest extends TestCase
                         && $parameters['parameters']['region'] === 'us-east-1';
                 }),
             )
-            ->willReturn([
+            ->willReturn(Job::fromApiResponse([
                 'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
                 'status' => 'success',
-            ]);
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
 
         $sourceJobRunnerMock
             ->expects($this->once())
@@ -2061,7 +2093,7 @@ class MigrateTest extends TestCase
                 Config::PROJECT_BACKUP_COMPONENT,
                 'generate-read-credentials',
             )
-            ->willReturn([
+            ->willReturn(new ActionResponse($this->arrayToStdClass([
                 'backupId' => '123',
                 'backupUri' => 's3://my-bucket/backup/',
                 'region' => 'us-east-1',
@@ -2070,12 +2102,44 @@ class MigrateTest extends TestCase
                     'secretAccessKey' => 'yyy',
                     'sessionToken' => 'zzz',
                 ],
-            ]);
+            ])));
 
-        $destJobRunnerMock->method('runJob')->willReturn([
+        $destJobRunnerMock->method('runJob')->willReturn(Job::fromApiResponse([
             'id' => '222',
+            'runId' => 'run-123',
+            'parentRunId' => 'parent-123',
+            'project' => ['id' => '123'],
+            'token' => ['id' => 'token-123', 'description' => null],
             'status' => 'success',
-        ]);
+            'desiredStatus' => 'processing',
+            'mode' => 'run',
+            'component' => 'test-component',
+            'config' => null,
+            'configData' => null,
+            'configRowIds' => null,
+            'tag' => null,
+            'createdTime' => '2024-01-01T00:00:00+00:00',
+            'startTime' => '2024-01-01T00:00:00+00:00',
+            'endTime' => '2024-01-01T00:00:00+00:00',
+            'durationSeconds' => null,
+            'result' => null,
+            'usageData' => null,
+            'isFinished' => true,
+            'url' => 'https://example.com',
+            'branchId' => null,
+            'variableValuesId' => null,
+            'variableValuesData' => [],
+            'backend' => [],
+            'executor' => null,
+            'metrics' => null,
+            'behavior' => [],
+            'parallelism' => null,
+            'type' => 'container',
+            'orchestrationJobId' => null,
+            'orchestrationTaskId' => null,
+            'onlyOrchestrationTaskIds' => null,
+            'previousJobId' => null,
+        ]));
 
         $config = new Config(
             [
@@ -2154,10 +2218,42 @@ class MigrateTest extends TestCase
                             $parameters['parameters']['region'] === 'east-us');
                 }),
             )
-            ->willReturn([
+            ->willReturn(Job::fromApiResponse([
                 'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
                 'status' => 'success',
-            ]);
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
 
         $sourceJobRunnerMock
             ->expects($this->once())
@@ -2166,18 +2262,50 @@ class MigrateTest extends TestCase
                 Config::PROJECT_BACKUP_COMPONENT,
                 'generate-read-credentials',
             )
-            ->willReturn([
+            ->willReturn(new ActionResponse($this->arrayToStdClass([
                 'backupId' => '123',
                 'container' => 'container123',
                 'credentials' => [
                     'connectionString' => 'https://testConnectionString',
                 ],
-            ]);
+            ])));
 
-        $destJobRunnerMock->method('runJob')->willReturn([
+        $destJobRunnerMock->method('runJob')->willReturn(Job::fromApiResponse([
             'id' => '222',
+            'runId' => 'run-123',
+            'parentRunId' => 'parent-123',
+            'project' => ['id' => '123'],
+            'token' => ['id' => 'token-123', 'description' => null],
             'status' => 'success',
-        ]);
+            'desiredStatus' => 'processing',
+            'mode' => 'run',
+            'component' => 'test-component',
+            'config' => null,
+            'configData' => null,
+            'configRowIds' => null,
+            'tag' => null,
+            'createdTime' => '2024-01-01T00:00:00+00:00',
+            'startTime' => '2024-01-01T00:00:00+00:00',
+            'endTime' => '2024-01-01T00:00:00+00:00',
+            'durationSeconds' => null,
+            'result' => null,
+            'usageData' => null,
+            'isFinished' => true,
+            'url' => 'https://example.com',
+            'branchId' => null,
+            'variableValuesId' => null,
+            'variableValuesData' => [],
+            'backend' => [],
+            'executor' => null,
+            'metrics' => null,
+            'behavior' => [],
+            'parallelism' => null,
+            'type' => 'container',
+            'orchestrationJobId' => null,
+            'orchestrationTaskId' => null,
+            'onlyOrchestrationTaskIds' => null,
+            'previousJobId' => null,
+        ]));
 
         $config = new Config(
             [
@@ -2254,10 +2382,42 @@ class MigrateTest extends TestCase
                         && $parameters['parameters']['region'] === 'us-central1';
                 }),
             )
-            ->willReturn([
+            ->willReturn(Job::fromApiResponse([
                 'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
                 'status' => 'success',
-            ]);
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
 
         $sourceJobRunnerMock
             ->expects($this->once())
@@ -2266,7 +2426,7 @@ class MigrateTest extends TestCase
                 Config::PROJECT_BACKUP_COMPONENT,
                 'generate-read-credentials',
             )
-            ->willReturn([
+            ->willReturn(new ActionResponse($this->arrayToStdClass([
                 'projectId' => 'gcs-project',
                 'bucket' => 'my-gcs-bucket',
                 'backupUri' => '/my-gcs-bucket/backup',
@@ -2275,12 +2435,44 @@ class MigrateTest extends TestCase
                     'expiresIn' => 3599,
                     'tokenType' => 'Bearer',
                 ],
-            ]);
+            ])));
 
-        $destJobRunnerMock->method('runJob')->willReturn([
+        $destJobRunnerMock->method('runJob')->willReturn(Job::fromApiResponse([
             'id' => '222',
+            'runId' => 'run-123',
+            'parentRunId' => 'parent-123',
+            'project' => ['id' => '123'],
+            'token' => ['id' => 'token-123', 'description' => null],
             'status' => 'success',
-        ]);
+            'desiredStatus' => 'processing',
+            'mode' => 'run',
+            'component' => 'test-component',
+            'config' => null,
+            'configData' => null,
+            'configRowIds' => null,
+            'tag' => null,
+            'createdTime' => '2024-01-01T00:00:00+00:00',
+            'startTime' => '2024-01-01T00:00:00+00:00',
+            'endTime' => '2024-01-01T00:00:00+00:00',
+            'durationSeconds' => null,
+            'result' => null,
+            'usageData' => null,
+            'isFinished' => true,
+            'url' => 'https://example.com',
+            'branchId' => null,
+            'variableValuesId' => null,
+            'variableValuesData' => [],
+            'backend' => [],
+            'executor' => null,
+            'metrics' => null,
+            'behavior' => [],
+            'parallelism' => null,
+            'type' => 'container',
+            'orchestrationJobId' => null,
+            'orchestrationTaskId' => null,
+            'onlyOrchestrationTaskIds' => null,
+            'previousJobId' => null,
+        ]));
 
         $config = new Config(
             [
