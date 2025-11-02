@@ -6,28 +6,479 @@
     "sourceKbcUrl"
   ],
   "properties": {
+    "sourceKbcUrl": {
+      "type": "string",
+      "title": "Source KBC URL",
+      "default": "https://connection.keboola.com",
+      "minLength": 1,
+      "propertyOrder": 1
+    },
     "#sourceKbcToken": {
       "type": "string",
       "title": "KBC Storage API token",
       "format": "password",
-      "default": "",
       "minLength": 1,
-      "propertyOrder": 1
-    },
-    "sourceKbcUrl": {
-      "title": "KBC Stack",
-      "type": "string",
-      "enum": [
-        "https://connection.keboola.com",
-        "https://connection.eu-central-1.keboola.com"
-      ],
-      "options": {
-        "enum_titles": [
-          "US",
-          "EU"
-        ]
-      },
       "propertyOrder": 2
+    },
+    "dryRun": {
+      "type": "boolean",
+      "title": "Dry Run",
+      "format": "checkbox",
+      "default": false,
+      "propertyOrder": 3
+    },
+    "directDataMigration": {
+      "type": "boolean",
+      "title": "Direct Data Migration",
+      "format": "checkbox",
+      "default": true,
+      "propertyOrder": 4
+    },
+    "migrateConfigurations": {
+      "type": "boolean",
+      "title": "Migrate Configurations",
+      "format": "checkbox",
+      "default": true,
+      "propertyOrder": 5
+    },
+    "migratePermanentFiles": {
+      "type": "boolean",
+      "title": "Migrate Permanent Files",
+      "format": "checkbox",
+      "default": true,
+      "propertyOrder": 6
+    },
+    "migrateTriggers": {
+      "type": "boolean",
+      "title": "Migrate Triggers",
+      "format": "checkbox",
+      "default": true,
+      "propertyOrder": 7
+    },
+    "migrateNotifications": {
+      "type": "boolean",
+      "title": "Migrate Notifications",
+      "format": "checkbox",
+      "default": true,
+      "propertyOrder": 8
+    },
+    "migrateStructureOnly": {
+      "type": "boolean",
+      "title": "Migrate Structure Only",
+      "format": "checkbox",
+      "default": false,
+      "propertyOrder": 9
+    },
+    "migrateSecrets": {
+      "type": "boolean",
+      "title": "Migrate Secrets",
+      "format": "checkbox",
+      "default": false,
+      "propertyOrder": 10
+    },
+    "#sourceManageToken": {
+      "type": "string",
+      "title": "Source Manage Token",
+      "format": "password",
+      "default": null,
+      "options": {
+        "dependencies": {
+          "migrateSecrets": true
+        }
+      },
+      "propertyOrder": 11
+    },
+    "migrateBuckets": {
+      "type": "boolean",
+      "title": "Migrate Buckets",
+      "format": "checkbox",
+      "default": true,
+      "propertyOrder": 12
+    },
+    "migrateTables": {
+      "type": "boolean",
+      "title": "Migrate Tables",
+      "format": "checkbox",
+      "default": true,
+      "propertyOrder": 13
+    },
+    "migrateProjectMetadata": {
+      "type": "boolean",
+      "title": "Migrate Project Metadata",
+      "format": "checkbox",
+      "default": true,
+      "propertyOrder": 14
+    },
+    "skipRegionValidation": {
+      "type": "boolean",
+      "title": "Skip Region Validation",
+      "format": "checkbox",
+      "default": false,
+      "propertyOrder": 15
+    },
+    "checkEmptyProject": {
+      "type": "boolean",
+      "title": "Check Empty Project",
+      "format": "checkbox",
+      "default": true,
+      "propertyOrder": 16
+    },
+    "preserveTimestamp": {
+      "type": "boolean",
+      "title": "Preserve Timestamp",
+      "format": "checkbox",
+      "default": false,
+      "propertyOrder": 17
+    },
+    "tablesToMigrate": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Tables to Migrate",
+      "format": "select",
+      "options": {
+        "tags": true
+      },
+      "description": "e.g. in.c-main.table1, out.c-main.table2. If empty, all tables will be migrated.",
+      "uniqueItems": true,
+      "propertyOrder": 18
+    },
+    "configurationsToMigrate": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Configurations to Migrate",
+      "format": "select",
+      "options": {
+        "tags": true
+      },
+      "description": "e.g. keboola.ex-aws-s3, keboola.ex-google-drive. If empty, all configurations will be migrated.",
+      "uniqueItems": true,
+      "propertyOrder": 20
+    },
+    "includeWorkspaceSchemas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Include Workspace Schemas",
+      "format": "select",
+      "options": {
+        "tags": true
+      },
+      "description": "e.g. MY_SCHEMA, PUBLIC. If empty, no workspace schemas will be migrated.",
+      "uniqueItems": true,
+      "propertyOrder": 21
+    },
+    "dataMode": {
+      "type": "string",
+      "title": "Data Mode",
+      "enum": ["database", "sapi"],
+      "default": "database",
+      "propertyOrder": 22
+    },
+    "db": {
+      "type": "object",
+      "title": "Database Configuration",
+      "options": {
+        "dependencies": {
+          "dataMode": "database"
+        }
+      },
+      "properties": {
+        "useOwnDbSettings": {
+          "type": "boolean",
+          "title": "Use own DB settings",
+          "format": "checkbox",
+          "default": false,
+          "propertyOrder": 231
+        },
+        "host": {
+          "type": "string",
+          "title": "Host",
+          "minLength": 1,
+          "options": {
+            "dependencies": {
+              "useOwnDbSettings": true
+            }
+          },
+          "propertyOrder": 232
+        },
+        "username": {
+          "type": "string",
+          "title": "Username",
+          "minLength": 1,
+          "options": {
+            "dependencies": {
+              "useOwnDbSettings": true
+            }
+          },
+          "propertyOrder": 233
+        },
+        "#password": {
+          "type": "string",
+          "title": "Password",
+          "format": "password",
+          "options": {
+            "dependencies": {
+              "useOwnDbSettings": true
+            }
+          },
+          "propertyOrder": 234
+        },
+        "#privateKey": {
+          "type": "string",
+          "title": "Private Key",
+          "format": "password",
+          "options": {
+            "dependencies": {
+              "useOwnDbSettings": true
+            }
+          },
+          "propertyOrder": 235
+        },
+        "warehouse": {
+          "type": "string",
+          "title": "Warehouse",
+          "minLength": 1,
+          "options": {
+            "dependencies": {
+              "useOwnDbSettings": true
+            }
+          },
+          "propertyOrder": 236
+        },
+        "warehouse_size": {
+          "type": "string",
+          "title": "Warehouse Size",
+          "enum": ["SMALL", "MEDIUM", "LARGE"],
+          "default": "SMALL",
+          "options": {
+            "dependencies": {
+              "useOwnDbSettings": true
+            }
+          },
+          "propertyOrder": 237
+        },
+        "isSourceByodb": {
+          "type": "boolean",
+          "title": "Is Source Project BYODB",
+          "format": "checkbox",
+          "default": false,
+          "options": {
+            "dependencies": {
+              "dataMode": "database"
+            }
+          },
+          "propertyOrder": 260
+        },
+        "sourceByodb": {
+          "type": "string",
+          "title": "Source Project BYODB",
+          "options": {
+            "dependencies": {
+              "isSourceByodb": true
+            }
+          },
+          "propertyOrder": 261
+        }
+      },
+      "propertyOrder": 23
+    },
+    "showComponentsDevTag": {
+      "type": "boolean",
+      "title": "Use specific Components Dev Tag",
+      "format": "checkbox",
+      "default": false,
+      "propertyOrder": 27
+    },
+    "componentsDevTag": {
+      "type": "object",
+      "title": "",
+      "format": "grid",
+      "options": {
+        "dependencies": {
+          "showComponentsDevTag": true
+        }
+      },
+      "properties": {
+        "backup": {
+          "type": "string",
+          "title": "Backup"
+        },
+        "restore": {
+          "type": "string",
+          "title": "Restore"
+        },
+        "tablesData": {
+          "type": "string",
+          "title": "Tables Data"
+        }
+      },
+      "propertyOrder": 28
+    },
+    "showStorageBackend": {
+      "type": "boolean",
+      "title": "Use own Storage Backend",
+      "format": "checkbox",
+      "default": false,
+      "propertyOrder": 29
+    },
+    "storageBackend": {
+      "type": "object",
+      "title": "Storage Backend",
+      "format": "grid",
+      "options": {
+        "dependencies": {
+          "showStorageBackend": true
+        }
+      },
+      "properties": {
+        "storageBackendType": {
+          "type": "string",
+          "title": "Storage Backend Type",
+          "enum": ["s3", "abs", "gcs"],
+          "propertyOrder": 271
+        },
+        "backupPath": {
+          "type": "string",
+          "title": "Backup Path",
+          "propertyOrder": 272
+        },
+        "accountName": {
+          "type": "string",
+          "title": "Account Name",
+          "options": {
+            "dependencies": {
+              "storageBackendType": "abs"
+            }
+          },
+          "propertyOrder": 273
+        },
+        "#accountKey": {
+          "type": "string",
+          "title": "Account Key",
+          "format": "password",
+          "options": {
+            "dependencies": {
+              "storageBackendType": "abs"
+            }
+          },
+          "propertyOrder": 274
+        },
+        "access_key_id": {
+          "type": "string",
+          "title": "Access Key ID",
+          "options": {
+            "dependencies": {
+              "storageBackendType": "s3"
+            }
+          },
+          "propertyOrder": 275
+        },
+        "#secret_access_key": {
+          "type": "string",
+          "title": "Secret Access Key",
+          "format": "password",
+          "options": {
+            "dependencies": {
+              "storageBackendType": "s3"
+            }
+          },
+          "propertyOrder": 276
+        },
+        "region": {
+          "type": "string",
+          "title": "Region",
+          "options": {
+            "dependencies": {
+              "storageBackendType": ["s3", "abs", "gcs"]
+            }
+          },
+          "propertyOrder": 277
+        },
+        "#bucket": {
+          "type": "string",
+          "title": "Bucket",
+          "options": {
+            "dependencies": {
+              "storageBackendType": ["s3", "gcs"]
+            }
+          },
+          "propertyOrder": 278
+        },
+        "#jsonKey": {
+          "type": "string",
+          "title": "JSON Key",
+          "format": "password",
+          "options": {
+            "dependencies": {
+              "storageBackendType": "gcs"
+            }
+          },
+          "propertyOrder": 279
+        }
+      },
+      "required": ["storageBackendType", "backupPath"],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "storageBackendType": {
+                "const": "s3"
+              }
+            }
+          },
+          "then": {
+            "required": ["access_key_id", "#secret_access_key", "#bucket", "region"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "storageBackendType": {
+                "const": "abs"
+              }
+            }
+          },
+          "then": {
+            "required": ["accountName", "#accountKey"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "storageBackendType": {
+                "const": "gcs"
+              }
+            }
+          },
+          "then": {
+            "required": ["#jsonKey", "#bucket", "region"]
+          }
+        }
+      ],
+      "propertyOrder": 30
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "dataMode": {
+            "const": "sapi"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "db": {
+            "not": {}
+          }
+        }
+      }
+    }
+  ]
 }

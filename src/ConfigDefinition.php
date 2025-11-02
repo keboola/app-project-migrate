@@ -14,6 +14,7 @@ class ConfigDefinition extends BaseConfigDefinition
     {
         $parametersNode = parent::getParametersDefinition();
         $parametersNode
+            ->ignoreExtraKeys()
             ->children()
                 ->scalarNode('sourceKbcUrl')
                     ->isRequired()
@@ -48,7 +49,7 @@ class ConfigDefinition extends BaseConfigDefinition
                     ->children()
                         ->scalarNode('backup')->end()
                         ->scalarNode('restore')->end()
-                        ->scalarNode('tables-data')->end()
+                        ->scalarNode('tablesData')->end()
                     ->end()
                 ->end()
                 ->arrayNode('db')
@@ -72,6 +73,70 @@ class ConfigDefinition extends BaseConfigDefinition
                         ->scalarNode('#privateKey')->end()
                         ->scalarNode('warehouse')->isRequired()->cannotBeEmpty()->end()
                         ->enumNode('warehouse_size')->values(['SMALL', 'MEDIUM', 'LARGE'])->defaultValue('SMALL')->end()
+                    ->end()
+                ->end()
+                ->arrayNode('storageBackend')
+                    ->validate()->always(function ($v) {
+                        /** @var array{
+                         *     storageBackendType: string,
+                         *     access_key_id?: string,
+                         *     '#secret_access_key'?: string,
+                         *     '#bucket'?: string,
+                         *     region?: string,
+                         *     accountName?: string,
+                         *     '#accountKey'?: string,
+                         *     '#jsonKey'?: string,
+                         * } $v */
+                        switch ($v['storageBackendType']) {
+                            case Config::STORAGE_BACKEND_S3:
+                                $requiredParameters = [
+                                    'access_key_id',
+                                    '#secret_access_key',
+                                    '#bucket',
+                                    'region',
+                                ];
+                                break;
+                            case Config::STORAGE_BACKEND_ABS:
+                                $requiredParameters = [
+                                    'accountName',
+                                    '#accountKey',
+                                ];
+                                break;
+                            case Config::STORAGE_BACKEND_GCS:
+                                $requiredParameters = [
+                                    '#jsonKey',
+                                    '#bucket',
+                                    'region',
+                                ];
+                                break;
+                            default:
+                                throw new InvalidConfigurationException(
+                                    'Invalid storageBackendType: ' . $v['storageBackendType'],
+                                );
+                        }
+                        foreach ($requiredParameters as $param) {
+                            if (empty($v[$param])) {
+                                throw new InvalidConfigurationException(
+                                    sprintf(
+                                        'Parameter "%s" is required for storageBackendType "%s".',
+                                        $param,
+                                        $v['storageBackendType'],
+                                    ),
+                                );
+                            }
+                        }
+                        return $v;
+                    })->end()
+                    ->children()
+                        ->scalarNode('storageBackendType')->isRequired()->end()
+                        ->scalarNode('backupPath')->isRequired()->end()
+                        ->scalarNode('accountName')->end()
+                        ->scalarNode('#accountKey')->end()
+                        ->scalarNode('access_key_id')->end()
+                        ->scalarNode('#secret_access_key')->end()
+                        ->scalarNode('region')->end()
+                        ->scalarNode('#bucket')->end()
+                        ->scalarNode('#jsonKey')->end()
                     ->end()
                 ->end()
                 ->scalarNode('#sourceManageToken')->defaultNull()->end()

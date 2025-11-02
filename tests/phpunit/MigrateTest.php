@@ -2013,6 +2013,508 @@ class MigrateTest extends TestCase
         $migrate->run();
     }
 
+    public function testBackupWithUserDefinedS3Credentials(): void
+    {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        $sourceJobRunnerMock
+            ->expects($this->once())
+            ->method('runJob')
+            ->with(
+                Config::PROJECT_BACKUP_COMPONENT,
+                $this->callback(function ($parameters) {
+                    /** @var array{
+                     *     parameters: array{
+                     *          backupId: string,
+                     *          exportStructureOnly: bool,
+                     *          skipRegionValidation: bool,
+                     *          storageBackendType: string,
+                     *          access_key_id: string,
+                     *          "#secret_access_key": string,
+                     *          "#bucket": string,
+                     *          region: string
+                     *     }
+                     * } $parameters
+                     */
+                    return $parameters['parameters']['backupId'] === '123'
+                        && $parameters['parameters']['exportStructureOnly'] === true
+                        && $parameters['parameters']['skipRegionValidation'] === false
+                        && $parameters['parameters']['storageBackendType'] === 's3'
+                        && $parameters['parameters']['access_key_id'] === 'my-access-key'
+                        && $parameters['parameters']['#secret_access_key'] === 'my-secret-key'
+                        && $parameters['parameters']['#bucket'] === 'my-bucket'
+                        && $parameters['parameters']['region'] === 'us-east-1';
+                }),
+            )
+            ->willReturn(Job::fromApiResponse([
+                'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
+                'status' => 'success',
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
+
+        $sourceJobRunnerMock
+            ->expects($this->once())
+            ->method('runSyncAction')
+            ->with(
+                Config::PROJECT_BACKUP_COMPONENT,
+                'generate-read-credentials',
+            )
+            ->willReturn(new ActionResponse($this->arrayToStdClass([
+                'backupId' => '123',
+                'backupUri' => 's3://my-bucket/backup/',
+                'region' => 'us-east-1',
+                'credentials' => [
+                    'accessKeyId' => 'xxx',
+                    'secretAccessKey' => 'yyy',
+                    'sessionToken' => 'zzz',
+                ],
+            ])));
+
+        $destJobRunnerMock->method('runJob')->willReturn(Job::fromApiResponse([
+            'id' => '222',
+            'runId' => 'run-123',
+            'parentRunId' => 'parent-123',
+            'project' => ['id' => '123'],
+            'token' => ['id' => 'token-123', 'description' => null],
+            'status' => 'success',
+            'desiredStatus' => 'processing',
+            'mode' => 'run',
+            'component' => 'test-component',
+            'config' => null,
+            'configData' => null,
+            'configRowIds' => null,
+            'tag' => null,
+            'createdTime' => '2024-01-01T00:00:00+00:00',
+            'startTime' => '2024-01-01T00:00:00+00:00',
+            'endTime' => '2024-01-01T00:00:00+00:00',
+            'durationSeconds' => null,
+            'result' => null,
+            'usageData' => null,
+            'isFinished' => true,
+            'url' => 'https://example.com',
+            'branchId' => null,
+            'variableValuesId' => null,
+            'variableValuesData' => [],
+            'backend' => [],
+            'executor' => null,
+            'metrics' => null,
+            'behavior' => [],
+            'parallelism' => null,
+            'type' => 'container',
+            'orchestrationJobId' => null,
+            'orchestrationTaskId' => null,
+            'onlyOrchestrationTaskIds' => null,
+            'previousJobId' => null,
+        ]));
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'storageBackend' => [
+                        'backupPath' => '/path/to/backup',
+                        'storageBackendType' => 's3',
+                        'access_key_id' => 'my-access-key',
+                        '#secret_access_key' => 'my-secret-key',
+                        '#bucket' => 'my-bucket',
+                        'region' => 'us-east-1',
+                    ],
+                    'directDataMigration' => true,
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock->method('generateId')->willReturn('123');
+        $sourceClientMock->method('apiGet')->willReturn([]);
+        $sourceClientMock->method('getServiceUrl')->willReturn('https://encryption.keboola.com');
+
+        $destClientMock = $this->createMock(StorageClient::class);
+        $migrationsClientMock = $this->createMock(Migrations::class);
+
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            new NullLogger(),
+        );
+
+        $migrate->run();
+    }
+
+    public function testBackupWithUserDefinedABSCredentials(): void
+    {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        $sourceJobRunnerMock
+            ->expects($this->once())
+            ->method('runJob')
+            ->with(
+                Config::PROJECT_BACKUP_COMPONENT,
+                $this->callback(function ($parameters) {
+                    /** @var array{
+                     *     parameters: array{
+                     *          backupId: string,
+                     *          exportStructureOnly: bool,
+                     *          skipRegionValidation: bool,
+                     *          storageBackendType: string,
+                     *          accountName: string,
+                     *          "#accountKey": string,
+                     *          region?: string
+                     *     }
+                     * } $parameters
+                    */
+                    return $parameters['parameters']['backupId'] === '123'
+                        && $parameters['parameters']['exportStructureOnly'] === true
+                        && $parameters['parameters']['skipRegionValidation'] === false
+                        && $parameters['parameters']['storageBackendType'] === 'abs'
+                        && $parameters['parameters']['accountName'] === 'my-account'
+                        && $parameters['parameters']['#accountKey'] === 'my-account-key'
+                        && (!isset($parameters['parameters']['region']) ||
+                            $parameters['parameters']['region'] === 'east-us');
+                }),
+            )
+            ->willReturn(Job::fromApiResponse([
+                'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
+                'status' => 'success',
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
+
+        $sourceJobRunnerMock
+            ->expects($this->once())
+            ->method('runSyncAction')
+            ->with(
+                Config::PROJECT_BACKUP_COMPONENT,
+                'generate-read-credentials',
+            )
+            ->willReturn(new ActionResponse($this->arrayToStdClass([
+                'backupId' => '123',
+                'container' => 'container123',
+                'credentials' => [
+                    'connectionString' => 'https://testConnectionString',
+                ],
+            ])));
+
+        $destJobRunnerMock->method('runJob')->willReturn(Job::fromApiResponse([
+            'id' => '222',
+            'runId' => 'run-123',
+            'parentRunId' => 'parent-123',
+            'project' => ['id' => '123'],
+            'token' => ['id' => 'token-123', 'description' => null],
+            'status' => 'success',
+            'desiredStatus' => 'processing',
+            'mode' => 'run',
+            'component' => 'test-component',
+            'config' => null,
+            'configData' => null,
+            'configRowIds' => null,
+            'tag' => null,
+            'createdTime' => '2024-01-01T00:00:00+00:00',
+            'startTime' => '2024-01-01T00:00:00+00:00',
+            'endTime' => '2024-01-01T00:00:00+00:00',
+            'durationSeconds' => null,
+            'result' => null,
+            'usageData' => null,
+            'isFinished' => true,
+            'url' => 'https://example.com',
+            'branchId' => null,
+            'variableValuesId' => null,
+            'variableValuesData' => [],
+            'backend' => [],
+            'executor' => null,
+            'metrics' => null,
+            'behavior' => [],
+            'parallelism' => null,
+            'type' => 'container',
+            'orchestrationJobId' => null,
+            'orchestrationTaskId' => null,
+            'onlyOrchestrationTaskIds' => null,
+            'previousJobId' => null,
+        ]));
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'storageBackend' => [
+                        'backupPath' => '/path/to/backup',
+                        'storageBackendType' => 'abs',
+                        'accountName' => 'my-account',
+                        '#accountKey' => 'my-account-key',
+                        'region' => 'east-us',
+                    ],
+                    'directDataMigration' => true,
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock->method('generateId')->willReturn('123');
+        $sourceClientMock->method('apiGet')->willReturn([]);
+        $sourceClientMock->method('getServiceUrl')->willReturn('https://encryption.keboola.com');
+
+        $destClientMock = $this->createMock(StorageClient::class);
+        $migrationsClientMock = $this->createMock(Migrations::class);
+
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            new NullLogger(),
+        );
+
+        $migrate->run();
+    }
+
+    public function testBackupWithUserDefinedGCSCredentials(): void
+    {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        $sourceJobRunnerMock
+            ->expects($this->once())
+            ->method('runJob')
+            ->with(
+                Config::PROJECT_BACKUP_COMPONENT,
+                $this->callback(function ($parameters) {
+                    /** @var array{
+                     *     parameters: array{
+                     *          backupId: string,
+                     *          exportStructureOnly: bool,
+                     *          skipRegionValidation: bool,
+                     *          storageBackendType: string,
+                     *          "#jsonKey": string,
+                     *          "#bucket": string,
+                     *          region: string
+                     *     }
+                     * } $parameters
+                    */
+                    return $parameters['parameters']['backupId'] === '123'
+                        && $parameters['parameters']['exportStructureOnly'] === true
+                        && $parameters['parameters']['skipRegionValidation'] === false
+                        && $parameters['parameters']['storageBackendType'] === 'gcs'
+                        && $parameters['parameters']['#jsonKey'] === '{"type":"service_account"}'
+                        && $parameters['parameters']['#bucket'] === 'my-gcs-bucket'
+                        && $parameters['parameters']['region'] === 'us-central1';
+                }),
+            )
+            ->willReturn(Job::fromApiResponse([
+                'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
+                'status' => 'success',
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
+
+        $sourceJobRunnerMock
+            ->expects($this->once())
+            ->method('runSyncAction')
+            ->with(
+                Config::PROJECT_BACKUP_COMPONENT,
+                'generate-read-credentials',
+            )
+            ->willReturn(new ActionResponse($this->arrayToStdClass([
+                'projectId' => 'gcs-project',
+                'bucket' => 'my-gcs-bucket',
+                'backupUri' => '/my-gcs-bucket/backup',
+                'credentials' => [
+                    'accessToken' => 'test-token',
+                    'expiresIn' => 3599,
+                    'tokenType' => 'Bearer',
+                ],
+            ])));
+
+        $destJobRunnerMock->method('runJob')->willReturn(Job::fromApiResponse([
+            'id' => '222',
+            'runId' => 'run-123',
+            'parentRunId' => 'parent-123',
+            'project' => ['id' => '123'],
+            'token' => ['id' => 'token-123', 'description' => null],
+            'status' => 'success',
+            'desiredStatus' => 'processing',
+            'mode' => 'run',
+            'component' => 'test-component',
+            'config' => null,
+            'configData' => null,
+            'configRowIds' => null,
+            'tag' => null,
+            'createdTime' => '2024-01-01T00:00:00+00:00',
+            'startTime' => '2024-01-01T00:00:00+00:00',
+            'endTime' => '2024-01-01T00:00:00+00:00',
+            'durationSeconds' => null,
+            'result' => null,
+            'usageData' => null,
+            'isFinished' => true,
+            'url' => 'https://example.com',
+            'branchId' => null,
+            'variableValuesId' => null,
+            'variableValuesData' => [],
+            'backend' => [],
+            'executor' => null,
+            'metrics' => null,
+            'behavior' => [],
+            'parallelism' => null,
+            'type' => 'container',
+            'orchestrationJobId' => null,
+            'orchestrationTaskId' => null,
+            'onlyOrchestrationTaskIds' => null,
+            'previousJobId' => null,
+        ]));
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'storageBackend' => [
+                        'backupPath' => '/path/to/backup',
+                        'storageBackendType' => 'gcs',
+                        '#jsonKey' => '{"type":"service_account"}',
+                        '#bucket' => 'my-gcs-bucket',
+                        'region' => 'us-central1',
+                    ],
+                    'directDataMigration' => true,
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock->method('generateId')->willReturn('123');
+        $sourceClientMock->method('apiGet')->willReturn([]);
+        $sourceClientMock->method('getServiceUrl')->willReturn('https://encryption.keboola.com');
+
+        $destClientMock = $this->createMock(StorageClient::class);
+        $migrationsClientMock = $this->createMock(Migrations::class);
+
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            new NullLogger(),
+        );
+
+        $migrate->run();
+    }
+
     public function testRestoreWithConfigurationsAndTablesFilter(): void
     {
         /** @var JobRunner&MockObject $sourceJobRunnerMock */
