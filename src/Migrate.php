@@ -434,10 +434,15 @@ class Migrate
 
     private function getCommonRestoreParameters(): array
     {
+        $restoreConfigurations = $this->config->shouldMigrateConfigurations();
+        if ($this->config->shouldMigrateSecrets() === true) {
+            // When migrating secrets, configurations will be migrated by the encryption-api,
+            $restoreConfigurations = false;
+        }
         return [
             'dryRun' => $this->config->isDryRun(),
             'useDefaultBackend' => true,
-            'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
+            'restoreConfigs' => $restoreConfigurations,
             'restorePermanentFiles' => $this->config->shouldMigratePermanentFiles(),
             'restoreTriggers' => $this->config->shouldMigrateTriggers(),
             'restoreNotifications' => $this->config->shouldMigrateNotifications(),

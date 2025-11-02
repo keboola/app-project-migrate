@@ -103,6 +103,22 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->shouldMigrateTriggers());
     }
 
+    public function testDisabledMigrateConfigurations(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'migrateConfigurations' => false,
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $this->assertFalse($config->shouldMigrateConfigurations());
+    }
+
     public function testDisabledMigratePermanentFiles(): void
     {
         $config = new Config(

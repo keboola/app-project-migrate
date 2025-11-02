@@ -26,6 +26,7 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->end()
                 ->booleanNode('dryRun')->defaultFalse()->end()
                 ->booleanNode('directDataMigration')->defaultTrue()->end()
+                ->booleanNode('migrateConfigurations')->defaultTrue()->end()
                 ->booleanNode('migratePermanentFiles')->defaultTrue()->end()
                 ->booleanNode('migrateTriggers')->defaultTrue()->end()
                 ->booleanNode('migrateNotifications')->defaultTrue()->end()
