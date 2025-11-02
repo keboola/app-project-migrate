@@ -49,7 +49,7 @@ class ConfigDefinition extends BaseConfigDefinition
                     ->children()
                         ->scalarNode('backup')->end()
                         ->scalarNode('restore')->end()
-                        ->scalarNode('tables-data')->end()
+                        ->scalarNode('tablesData')->end()
                     ->end()
                 ->end()
                 ->arrayNode('db')

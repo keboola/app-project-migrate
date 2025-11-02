@@ -312,7 +312,7 @@
           "type": "string",
           "title": "Restore"
         },
-        "tables-data": {
+        "tablesData": {
           "type": "string",
           "title": "Tables Data"
         }
