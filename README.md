@@ -7,7 +7,7 @@ Application which orchestrates whole process of Keboola Connection project migra
 Prerequisites:
  - Source project which will be migrated
  - Destination project - empty project where the source project will be cloned
- 
+
 Application is executed in *destination* project and requires Storage API token and Keboola Connection URL of *source* project.
 Admin token of source project is required for GoodData writers migration.
 Source project is left without any changes.
@@ -60,6 +60,8 @@ curl -X POST \
       "migrateProjectMetadata": true,
       "skipRegionValidation": true,
       "checkEmptyProject": true,
+      "configurationsToMigrate": ["123456", "789012"],
+      "tablesToMigrate": ["in.c-main.table1", "in.c-main.table2"],
       "#sourceManageToken": "SOURCE_MANAGE_API_TOKEN"
     }
   }
@@ -86,6 +88,8 @@ The request contains the following parameters:
 - `migrateProjectMetadata`: Enables migration of project metadata
 - `checkEmptyProject`: Check if the destination project is empty before migration
 - `skipRegionValidation`: Skips validation of regions during migration
+- `configurationsToMigrate`: Array of configuration IDs to migrate (if empty, all configurations are migrated)
+- `tablesToMigrate`: Array of table IDs to migrate (if empty, all tables are migrated)
 
 #### Dry-run mode
 
@@ -119,7 +123,7 @@ What is **not** executed during dry-run mode?
   - [replicate tables](https://github.com/keboola/app-project-migrate-tables-data/blob/88625047c4e6974fc556a2ff0eabdbfbf16b2c51/src/Strategy/DatabaseMigrate.php#L109)
 
 ## Development
- 
+
 Clone this repository and init the workspace with following command:
 
 ```shell
@@ -134,10 +138,10 @@ Run the test suite using this command:
 ```shell
 docker-compose run --rm dev composer tests
 ```
- 
+
 # Integration
 
-For information about deployment and integration with KBC, please refer to the [deployment section of developers documentation](https://developers.keboola.com/extend/component/deployment/) 
+For information about deployment and integration with KBC, please refer to the [deployment section of developers documentation](https://developers.keboola.com/extend/component/deployment/)
 
 ## License
 

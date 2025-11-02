@@ -285,4 +285,66 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
     }
+
+    public function testConfigurationsToMigrate(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'configurationsToMigrate' => ['config1', 'config2', 'config3'],
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $this->assertEquals(['config1', 'config2', 'config3'], $config->getConfigurationsToMigrate());
+    }
+
+    public function testConfigurationsToMigrateEmpty(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $this->assertEquals([], $config->getConfigurationsToMigrate());
+    }
+
+    public function testTablesToMigrate(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'tablesToMigrate' => ['table1', 'table2', 'table3'],
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $this->assertEquals(['table1', 'table2', 'table3'], $config->getTablesToMigrate());
+    }
+
+    public function testTablesToMigrateEmpty(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $this->assertEquals([], $config->getTablesToMigrate());
+    }
 }

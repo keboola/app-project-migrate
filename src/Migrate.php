@@ -174,8 +174,21 @@ class Migrate
                 continue;
             }
 
+            /** @var array{id: string} $config */
             foreach ($component['configurations'] as $config) {
-                /** @var array{id: string} $config */
+                if ($this->config->getConfigurationsToMigrate() &&
+                    !in_array($config['id'], $this->config->getConfigurationsToMigrate(), true)) {
+                    $this->logger->info(
+                        sprintf(
+                            'Skipping configuration "%s" of component "%s"',
+                            $config['id'],
+                            $component['id'],
+                        ),
+                        ['secrets'],
+                    );
+                    continue;
+                }
+
                 $this->logger->info(
                     sprintf(
                         '%sMigrating configuration "%s" of component "%s"',
@@ -250,6 +263,7 @@ class Migrate
             'sourceByodb' => $this->config->getSourceByodb(),
             'includeWorkspaceSchemas' => $this->config->getIncludeWorkspaceSchemas(),
             'preserveTimestamp' => $this->config->preserveTimestamp(),
+            'tables' => $this->config->getTablesToMigrate(),
         ];
 
         if ($this->config->getMigrateDataMode() === 'database' && !empty($this->config->getDb())) {
@@ -449,6 +463,8 @@ class Migrate
             'restoreBuckets' => $this->config->shouldMigrateBuckets(),
             'restoreTables' => $this->config->shouldMigrateTables(),
             'restoreProjectMetadata' => $this->config->shouldMigrateProjectMetadata(),
+            'configurationsToMigrate' => $this->config->getConfigurationsToMigrate(),
+            'tablesToMigrate' => $this->config->getTablesToMigrate(),
             'checkEmptyProject' => $this->config->checkEmptyProject(),
         ];
     }

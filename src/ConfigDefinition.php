@@ -37,6 +37,8 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->booleanNode('migrateProjectMetadata')->defaultTrue()->end()
                 ->booleanNode('skipRegionValidation')->defaultFalse()->end()
                 ->booleanNode('checkEmptyProject')->defaultTrue()->end()
+                ->arrayNode('tablesToMigrate')->prototype('scalar')->end()->end()
+                ->arrayNode('configurationsToMigrate')->prototype('scalar')->end()->end()
                 ->enumNode('dataMode')->values(['sapi', 'database'])->defaultValue('sapi')->end()
                 ->booleanNode('isSourceByodb')->defaultFalse()->end()
                 ->scalarNode('sourceByodb')->end()
