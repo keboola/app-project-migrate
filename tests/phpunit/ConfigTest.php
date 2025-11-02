@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Keboola\AppProjectMigrate\Tests;
 
+use Generator;
 use Keboola\AppProjectMigrate\Config;
 use Keboola\AppProjectMigrate\ConfigDefinition;
 use PHPUnit\Framework\TestCase;
@@ -346,5 +347,200 @@ class ConfigTest extends TestCase
         );
 
         $this->assertEquals([], $config->getTablesToMigrate());
+    }
+
+    /**
+     * @dataProvider invalidStorageBackendProvider
+     */
+    public function testStorageBackendInvalid(string $errorMessage, array $config): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage($errorMessage);
+
+        new Config(
+            [
+                'parameters' => array_merge(
+                    [
+                        'sourceKbcUrl' => 'https://connection.keboola.com',
+                        '#sourceKbcToken' => 'token',
+                    ],
+                    $config,
+                ),
+            ],
+            new ConfigDefinition(),
+        );
+    }
+
+    public function invalidStorageBackendProvider(): Generator
+    {
+        yield 'invalid type' => [
+            'errorMessage' => 'Invalid storageBackendType: invalid',
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 'invalid',
+                    'backupPath' => 'backup',
+                ],
+            ],
+        ];
+
+        yield 'S3 missing access_key_id' => [
+            'errorMessage' => 'Parameter "access_key_id" is required for storageBackendType "s3".',
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 's3',
+                    'backupPath' => 's3://bucket/backup',
+                ],
+            ],
+        ];
+
+        yield 'S3 missing secret_access_key' => [
+            'errorMessage' => 'Parameter "#secret_access_key" is required for storageBackendType "s3".',
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 's3',
+                    'backupPath' => 's3://bucket/backup',
+                    'access_key_id' => 'key',
+                ],
+            ],
+        ];
+
+        yield 'S3 missing bucket' => [
+            'errorMessage' => 'Parameter "#bucket" is required for storageBackendType "s3".',
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 's3',
+                    'backupPath' => 's3://bucket/backup',
+                    'access_key_id' => 'key',
+                    '#secret_access_key' => 'secret',
+                ],
+            ],
+        ];
+
+        yield 'S3 missing region' => [
+            'errorMessage' => 'Parameter "region" is required for storageBackendType "s3".',
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 's3',
+                    'backupPath' => 's3://bucket/backup',
+                    'access_key_id' => 'key',
+                    '#secret_access_key' => 'secret',
+                    '#bucket' => 'bucket',
+                ],
+            ],
+        ];
+
+        yield 'ABS missing accountName' => [
+            'errorMessage' => 'Parameter "accountName" is required for storageBackendType "abs".',
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 'abs',
+                    'backupPath' => 'abs://container/backup',
+                ],
+            ],
+        ];
+
+        yield 'ABS missing accountKey' => [
+            'errorMessage' => 'Parameter "#accountKey" is required for storageBackendType "abs".',
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 'abs',
+                    'backupPath' => 'abs://container/backup',
+                    'accountName' => 'account',
+                ],
+            ],
+        ];
+
+        yield 'GCS missing jsonKey' => [
+            'errorMessage' => 'Parameter "#jsonKey" is required for storageBackendType "gcs".',
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 'gcs',
+                    'backupPath' => 'gcs://bucket/backup',
+                ],
+            ],
+        ];
+
+        yield 'GCS missing bucket' => [
+            'errorMessage' => 'Parameter "#bucket" is required for storageBackendType "gcs".',
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 'gcs',
+                    'backupPath' => 'gcs://bucket/backup',
+                    '#jsonKey' => '{"key":"value"}',
+                ],
+            ],
+        ];
+
+        yield 'GCS missing region' => [
+            'errorMessage' => 'Parameter "region" is required for storageBackendType "gcs".',
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 'gcs',
+                    'backupPath' => 'gcs://bucket/backup',
+                    '#jsonKey' => '{"key":"value"}',
+                    '#bucket' => 'bucket',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider validStorageBackendProvider
+     */
+    public function testStorageBackendValid(array $config): void
+    {
+        self::expectNotToPerformAssertions();
+
+        new Config(
+            [
+                'parameters' => array_merge(
+                    [
+                        'sourceKbcUrl' => 'https://connection.keboola.com',
+                        '#sourceKbcToken' => 'token',
+                    ],
+                    $config,
+                ),
+            ],
+            new ConfigDefinition(),
+        );
+    }
+
+    public function validStorageBackendProvider(): Generator
+    {
+        yield 'S3 valid' => [
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 's3',
+                    'backupPath' => 's3://bucket/backup',
+                    'access_key_id' => 'key',
+                    '#secret_access_key' => 'secret',
+                    '#bucket' => 'bucket',
+                    'region' => 'us-east-1',
+                ],
+            ],
+        ];
+
+        yield 'ABS valid' => [
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 'abs',
+                    'backupPath' => 'abs://container/backup',
+                    'accountName' => 'account',
+                    '#accountKey' => 'key',
+                ],
+            ],
+        ];
+
+        yield 'GCS valid' => [
+            'config' => [
+                'storageBackend' => [
+                    'storageBackendType' => 'gcs',
+                    'backupPath' => 'gcs://bucket/backup',
+                    '#jsonKey' => '{"key":"value"}',
+                    '#bucket' => 'bucket',
+                    'region' => 'us-central1',
+                ],
+            ],
+        ];
     }
 }

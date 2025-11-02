@@ -13,6 +13,9 @@ class Config extends BaseConfig
     public const PROJECT_RESTORE_COMPONENT = 'keboola.project-restore';
     public const SNOWFLAKE_WRITER_MIGRATE_COMPONENT = 'keboola.app-snowflake-writer-migrate';
     public const DATA_OF_TABLES_MIGRATE_COMPONENT = 'keboola.app-project-migrate-large-tables';
+    public const STORAGE_BACKEND_S3 = 's3';
+    public const STORAGE_BACKEND_ABS = 'abs';
+    public const STORAGE_BACKEND_GCS = 'gcs';
 
     public function getSourceProjectUrl(): string
     {
@@ -172,5 +175,16 @@ class Config extends BaseConfig
         /** @var bool $value */
         $value = $this->getValue($keys, $default);
         return $value;
+    }
+
+    public function hasUserDefinedCredentials(): bool
+    {
+        $storageBackend = $this->getArrayValue(['parameters', 'storageBackend'], []);
+        return !empty($storageBackend);
+    }
+
+    public function getUserDefinedCredentials(): array
+    {
+        return $this->getArrayValue(['parameters', 'storageBackend'], []);
     }
 }

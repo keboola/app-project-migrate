@@ -100,17 +100,11 @@ class Migrate
     private function backupSourceProject(string $backupId): void
     {
         $this->logger->info('Creating source project snapshot');
+        $config = $this->getBackupConfigData($backupId);
 
         $job = $this->sourceJobRunner->runJob(
             Config::PROJECT_BACKUP_COMPONENT,
-            [
-                'parameters' => [
-                    'backupId' => $backupId,
-                    'exportStructureOnly' => $this->config->directDataMigration() ||
-                        $this->config->shouldMigrateStructureOnly(),
-                    'skipRegionValidation' => $this->config->shouldSkipRegionValidation(),
-                ],
-            ],
+            $config,
             $this->config->getAppBackupTag(),
         );
         if ($job->status !== self::JOB_STATUS_SUCCESS) {
@@ -534,5 +528,50 @@ class Migrate
         /** @var array{configuration: array{parameters: array{db: array}}} $destinationConfigurationData */
         $workspaceParameters = $destinationConfigurationData['configuration']['parameters']['db'];
         $this->migratedSnowflakeWorkspaces[$snowflakeUser] = $workspaceParameters;
+    }
+
+    private function getBackupConfigData(string $backupId): array
+    {
+        $config = [
+            'parameters' => [
+                'backupId' => $backupId,
+                'exportStructureOnly' => $this->config->directDataMigration() ||
+                    $this->config->shouldMigrateStructureOnly(),
+                'skipRegionValidation' => $this->config->shouldSkipRegionValidation(),
+            ],
+        ];
+
+        if ($this->config->hasUserDefinedCredentials()) {
+            /** @var string $backendType */
+            $backendType = $this->config->getUserDefinedCredentials()['storageBackendType'];
+            $config['parameters']['storageBackendType'] = $backendType;
+            switch ($backendType) {
+                case Config::STORAGE_BACKEND_S3:
+                    $config['parameters']['access_key_id'] =
+                        $this->config->getUserDefinedCredentials()['access_key_id'];
+                    $config['parameters']['#secret_access_key'] =
+                        $this->config->getUserDefinedCredentials()['#secret_access_key'];
+                    $config['parameters']['#bucket'] = $this->config->getUserDefinedCredentials()['#bucket'];
+                    $config['parameters']['region'] = $this->config->getUserDefinedCredentials()['region'];
+                    break;
+                case Config::STORAGE_BACKEND_ABS:
+                    $config['parameters']['accountName'] =
+                        $this->config->getUserDefinedCredentials()['accountName'];
+                    $config['parameters']['#accountKey'] =
+                        $this->config->getUserDefinedCredentials()['#accountKey'];
+                    $config['parameters']['region'] = $this->config->getUserDefinedCredentials()['region'];
+                    break;
+                case Config::STORAGE_BACKEND_GCS:
+                    $config['parameters']['#jsonKey'] = $this->config->getUserDefinedCredentials()['#jsonKey'];
+                    $config['parameters']['#bucket'] = $this->config->getUserDefinedCredentials()['#bucket'];
+                    $config['parameters']['region'] = $this->config->getUserDefinedCredentials()['region'];
+                    break;
+                default:
+                    throw new UserException(
+                        sprintf('Unsupported storage backend type "%s".', $backendType),
+                    );
+            }
+        }
+        return $config;
     }
 }
