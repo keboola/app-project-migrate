@@ -17,6 +17,7 @@ abstract class JobRunner
 
     protected LoggerInterface $logger;
 
+    /** @var array<int, array{id: string, url: string}>|null $services */
     private ?array $services = null;
 
     public function __construct(Client $client, LoggerInterface $logger)
@@ -36,7 +37,8 @@ abstract class JobRunner
 
     public function getServiceUrl(string $serviceId): string
     {
-        $foundServices = array_values(array_filter($this->getServices(), function ($service) use ($serviceId) {
+        /** @var array<int, array{id: string, url: string}> $foundServices */
+        $foundServices = array_values(array_filter($this->getServices(), function (array $service) use ($serviceId) {
             return $service['id'] === $serviceId;
         }));
         if (empty($foundServices)) {
@@ -45,13 +47,18 @@ abstract class JobRunner
         return $foundServices[0]['url'];
     }
 
+    /**
+     * @return array<int, array{id: string, url: string}>
+     */
     private function getServices(): array
     {
         $options = new IndexOptions();
         $options->setExclude(['components']);
 
         if (!$this->services) {
-            $this->services = $this->storageApiClient->indexAction($options)['services'];
+            /** @var array{services: array<int, array{id: string, url: string}>} $indexResult */
+            $indexResult = $this->storageApiClient->indexAction($options);
+            $this->services = $indexResult['services'];
         }
         return $this->services;
     }

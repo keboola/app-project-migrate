@@ -7,9 +7,10 @@ namespace Keboola\AppProjectMigrate\Tests;
 use Keboola\AppProjectMigrate\Checker\AfterMigration;
 use Keboola\Component\UserException;
 use Keboola\StorageApi\Client;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\Test\TestLogger;
 
 class CheckerAfterMigration extends TestCase
 {
@@ -23,8 +24,9 @@ class CheckerAfterMigration extends TestCase
             ->withConsecutive(['in.bucket.table1'], ['in.bucket.table2'])
             ->willReturnOnConsecutiveCalls(['rowsCount' => 12345], ['rowsCount' => 67890]);
 
-        $testLogger = new TestLogger();
-        $afterMigrationChecker = new AfterMigration($sourceClient, $destinationClient, $testLogger);
+        $logsHandler = new TestHandler();
+        $logger = new Logger('tests', [$logsHandler]);
+        $afterMigrationChecker = new AfterMigration($sourceClient, $destinationClient, $logger);
         $afterMigrationChecker->check();
     }
 
@@ -38,8 +40,9 @@ class CheckerAfterMigration extends TestCase
             ->withConsecutive(['in.bucket.table1'], ['in.bucket.table2'])
             ->willReturnOnConsecutiveCalls(['rowsCount' => 1234567890], ['rowsCount' => 987654321]);
 
-        $testLogger = new TestLogger();
-        $afterMigrationChecker = new AfterMigration($sourceClient, $destinationClient, $testLogger);
+        $logsHandler = new TestHandler();
+        $logger = new Logger('tests', [$logsHandler]);
+        $afterMigrationChecker = new AfterMigration($sourceClient, $destinationClient, $logger);
 
         try {
             $afterMigrationChecker->check();
@@ -49,13 +52,13 @@ class CheckerAfterMigration extends TestCase
         }
 
         Assert::assertTrue(
-            $testLogger->hasWarning(
+            $logsHandler->hasWarning(
                 'Bad row count: Bucket "testBucket", Table "table1". ' .
                 'Source table rows: "1234567890"; Destination table rows: "12345".',
             ),
         );
         Assert::assertTrue(
-            $testLogger->hasWarning(
+            $logsHandler->hasWarning(
                 'Bad row count: Bucket "testBucket", Table "table2". ' .
                 'Source table rows: "987654321"; Destination table rows: "67890".',
             ),

@@ -40,6 +40,7 @@ class Utils
     public static function checkMigrationApps(Client $sourceProjectClient, Client $destinationProjectClient): void
     {
         // Check app in the source project
+        /** @var array{components: array<int, array{id: string}>} $sourceApplications */
         $sourceApplications = $sourceProjectClient->apiGet('');
         $listSourceApplication = array_map(fn(array $v) => $v['id'], $sourceApplications['components']);
 
@@ -54,6 +55,7 @@ class Utils
         }
 
         // Check app in the destination project
+        /** @var array{components: array<int, array{id: string}>} $destinationApplications */
         $destinationApplications = $destinationProjectClient->apiGet('');
         $listDestinationApplication = array_map(fn(array $v) => $v['id'], $destinationApplications['components']);
 

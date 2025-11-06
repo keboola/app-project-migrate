@@ -10,6 +10,7 @@ use Keboola\Component\UserException;
 use Keboola\StorageApi\Client;
 use Keboola\StorageApi\Components;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class UtilsTest extends TestCase
@@ -32,8 +33,8 @@ class UtilsTest extends TestCase
             ->willReturn($storageBuckets)
         ;
 
-        /** @var Components $componentClient */
-        /** @var Client $storageClientMock */
+        /** @var Components&MockObject $componentClient */
+        /** @var Client&MockObject $storageClientMock */
         Assert::assertEquals(Utils::checkIfProjectEmpty($storageClientMock, $componentClient), $expectedResult);
     }
 

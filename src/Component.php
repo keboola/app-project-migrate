@@ -26,6 +26,7 @@ class Component extends BaseComponent
             'token' => $config->getSourceProjectToken(),
         ]);
         try {
+            /** @var array{owner: array{name: string, id: int, features: string[]}} $sourceTokenInfo */
             $sourceTokenInfo = $sourceProjectClient->verifyToken();
         } catch (StorageClientException $e) {
             throw new UserException('Cannot authorize source project: ' . $e->getMessage(), $e->getCode(), $e);
@@ -37,6 +38,7 @@ class Component extends BaseComponent
         ]);
 
         try {
+            /** @var array{owner: array{name: string, id: int, features: string[]}} $destinationTokenInfo */
             $destinationTokenInfo = $destProjectClient->verifyToken();
         } catch (StorageClientException $e) {
             throw new UserException('Cannot authorize destination project: ' . $e->getMessage(), $e->getCode(), $e);

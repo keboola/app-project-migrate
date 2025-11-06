@@ -41,7 +41,11 @@ class Config extends BaseConfig
 
     public function getSourceManageToken(): ?string
     {
-        return $this->getValue(['parameters', '#sourceManageToken']);
+        try {
+            return $this->getStringValue(['parameters', '#sourceManageToken']);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
     }
 
     public function getMigrateDataMode(): string
@@ -152,6 +156,9 @@ class Config extends BaseConfig
         }
     }
 
+    /**
+     * @param array<string> $keys
+     */
     public function getBoolValue(array $keys, mixed $default = null): bool
     {
         /** @var bool $value */

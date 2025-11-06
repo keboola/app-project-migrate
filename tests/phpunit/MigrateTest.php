@@ -253,8 +253,8 @@ class MigrateTest extends TestCase
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock->expects(self::never())->method('migrateConfiguration');
 
-        /** @var JobRunner $sourceJobRunnerMock */
-        /** @var JobRunner $destJobRunnerMock */
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        /** @var JobRunner&MockObject $destJobRunnerMock */
         $migrate = new Migrate(
             $config,
             $sourceJobRunnerMock,
@@ -406,6 +406,8 @@ class MigrateTest extends TestCase
             ->method('migrateConfiguration')
             ->willReturnCallback(function (...$args) {
                 [, $destinationStack, , , $configId] = $args;
+                /** @var string $configId */
+                /** @var string $destinationStack */
                 return [
                     'message' => "Configuration with ID '$configId' successfully " .
                         "migrated to stack '$destinationStack'.",
@@ -413,8 +415,8 @@ class MigrateTest extends TestCase
                 ];
             });
 
-        /** @var JobRunner $sourceJobRunnerMock */
-        /** @var JobRunner $destJobRunnerMock */
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        /** @var JobRunner&MockObject $destJobRunnerMock */
         $migrate = new Migrate(
             $config,
             $sourceJobRunnerMock,
@@ -436,35 +438,43 @@ class MigrateTest extends TestCase
         self::assertCount(8, $records);
 
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame('Migrating configurations with secrets', $record['message']);
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame('Components "gooddata-writer" is obsolete, skipping migration...', $record['message']);
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Migrating configuration "101" of component "some-component"',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Migrating configuration "102" of component "some-component"',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Migrating configuration "201" of component "another-component"',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Configuration with ID \'201\' successfully migrated to stack \'dest-stack\'.',
             $record['message'],
@@ -627,6 +637,7 @@ class MigrateTest extends TestCase
                         ],
                     ];
                 }
+                /** @var string $url */
                 if (preg_match('~components/([^/]+)/configs/([^/]+)~', $url, $matches)) {
                     [, , $configId] = $matches + [null, null, null];
                     return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
@@ -645,6 +656,7 @@ class MigrateTest extends TestCase
         $destClientMock
             ->method('apiGet')
             ->willReturnCallback(function ($url) use ($testConfigurations): ?array {
+                /** @var string $url */
                 preg_match('~components/([^/]+)/configs/([^/]+)~', $url, $matches);
                 [, , $configId] = $matches + [null, null, null];
                 return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
@@ -658,6 +670,8 @@ class MigrateTest extends TestCase
             ->method('migrateConfiguration')
             ->willReturnCallback(function (...$args) {
                 [, $destinationStack, , $componentId, $configId, $branchId] = $args;
+                /** @var string $configId */
+                /** @var string $destinationStack */
                 return [
                     'message' => "Configuration with ID '$configId' successfully " .
                         "migrated to stack '$destinationStack'.",
@@ -675,8 +689,8 @@ class MigrateTest extends TestCase
             ->willReturn('123')
         ;
 
-        /** @var JobRunner $sourceJobRunnerMock */
-        /** @var JobRunner $destJobRunnerMock */
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        /** @var JobRunner&MockObject $destJobRunnerMock */
         $migrate = new Migrate(
             $config,
             $sourceJobRunnerMock,
@@ -698,39 +712,47 @@ class MigrateTest extends TestCase
         self::assertCount(8, $records);
 
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame('Migrating configurations with secrets', $record['message']);
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Migrating configuration "101" of component "keboola.wr-db-snowflake"',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Configuration with ID \'101\' successfully migrated to stack \'dest-stack\'.',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Migrating configuration "102" of component "keboola.wr-db-snowflake"',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Configuration with ID \'102\' successfully migrated to stack \'dest-stack\'.',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Migrating configuration "103" of component "keboola.wr-db-snowflake"',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Used existing Snowflake workspace \'USER_01\' for configuration with ID \'103\' '
             . '(keboola.wr-db-snowflake).',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Configuration with ID \'103\' successfully migrated to stack \'dest-stack\'.',
             $record['message'],
@@ -857,6 +879,8 @@ class MigrateTest extends TestCase
             ->method('migrateConfiguration')
             ->willReturnCallback(function (...$args) use ($encryptionApiException) {
                 [, $destinationStack, , , $configId] = $args;
+                /** @var string $configId */
+                /** @var string $destinationStack */
                 if ($configId === '666') {
                     throw $encryptionApiException;
                 }
@@ -872,8 +896,8 @@ class MigrateTest extends TestCase
             ->willReturn('123')
         ;
 
-        /** @var JobRunner $sourceJobRunnerMock */
-        /** @var JobRunner $destJobRunnerMock */
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        /** @var JobRunner&MockObject $destJobRunnerMock */
         $migrate = new Migrate(
             $config,
             $sourceJobRunnerMock,
@@ -1024,6 +1048,7 @@ class MigrateTest extends TestCase
                         ],
                     ];
                 }
+                /** @var string $url */
                 if (preg_match('~components/([^/]+)/configs/([^/]+)~', $url, $matches)) {
                     [, , $configId] = $matches + [null, null, null];
                     return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
@@ -1042,6 +1067,7 @@ class MigrateTest extends TestCase
         $destClientMock
             ->method('apiGet')
             ->willReturnCallback(function ($url) use ($testConfigurations): ?array {
+                /** @var string $url */
                 preg_match('~components/([^/]+)/configs/([^/]+)~', $url, $matches);
                 [, , $configId] = $matches + [null, null, null];
                 return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
@@ -1055,6 +1081,8 @@ class MigrateTest extends TestCase
             ->method('migrateConfiguration')
             ->willReturnCallback(function (...$args) {
                 [, $destinationStack, , $componentId, $configId, $branchId] = $args;
+                /** @var string $configId */
+                /** @var string $destinationStack */
                 return [
                     'message' => "Configuration with ID '$configId' successfully " .
                         "migrated to stack '$destinationStack'.",
@@ -1072,8 +1100,8 @@ class MigrateTest extends TestCase
             ->willReturn('123')
         ;
 
-        /** @var JobRunner $sourceJobRunnerMock */
-        /** @var JobRunner $destJobRunnerMock */
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        /** @var JobRunner&MockObject $destJobRunnerMock */
         $migrate = new Migrate(
             $config,
             $sourceJobRunnerMock,
@@ -1095,21 +1123,25 @@ class MigrateTest extends TestCase
         self::assertCount(4, $records);
 
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Migrating configurations with secrets',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Migrating configuration "104" of component "keboola.wr-db-snowflake"',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Configuration with ID \'104\' (keboola.wr-db-snowflake) does not have a Snowflake workspace.',
             $record['message'],
         );
         $record = array_shift($records);
+        self::assertNotNull($record);
         self::assertSame(
             'Configuration with ID \'104\' successfully migrated to stack \'dest-stack\'.',
             $record['message'],
@@ -1303,6 +1335,7 @@ class MigrateTest extends TestCase
         $sourceJobRunnerMock
             ->method('runJob')
             ->willReturnCallback(function (string $componentId, array $data) use (&$actualEntriesInDryRunMode) {
+                /** @var array{parameters?: array{dryRun?: bool}} $data */
                 $actualEntriesInDryRunMode[$componentId] = $data['parameters']['dryRun'] ?? false;
                 return Job::fromApiResponse([
                     'id' => '222',
@@ -1344,6 +1377,7 @@ class MigrateTest extends TestCase
         $destJobRunnerMock
             ->method('runJob')
             ->willReturnCallback(function (string $componentId, array $data) use (&$actualEntriesInDryRunMode) {
+                /** @var array{parameters?: array{dryRun?: bool}} $data */
                 $actualEntriesInDryRunMode[$componentId] = $data['parameters']['dryRun'] ?? false;
                 return Job::fromApiResponse([
                     'id' => '222',
@@ -1453,7 +1487,9 @@ class MigrateTest extends TestCase
 
         $migrate->run();
 
-        $actualEntriesInDryRunMode = array_keys(array_filter($actualEntriesInDryRunMode, fn(bool $dry) => $dry));
+        $actualEntriesInDryRunMode = array_keys(
+            array_filter($actualEntriesInDryRunMode, fn(mixed $dry): bool => (bool) $dry),
+        );
 
         self::assertSame($expectedEntriesInDryRunMode, $actualEntriesInDryRunMode);
     }
