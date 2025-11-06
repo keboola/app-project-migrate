@@ -150,7 +150,7 @@ class Config extends BaseConfig
     public function getAppTablesDataTag(): ?string
     {
         try {
-            return $this->getStringValue(['parameters', 'componentsDevTag', 'tables-data']);
+            return $this->getStringValue(['parameters', 'componentsDevTag', 'tablesData']);
         } catch (InvalidArgumentException) {
             return null;
         }
