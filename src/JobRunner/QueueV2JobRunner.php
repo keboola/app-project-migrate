@@ -13,30 +13,20 @@ use Keboola\SyncActionsClient\Model\ActionResponse;
 
 class QueueV2JobRunner extends JobRunner
 {
-    private const MAX_DELAY = 10;
-
     public function runJob(string $componentId, array $data, ?string $tag = null): Job
     {
-        $jobData = new JobData(
-            $componentId,
-            null,
-            $data,
-            'run',
-            [],
-            $tag,
+        $jobData = new JobData($componentId, null, $data, 'run', [], $tag);
+
+        $client = new Client(
+            $this->getServiceUrl('queue'),
+            $this->storageApiClient->getTokenString(),
+            [
+                'logger' => $this->logger,
+            ],
         );
-        $response = $this->getQueueClient()->createJob($jobData);
+        $response = $client->createJob($jobData);
 
-        $attempt = 0;
-        $finished = false;
-        while (!$finished) {
-            $job = $this->getQueueClient()->getJob($response->id);
-            $finished = $job->isFinished;
-            $attempt++;
-            sleep((int) min(pow(2, $attempt), self::MAX_DELAY));
-        }
-
-        return $job;
+        return $client->waitForJobCompletion($response->id);
     }
 
     public function runSyncAction(
@@ -45,29 +35,12 @@ class QueueV2JobRunner extends JobRunner
         array $data,
         ?string $tag = null,
     ): ActionResponse {
-        $client = $this->getSyncActionsClient();
-
         $data = new ActionData($componentId, $action, $data, $tag);
 
-        return $client->callAction($data);
-    }
-
-    private function getQueueClient(): Client
-    {
-        return new Client(
-            $this->getServiceUrl('queue'),
-            $this->storageApiClient->getTokenString(),
-            [
-                'logger' => $this->logger,
-            ],
-        );
-    }
-
-    private function getSyncActionsClient(): SyncActionsClient
-    {
-        return new SyncActionsClient(
+        $client = new SyncActionsClient(
             $this->getServiceUrl('sync-actions'),
             $this->storageApiClient->getTokenString(),
         );
+        return $client->callAction($data);
     }
 }
