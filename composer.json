@@ -8,8 +8,7 @@
         "keboola/job-queue-api-php-client": "^5.2",
         "keboola/php-component": "^11.0",
         "keboola/storage-api-client": "^18.4",
-        "keboola/sync-actions-client": "^3.0",
-        "keboola/syrup-php-client": "^6.0"
+        "keboola/sync-actions-client": "^3.0"
     },
     "require-dev": {
       "keboola/coding-standard": "^16.0",

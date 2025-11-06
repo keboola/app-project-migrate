@@ -6,9 +6,7 @@ namespace Keboola\AppProjectMigrate;
 
 use Keboola\Component\UserException;
 use Keboola\StorageApi\Client;
-use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\Components;
-use Keboola\Syrup\Client as SyrupClient;
 use Symfony\Component\Validator\Constraints\Url;
 use Symfony\Component\Validator\Validation;
 

@@ -10,18 +10,13 @@ use Keboola\AppProjectMigrate\Config;
 use Keboola\AppProjectMigrate\ConfigDefinition;
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
 use Keboola\AppProjectMigrate\JobRunner\QueueV2JobRunner;
-use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\AppProjectMigrate\Migrate;
 use Keboola\Component\UserException;
 use Keboola\EncryptionApiClient\Exception\ClientException as EncryptionClientException;
 use Keboola\EncryptionApiClient\Migrations;
 use Keboola\JobQueueClient\DTO\Job;
-use Keboola\JobQueueClient\DTO\Project;
-use Keboola\JobQueueClient\DTO\Token;
 use Keboola\StorageApi\Client as StorageClient;
-use Keboola\StorageApi\Components;
 use Keboola\SyncActionsClient\Model\ActionResponse;
-use Keboola\Syrup\ClientException;
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
 use Monolog\LogRecord;
@@ -36,7 +31,7 @@ class MigrateTest extends TestCase
     /**
      * @param class-string $jobRunnerClass
      * @dataProvider successMigrateDataProvider
-     * @throws UserException|ClientException
+     * @throws UserException
      */
     public function testMigrateSuccess(
         array $expectedCredentialsData,
@@ -1272,70 +1267,10 @@ class MigrateTest extends TestCase
         $migrate->run();
     }
 
-    public function testCatchSyrupClientException(): void
-    {
-        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
-        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
-        $sourceClientMock = $this->createMock(StorageClient::class);
-        $destClientMock = $this->createMock(StorageClient::class);
-        $migrationsClientMock = $this->createMock(Migrations::class);
-
-        $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
-        $this->mockAddMethodBackupProject(
-            $sourceJobRunnerMock,
-            [
-                'id' => '222',
-                'status' => 'success',
-            ],
-            false,
-        );
-
-        $destJobRunnerMock
-            ->method('runJob')
-            ->willThrowException(
-                new ClientException('Test ClientException', 401),
-            )
-        ;
-
-        $config = new Config(
-            [
-                'parameters' => [
-                    'sourceKbcUrl' => 'xxx',
-                    '#sourceKbcToken' => 'yyy',
-                    'migrateSecrets' => false,
-                    'directDataMigration' => false,
-                ],
-            ],
-            new ConfigDefinition(),
-        );
-
-        $sourceClientMock
-            ->method('generateId')
-            ->willReturn('123')
-        ;
-
-        $migrate = new Migrate(
-            $config,
-            $sourceJobRunnerMock,
-            $destJobRunnerMock,
-            $sourceClientMock,
-            $destClientMock,
-            $migrationsClientMock,
-            'xxx-b',
-            'yyy-b',
-            new NullLogger(),
-        );
-
-        $this->expectException(UserException::class);
-        $this->expectExceptionMessage('Test ClientException');
-        $this->expectExceptionCode(401);
-        $migrate->run();
-    }
-
     /**
      * @dataProvider provideDryRunOptions
      * @param class-string<JobRunner> $jobRunnerClass
-     * @throws ClientException|UserException
+     * @throws UserException
      */
     public function testDryRunMode(
         string $jobRunnerClass,

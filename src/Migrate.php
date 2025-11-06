@@ -13,7 +13,6 @@ use Keboola\StorageApi\Components;
 use Keboola\StorageApi\DevBranches;
 use Keboola\StorageApi\Options\Components\Configuration;
 use Keboola\SyncActionsClient\Model\ActionResponse;
-use Keboola\Syrup\ClientException as SyrupClientException;
 use Psr\Log\LoggerInterface;
 
 class Migrate
@@ -72,7 +71,7 @@ class Migrate
                 // secrets, Snowflake writers will be migrated by the encryption-api.
                 $this->migrateSnowflakeWriters();
             }
-        } catch (SyrupClientException|EncryptionClientException $e) {
+        } catch (EncryptionClientException $e) {
             if ($e->getCode() >= 400 && $e->getCode() < 500) {
                 throw new UserException($e->getMessage(), $e->getCode(), $e);
             }
