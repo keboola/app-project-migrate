@@ -167,6 +167,8 @@ class UtilsTest extends TestCase
 
         $sourceClientMock->method('apiGet')->willReturn(['components' => []]);
 
+        /** @var Client&MockObject $sourceClientMock */
+        /** @var Client&MockObject $destClientMock */
         $this->expectException(UserException::class);
         $this->expectExceptionMessage('Missing "keboola.project-backup" application in the source project.');
         Utils::checkMigrationApps($sourceClientMock, $destClientMock);
@@ -198,18 +200,81 @@ class UtilsTest extends TestCase
                 ],
             );
 
+        /** @var Client&MockObject $sourceClientMock */
+        /** @var Client&MockObject $destClientMock */
         $this->expectException(UserException::class);
         $this->expectExceptionMessage('Missing "keboola.project-restore" application in the destination project.');
         Utils::checkMigrationApps($sourceClientMock, $destClientMock);
     }
 
+    public function testMissingDestinationSnowflakeWriterApp(): void
+    {
+        $sourceClientMock = $this->createMock(Client::class);
+        $destClientMock = $this->createMock(Client::class);
+
+        $sourceClientMock
+            ->method('apiGet')
+            ->willReturn(
+                [
+                    'components' => [
+                        ['id' => 'keboola.project-backup'],
+                    ],
+                ],
+            );
+
+        $destClientMock
+            ->method('apiGet')
+            ->willReturn(
+                [
+                    'components' => [
+                        ['id' => 'keboola.project-restore'],
+                    ],
+                ],
+            );
+
+        /** @var Client&MockObject $sourceClientMock */
+        /** @var Client&MockObject $destClientMock */
+        $this->expectException(UserException::class);
+        $this->expectExceptionMessage(
+            'Missing "keboola.app-snowflake-writer-migrate" application in the destination project.',
+        );
+        Utils::checkMigrationApps($sourceClientMock, $destClientMock);
+    }
+
+    public function testCheckMigrationAppsSuccess(): void
+    {
+        $sourceClientMock = $this->createMock(Client::class);
+        $destClientMock = $this->createMock(Client::class);
+
+        $sourceClientMock
+            ->method('apiGet')
+            ->willReturn(
+                [
+                    'components' => [
+                        ['id' => 'keboola.project-backup'],
+                    ],
+                ],
+            );
+
+        $destClientMock
+            ->method('apiGet')
+            ->willReturn(
+                [
+                    'components' => [
+                        ['id' => 'keboola.project-restore'],
+                        ['id' => 'keboola.app-snowflake-writer-migrate'],
+                    ],
+                ],
+            );
+
+        /** @var Client&MockObject $sourceClientMock */
+        /** @var Client&MockObject $destClientMock */
+        Utils::checkMigrationApps($sourceClientMock, $destClientMock);
+        $this->expectNotToPerformAssertions();
+    }
+
     public function testStackFromProjectUrl(): void
     {
-        self::assertSame(
-            'connection.europe-west3.gcp.keboola.com',
-            Utils::getStackFromProjectUrl('https://connection.europe-west3.gcp.keboola.com/'),
-        );
-
         self::assertSame(
             'connection.europe-west3.gcp.keboola.com',
             Utils::getStackFromProjectUrl('https://connection.europe-west3.gcp.keboola.com/'),
