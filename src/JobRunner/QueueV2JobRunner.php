@@ -13,6 +13,9 @@ use Keboola\SyncActionsClient\Model\ActionResponse;
 
 class QueueV2JobRunner extends JobRunner
 {
+    /**
+     * @param array{parameters: array<string, scalar|array>} $data
+     */
     public function runJob(string $componentId, array $data, ?string $tag = null): Job
     {
         $jobData = new JobData($componentId, null, $data, 'run', [], $tag);
@@ -29,6 +32,9 @@ class QueueV2JobRunner extends JobRunner
         return $client->waitForJobCompletion($response->id);
     }
 
+    /**
+     * @param array{parameters: array<string, scalar|array>} $data
+     */
     public function runSyncAction(
         string $componentId,
         string $action,

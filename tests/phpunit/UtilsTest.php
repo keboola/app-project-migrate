@@ -17,6 +17,8 @@ class UtilsTest extends TestCase
 {
     /**
      * @dataProvider checkIfProjectEmptyDataProvider
+     * @param array<int, array<string, mixed>> $componentConfigs
+     * @param array<int, array<string, mixed>> $storageBuckets
      */
     public function testCheckIfProjectEmpty(array $componentConfigs, array $storageBuckets, bool $expectedResult): void
     {

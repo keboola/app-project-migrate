@@ -26,8 +26,14 @@ abstract class JobRunner
         $this->logger = $logger;
     }
 
+    /**
+     * @param array{parameters: array<string, scalar|array>} $data
+     */
     abstract public function runJob(string $componentId, array $data, ?string $tag = null): Job;
 
+    /**
+     * @param array{parameters: array<string, scalar|array>} $data
+     */
     abstract public function runSyncAction(
         string $componentId,
         string $action,

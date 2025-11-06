@@ -18,6 +18,7 @@ use Psr\Log\LoggerInterface;
 class Migrate
 {
     private const JOB_STATUS_SUCCESS = 'success';
+    /** @var array<string, array{host: string, username: string, "#password"?: string, "#privateKey"?: string, warehouse: string, warehouse_size?: 'SMALL'|'MEDIUM'|'LARGE'}> */
     private array $migratedSnowflakeWorkspaces = [];
 
     public const OBSOLETE_COMPONENTS = [
@@ -251,8 +252,11 @@ class Migrate
             'preserveTimestamp' => $this->config->preserveTimestamp(),
         ];
 
-        if ($this->config->getMigrateDataMode() === 'database' && !empty($this->config->getDb())) {
-            $parameters['db'] = $this->config->getDb();
+        if ($this->config->getMigrateDataMode() === 'database') {
+            $db = $this->config->getDb();
+            if (isset($db['host'])) {
+                $parameters['db'] = $db;
+            }
         }
 
         $this->destJobRunner->runJob(
@@ -383,6 +387,21 @@ class Migrate
      *         tokenType?: string
      *     }
      * } $restoreCredentials
+     * @return array{
+     *     s3?: array{
+     *         backupUri: string,
+     *         accessKeyId: string,
+     *         '#secretAccessKey': string,
+     *         '#sessionToken': string
+     *     },
+     *     abs?: array{container: string, '#connectionString': string},
+     *     gcs?: array{
+     *         projectId: string,
+     *         bucket: string,
+     *         backupUri: string,
+     *         credentials: array{'#accessToken': string, expiresIn: int, tokenType: string}
+     *     }
+     * }
      */
     private function getBackendConfig(array $restoreCredentials): array
     {
@@ -431,6 +450,20 @@ class Migrate
         throw new UserException('Unrecognized restore credentials.');
     }
 
+    /**
+     * @return array{
+     *     dryRun: bool,
+     *     useDefaultBackend: bool,
+     *     restoreConfigs: bool,
+     *     restorePermanentFiles: bool,
+     *     restoreTriggers: bool,
+     *     restoreNotifications: bool,
+     *     restoreBuckets: bool,
+     *     restoreTables: bool,
+     *     restoreProjectMetadata: bool,
+     *     checkEmptyProject: bool
+     * }
+     */
     private function getCommonRestoreParameters(): array
     {
         return [
@@ -510,6 +543,7 @@ class Migrate
 
         // Store Snowflake workspace for next configurations
         /** @var array{configuration: array{parameters: array{db: array}}} $destinationConfigurationData */
+        /** @var array{host: string, username: string, "#password"?: string, "#privateKey"?: string, warehouse: string, warehouse_size?: 'SMALL'|'MEDIUM'|'LARGE'} $workspaceParameters */
         $workspaceParameters = $destinationConfigurationData['configuration']['parameters']['db'];
         $this->migratedSnowflakeWorkspaces[$snowflakeUser] = $workspaceParameters;
     }

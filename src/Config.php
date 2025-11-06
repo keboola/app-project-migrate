@@ -53,9 +53,30 @@ class Config extends BaseConfig
         return $this->getStringValue(['parameters', 'dataMode']);
     }
 
+    /**
+     * @return array{
+     *     host: string,
+     *     username: string,
+     *     "#password"?: string,
+     *     "#privateKey"?: string,
+     *     warehouse: string,
+     *     warehouse_size?: 'SMALL'|'MEDIUM'|'LARGE'
+     * }|array{}
+     */
     public function getDb(): array
     {
-        return $this->getArrayValue(['parameters', 'db'], []);
+        /**
+         * @var array{
+         *     host: string,
+         *     username: string,
+         *     "#password"?: string,
+         *     "#privateKey"?: string,
+         *     warehouse: string,
+         *     warehouse_size?: 'SMALL'|'MEDIUM'|'LARGE'
+         * }|array{} $value
+         */
+        $value = $this->getArrayValue(['parameters', 'db'], []);
+        return $value;
     }
 
     public function shouldMigratePermanentFiles(): bool
@@ -113,8 +134,12 @@ class Config extends BaseConfig
         return $this->getStringValue(['parameters', 'sourceByodb'], '');
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function getIncludeWorkspaceSchemas(): array
     {
+        /** @var array<int, string> $value */
         $value = $this->getArrayValue(['parameters', 'includeWorkspaceSchemas'], []);
         return empty($value) ? [] : $value;
     }

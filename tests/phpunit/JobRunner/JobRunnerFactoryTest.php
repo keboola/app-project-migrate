@@ -16,6 +16,7 @@ class JobRunnerFactoryTest extends TestCase
 {
     /**
      * @dataProvider jobRunnerFactoryDataProvider
+     * @param array<int, string> $features
      * @param class-string $expectedClass
      */
     public function testJobRunnerFactory(array $features, string $expectedClass): void
@@ -41,6 +42,7 @@ class JobRunnerFactoryTest extends TestCase
 
     /**
      * @dataProvider jobRunnerFactoryExceptionDataProvider
+     * @param array<int, string> $features
      */
     public function testJobRunnerFactoryThrowsException(array $features): void
     {

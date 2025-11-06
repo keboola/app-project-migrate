@@ -15,6 +15,7 @@ class ConfigTest extends TestCase
 {
     /**
      * @dataProvider invalidConfigurationProvider
+     * @param array<string, mixed> $parameters
      */
     public function testInvalidConfiguration(
         array $parameters,
@@ -233,6 +234,14 @@ class ConfigTest extends TestCase
 
     /**
      * @dataProvider dbValidationProvider
+     * @param array{
+     *     host: string,
+     *     username: string,
+     *     '#password'?: string,
+     *     '#privateKey'?: string,
+     *     warehouse: string,
+     *     warehouse_size?: 'SMALL'|'MEDIUM'|'LARGE'
+     * } $dbConfig
      */
     public function testDbValidation(
         array $dbConfig,
@@ -316,6 +325,7 @@ class ConfigTest extends TestCase
 
     /**
      * @dataProvider migrateDataModeProvider
+     * @param array<string, mixed> $parameters
      */
     public function testGetMigrateDataMode(
         array $parameters,
@@ -348,6 +358,15 @@ class ConfigTest extends TestCase
 
     /**
      * @dataProvider dbConfigProvider
+     * @param array<string, mixed> $parameters
+     * @param array{
+     *     host: string,
+     *     username: string,
+     *     '#password'?: string,
+     *     '#privateKey'?: string,
+     *     warehouse: string,
+     *     warehouse_size?: 'SMALL'|'MEDIUM'|'LARGE'
+     * }|array{} $expectedValue
      */
     public function testGetDb(
         array $parameters,

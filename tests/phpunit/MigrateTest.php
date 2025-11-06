@@ -29,7 +29,22 @@ class MigrateTest extends TestCase
 {
 
     /**
-     * @param class-string $jobRunnerClass
+     * @param array{
+     *     s3?: array{
+     *         backupUri: string,
+     *         accessKeyId: string,
+     *         '#secretAccessKey': string,
+     *         '#sessionToken': string
+     *     },
+     *     abs?: array{container: string, '#connectionString': string},
+     *     gcs?: array{
+     *         projectId: string,
+     *         bucket: string,
+     *         backupUri: string,
+     *         credentials: array{'#accessToken': string, expiresIn: int, tokenType: string}
+     *     }
+     * } $expectedCredentialsData
+     * @param class-string<JobRunner> $jobRunnerClass
      * @dataProvider successMigrateDataProvider
      * @throws UserException
      */
@@ -1302,6 +1317,7 @@ class MigrateTest extends TestCase
     /**
      * @dataProvider provideDryRunOptions
      * @param class-string<JobRunner> $jobRunnerClass
+     * @param array<int, string> $expectedEntriesInDryRunMode
      * @throws UserException
      */
     public function testDryRunMode(
@@ -1494,6 +1510,9 @@ class MigrateTest extends TestCase
         self::assertSame($expectedEntriesInDryRunMode, $actualEntriesInDryRunMode);
     }
 
+    /**
+     * @return \Generator<string, array<string, mixed>>
+     */
     public function provideDryRunOptions(): iterable
     {
         yield 'Q2 without secrets & with direct data migration' => [
@@ -1613,6 +1632,9 @@ class MigrateTest extends TestCase
         ;
     }
 
+    /**
+     * @param array{id: string, status: string, result?: array<string, mixed>} $return
+     */
     private function mockAddMethodBackupProject(
         MockObject $mockObject,
         array $return,
@@ -2112,6 +2134,9 @@ class MigrateTest extends TestCase
         ];
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function arrayToStdClass(array $data): stdClass
     {
         $json = json_encode($data);
