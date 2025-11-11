@@ -65,18 +65,7 @@ class Config extends BaseConfig
      */
     public function getDb(): array
     {
-        /**
-         * @var array{
-         *     host: string,
-         *     username: string,
-         *     "#password"?: string,
-         *     "#privateKey"?: string,
-         *     warehouse: string,
-         *     warehouse_size?: 'SMALL'|'MEDIUM'|'LARGE'
-         * }|array{} $value
-         */
-        $value = $this->getArrayValue(['parameters', 'db'], []);
-        return $value;
+        return $this->getArrayValue(['parameters', 'db'], []);
     }
 
     public function shouldMigratePermanentFiles(): bool
@@ -106,22 +95,17 @@ class Config extends BaseConfig
 
     public function shouldMigrateBuckets(): bool
     {
-        /** @var bool $value */
-        $value = $this->getBoolValue(['parameters', 'migrateBuckets']);
-        return $value;
+        return $this->getBoolValue(['parameters', 'migrateBuckets']);
     }
 
     public function shouldMigrateTables(): bool
     {
-        /** @var bool $value */
-        $value = $this->getBoolValue(['parameters', 'migrateTables']);
-        return $value;
+        return $this->getBoolValue(['parameters', 'migrateTables']);
     }
 
     public function shouldMigrateProjectMetadata(): bool
     {
-        $value = $this->getBoolValue(['parameters', 'migrateProjectMetadata']);
-        return $value;
+        return $this->getBoolValue(['parameters', 'migrateProjectMetadata']);
     }
 
     public function isSourceByodb(): bool
@@ -141,7 +125,7 @@ class Config extends BaseConfig
     {
         /** @var array<int, string> $value */
         $value = $this->getArrayValue(['parameters', 'includeWorkspaceSchemas'], []);
-        return empty($value) ? [] : $value;
+        return $value;
     }
 
     public function preserveTimestamp(): bool
@@ -184,10 +168,8 @@ class Config extends BaseConfig
     /**
      * @param array<string> $keys
      */
-    public function getBoolValue(array $keys, mixed $default = null): bool
+    public function getBoolValue(array $keys, bool $default = false): bool
     {
-        /** @var bool $value */
-        $value = $this->getValue($keys, $default);
-        return $value;
+        return (bool) $this->getValue($keys, $default);
     }
 }

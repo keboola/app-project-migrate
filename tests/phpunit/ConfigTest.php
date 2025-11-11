@@ -520,4 +520,77 @@ class ConfigTest extends TestCase
         // when value is null (from defaultNull()). This is a known limitation.
         $config->getSourceManageToken();
     }
+
+    /**
+     * @dataProvider getBoolValueProvider
+     */
+    public function testGetBoolValue(
+        string $propertyName,
+        mixed $inputValue,
+        bool $expectedResult,
+    ): void {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    $propertyName => $inputValue,
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $result = $config->getBoolValue(['parameters', $propertyName]);
+        $this->assertSame($expectedResult, $result);
+    }
+
+    public static function getBoolValueProvider(): Generator
+    {
+        yield 'dryRun true' => [
+            'propertyName' => 'dryRun',
+            'inputValue' => true,
+            'expectedResult' => true,
+        ];
+        yield 'dryRun false' => [
+            'propertyName' => 'dryRun',
+            'inputValue' => false,
+            'expectedResult' => false,
+        ];
+        yield 'sourceByodb non-empty string' => [
+            'propertyName' => 'sourceByodb',
+            'inputValue' => 'some-value',
+            'expectedResult' => true,
+        ];
+        yield 'sourceByodb empty string' => [
+            'propertyName' => 'sourceByodb',
+            'inputValue' => '',
+            'expectedResult' => false,
+        ];
+        yield 'sourceKbcUrl non-empty string' => [
+            'propertyName' => 'sourceKbcUrl',
+            'inputValue' => 'https://connection.keboola.com',
+            'expectedResult' => true,
+        ];
+    }
+
+    public function testGetBoolValueWithExplicitDefault(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        // Test with explicit true default on a parameter that defaults to false
+        $result = $config->getBoolValue(['parameters', 'dryRun'], true);
+        $this->assertFalse($result); // Config has default false, so should return false
+
+        // Test with explicit false default on a parameter that defaults to true
+        $result = $config->getBoolValue(['parameters', 'migrateBuckets'], false);
+        $this->assertTrue($result); // Config has default true, so should return true
+    }
 }
