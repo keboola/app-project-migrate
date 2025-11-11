@@ -10,7 +10,6 @@ use Keboola\StorageApi\Client;
 use Keboola\StorageApi\ClientException;
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
-use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
 
 class AfterMigrationTest extends TestCase
@@ -31,14 +30,14 @@ class AfterMigrationTest extends TestCase
                 if ($tableId === 'in.bucket.table2') {
                     return ['rowsCount' => 67890];
                 }
-                $this->fail('Unexpected table ID: ' . $tableId);
+                self::fail('Unexpected table ID: ' . $tableId);
             });
 
         $logsHandler = new TestHandler();
         $logger = new Logger('tests', [$logsHandler]);
         $afterMigrationChecker = new AfterMigration($sourceClient, $destinationClient, $logger);
         $afterMigrationChecker->check();
-        $this->assertEquals(2, $callCount);
+        self::assertEquals(2, $callCount);
     }
 
     public function testInvalidTablesRowsCount(): void
@@ -55,7 +54,7 @@ class AfterMigrationTest extends TestCase
                 if ($tableId === 'in.bucket.table2') {
                     return ['rowsCount' => 987654321];
                 }
-                $this->fail('Unexpected table ID: ' . $tableId);
+                self::fail('Unexpected table ID: ' . $tableId);
             });
 
         $logsHandler = new TestHandler();
@@ -64,18 +63,18 @@ class AfterMigrationTest extends TestCase
 
         try {
             $afterMigrationChecker->check();
-            $this->fail('Test didn\'t fail');
+            self::fail('Test didn\'t fail');
         } catch (UserException $e) {
-            Assert::assertEquals('Failed post migration check.', $e->getMessage());
+            self::assertEquals('Failed post migration check.', $e->getMessage());
         }
 
-        Assert::assertTrue(
+        self::assertTrue(
             $logsHandler->hasWarning(
                 'Bad row count: Bucket "testBucket", Table "table1". ' .
                 'Source table rows: "1234567890"; Destination table rows: "12345".',
             ),
         );
-        Assert::assertTrue(
+        self::assertTrue(
             $logsHandler->hasWarning(
                 'Bad row count: Bucket "testBucket", Table "table2". ' .
                 'Source table rows: "987654321"; Destination table rows: "67890".',
@@ -97,7 +96,7 @@ class AfterMigrationTest extends TestCase
                 if ($tableId === 'in.bucket.table2') {
                     throw new ClientException('Table table2 not found');
                 }
-                $this->fail('Unexpected table ID: ' . $tableId);
+                self::fail('Unexpected table ID: ' . $tableId);
             });
 
         $logsHandler = new TestHandler();
@@ -106,15 +105,15 @@ class AfterMigrationTest extends TestCase
 
         try {
             $afterMigrationChecker->check();
-            $this->fail('Test didn\'t fail');
+            self::fail('Test didn\'t fail');
         } catch (UserException $e) {
-            Assert::assertEquals('Failed post migration check.', $e->getMessage());
+            self::assertEquals('Failed post migration check.', $e->getMessage());
         }
 
-        Assert::assertTrue(
+        self::assertTrue(
             $logsHandler->hasWarning('Table table1 not found'),
         );
-        Assert::assertTrue(
+        self::assertTrue(
             $logsHandler->hasWarning('Table table2 not found'),
         );
     }
@@ -133,7 +132,7 @@ class AfterMigrationTest extends TestCase
                 if ($tableId === 'in.bucket.table2') {
                     return ['rowsCount' => 67890];
                 }
-                $this->fail('Unexpected table ID: ' . $tableId);
+                self::fail('Unexpected table ID: ' . $tableId);
             });
 
         $logsHandler = new TestHandler();
@@ -142,12 +141,12 @@ class AfterMigrationTest extends TestCase
 
         try {
             $afterMigrationChecker->check();
-            $this->fail('Test didn\'t fail');
+            self::fail('Test didn\'t fail');
         } catch (UserException $e) {
-            Assert::assertEquals('Failed post migration check.', $e->getMessage());
+            self::assertEquals('Failed post migration check.', $e->getMessage());
         }
 
-        Assert::assertTrue(
+        self::assertTrue(
             $logsHandler->hasWarning('Table not found'),
         );
     }
@@ -189,7 +188,7 @@ class AfterMigrationTest extends TestCase
                         ],
                     ];
                 }
-                $this->fail('Unexpected bucket ID: ' . $bucketId);
+                self::fail('Unexpected bucket ID: ' . $bucketId);
             });
 
         $sourceClient = $this->createMock(Client::class);
@@ -202,7 +201,7 @@ class AfterMigrationTest extends TestCase
                 if ($tableId === 'in.bucket2.table1') {
                     return ['rowsCount' => 200];
                 }
-                $this->fail('Unexpected table ID: ' . $tableId);
+                self::fail('Unexpected table ID: ' . $tableId);
             });
 
         $logsHandler = new TestHandler();
@@ -252,7 +251,7 @@ class AfterMigrationTest extends TestCase
                 if ($tableId === 'in.bucket.table2') {
                     return ['rowsCount' => 99999];
                 }
-                $this->fail('Unexpected table ID: ' . $tableId);
+                self::fail('Unexpected table ID: ' . $tableId);
             });
 
         $logsHandler = new TestHandler();
@@ -261,15 +260,15 @@ class AfterMigrationTest extends TestCase
 
         try {
             $afterMigrationChecker->check();
-            $this->fail('Test didn\'t fail');
+            self::fail('Test didn\'t fail');
         } catch (UserException $e) {
-            Assert::assertEquals('Failed post migration check.', $e->getMessage());
+            self::assertEquals('Failed post migration check.', $e->getMessage());
         }
 
-        Assert::assertTrue(
+        self::assertTrue(
             $logsHandler->hasWarning('Table not found'),
         );
-        Assert::assertTrue(
+        self::assertTrue(
             $logsHandler->hasWarning(
                 'Bad row count: Bucket "testBucket", Table "table2". ' .
                 'Source table rows: "99999"; Destination table rows: "67890".',

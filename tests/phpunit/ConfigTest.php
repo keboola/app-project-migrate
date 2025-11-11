@@ -76,8 +76,8 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertSame(true, $baseConfig->shouldMigrateSecrets());
-        $this->assertEquals('manage-token', $baseConfig->getSourceManageToken());
+        self::assertSame(true, $baseConfig->shouldMigrateSecrets());
+        self::assertEquals('manage-token', $baseConfig->getSourceManageToken());
     }
 
     /**
@@ -100,7 +100,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertSame($testValue, $config->$methodName());
+        self::assertSame($testValue, $config->$methodName());
     }
 
     /**
@@ -120,7 +120,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertSame($expectedDefault, $config->$methodName());
+        self::assertSame($expectedDefault, $config->$methodName());
     }
 
     /**
@@ -178,7 +178,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertTrue($config->preserveTimestamp());
+        self::assertTrue($config->preserveTimestamp());
     }
 
     public function testAdditionalMigrationParametersDbMode(): void
@@ -203,8 +203,8 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertEquals(2, count($config->getIncludeWorkspaceSchemas()));
-        $this->assertEquals('test', $config->getSourceByodb());
+        self::assertEquals(2, count($config->getIncludeWorkspaceSchemas()));
+        self::assertEquals('test', $config->getSourceByodb());
     }
 
     public function testDbWithPrivateKey(): void
@@ -304,7 +304,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertEquals('https://custom.keboola.com', $config->getSourceProjectUrl());
+        self::assertEquals('https://custom.keboola.com', $config->getSourceProjectUrl());
     }
 
     public function testGetSourceProjectToken(): void
@@ -319,7 +319,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertEquals('my-token-123', $config->getSourceProjectToken());
+        self::assertEquals('my-token-123', $config->getSourceProjectToken());
     }
 
 
@@ -344,7 +344,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertEquals($expectedValue, $config->getMigrateDataMode());
+        self::assertEquals($expectedValue, $config->getMigrateDataMode());
     }
 
     /**
@@ -385,7 +385,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertEquals($expectedValue, $config->getDb());
+        self::assertEquals($expectedValue, $config->getDb());
     }
 
     /**
@@ -431,7 +431,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertEquals($testValue, $config->$methodName());
+        self::assertEquals($testValue, $config->$methodName());
     }
 
     /**
@@ -449,7 +449,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertNull($config->$methodName());
+        self::assertNull($config->$methodName());
     }
 
     /**
@@ -484,7 +484,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertEquals([], $config->getIncludeWorkspaceSchemas());
+        self::assertEquals([], $config->getIncludeWorkspaceSchemas());
     }
 
     public function testGetSourceByodbDefaultValue(): void
@@ -499,7 +499,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        $this->assertEquals('', $config->getSourceByodb());
+        self::assertEquals('', $config->getSourceByodb());
     }
 
     public function testGetSourceManageTokenDefaultValue(): void
@@ -541,7 +541,7 @@ class ConfigTest extends TestCase
         );
 
         $result = $config->getBoolValue(['parameters', $propertyName]);
-        $this->assertSame($expectedResult, $result);
+        self::assertSame($expectedResult, $result);
     }
 
     public static function getBoolValueProvider(): Generator
@@ -587,10 +587,10 @@ class ConfigTest extends TestCase
 
         // Test with explicit true default on a parameter that defaults to false
         $result = $config->getBoolValue(['parameters', 'dryRun'], true);
-        $this->assertFalse($result); // Config has default false, so should return false
+        self::assertFalse($result); // Config has default false, so should return false
 
         // Test with explicit false default on a parameter that defaults to true
         $result = $config->getBoolValue(['parameters', 'migrateBuckets'], false);
-        $this->assertTrue($result); // Config has default true, so should return true
+        self::assertTrue($result); // Config has default true, so should return true
     }
 }

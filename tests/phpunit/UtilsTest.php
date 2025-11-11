@@ -9,7 +9,6 @@ use Keboola\AppProjectMigrate\Utils;
 use Keboola\Component\UserException;
 use Keboola\StorageApi\Client;
 use Keboola\StorageApi\Components;
-use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -37,7 +36,7 @@ class UtilsTest extends TestCase
 
         /** @var Components&MockObject $componentClient */
         /** @var Client&MockObject $storageClientMock */
-        Assert::assertEquals(Utils::checkIfProjectEmpty($storageClientMock, $componentClient), $expectedResult);
+        self::assertEquals(Utils::checkIfProjectEmpty($storageClientMock, $componentClient), $expectedResult);
     }
 
     public function checkIfProjectEmptyDataProvider(): Generator
@@ -249,6 +248,7 @@ class UtilsTest extends TestCase
         $destClientMock = $this->createMock(Client::class);
 
         $sourceClientMock
+            ->expects($this->once())
             ->method('apiGet')
             ->willReturn(
                 [
@@ -259,6 +259,7 @@ class UtilsTest extends TestCase
             );
 
         $destClientMock
+            ->expects($this->once())
             ->method('apiGet')
             ->willReturn(
                 [
@@ -272,7 +273,6 @@ class UtilsTest extends TestCase
         /** @var Client&MockObject $sourceClientMock */
         /** @var Client&MockObject $destClientMock */
         Utils::checkMigrationApps($sourceClientMock, $destClientMock);
-        $this->expectNotToPerformAssertions();
     }
 
     public function testStackFromProjectUrl(): void
