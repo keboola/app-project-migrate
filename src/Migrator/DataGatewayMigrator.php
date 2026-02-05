@@ -99,6 +99,7 @@ class DataGatewayMigrator
             $configId,
             [
                 'publicKey' => $publicKey,
+                'useCase' => 'reader',
                 'backend' => 'snowflake',
                 'loginType' => WorkspaceLoginType::SNOWFLAKE_PERSON_KEYPAIR,
             ],
