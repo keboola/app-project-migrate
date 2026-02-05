@@ -6,47 +6,30 @@ namespace Keboola\AppProjectMigrate\Migrator;
 
 use Keboola\AppProjectMigrate\Config;
 use Keboola\Component\UserException;
-use Keboola\EncryptionApiClient\Encryption;
 use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\Components;
 use Keboola\StorageApi\Options\Components\Configuration;
 use Keboola\StorageApi\WorkspaceLoginType;
-use Keboola\StorageApi\Workspaces;
 use Psr\Log\LoggerInterface;
 
 class DataGatewayMigrator
 {
     /**
-     * @var array<int, array{
-     *     workspaceId: int,
-     *     host: string,
-     *     user: string,
-     *     schema: string,
-     *     warehouse: string,
-     *     database: string,
-     *     role: string|null,
-     *     encryptedPrivateKey: string
+     * Cache of migrated workspaces by source schema.
+     * When multiple configs share the same schema, they can reuse the same workspace.
+     *
+     * @var array<string, array{
+     *     id: int,
+     *     connection: array<string, mixed>
      * }>
      */
     private array $migratedWorkspaces = [];
-
-    private Encryption $encryptionClient;
-    private string $projectId;
 
     public function __construct(
         private readonly StorageClient $destStorageClient,
         private readonly LoggerInterface $logger,
         private readonly bool $dryRun = false,
-        ?Encryption $encryptionClient = null,
     ) {
-        /** @var array{owner: array{id: int}} $tokenInfo */
-        $tokenInfo = $this->destStorageClient->verifyToken();
-        $this->projectId = (string) $tokenInfo['owner']['id'];
-
-        $this->encryptionClient = $encryptionClient ?? new Encryption(
-            $this->destStorageClient->getTokenString(),
-            ['url' => $this->destStorageClient->getServiceUrl('encryption')],
-        );
     }
 
     public function migrate(): void
@@ -69,12 +52,10 @@ class DataGatewayMigrator
             return;
         }
 
-        $destWorkspaces = new Workspaces($this->destStorageClient);
-
         /** @var array<int, array{id: string}> $configurations */
         $configurations = $dataGatewayComponent['configurations'];
         foreach ($configurations as $config) {
-            $this->migrateConfiguration($config['id'], $destComponentsApi, $destWorkspaces);
+            $this->migrateConfiguration($config['id'], $destComponentsApi);
         }
 
         $this->logger->info('Data Gateway configurations migrated');
@@ -83,7 +64,6 @@ class DataGatewayMigrator
     private function migrateConfiguration(
         string $configId,
         Components $destComponentsApi,
-        Workspaces $destWorkspaces,
     ): void {
         if ($this->dryRun) {
             $this->logger->info(sprintf('[dry-run] Would migrate Data Gateway config "%s"', $configId));
@@ -92,55 +72,44 @@ class DataGatewayMigrator
 
         $this->logger->info(sprintf('Migrating Data Gateway config "%s"', $configId));
 
-        /** @var array{id: string, name: string, configuration: array{parameters?: array{db?: array{workspaceId?: int}}}} $configData */
+        /** @var array{id: string, name: string, configuration: array{parameters?: array{db?: array{schema?: string}}}} $configData */
         $configData = $destComponentsApi->getConfiguration(
             Config::DATA_GATEWAY_COMPONENT,
             $configId,
         );
 
-        $sourceWorkspaceId = $configData['configuration']['parameters']['db']['workspaceId'] ?? null;
+        $sourceSchema = $configData['configuration']['parameters']['db']['schema'] ?? null;
 
-        if ($sourceWorkspaceId !== null && isset($this->migratedWorkspaces[$sourceWorkspaceId])) {
+        // Check if we already migrated a workspace for this schema
+        if ($sourceSchema !== null && isset($this->migratedWorkspaces[$sourceSchema])) {
             $this->logger->info(sprintf(
                 'Reusing already migrated workspace %d for config "%s"',
-                $this->migratedWorkspaces[$sourceWorkspaceId]['workspaceId'],
+                $this->migratedWorkspaces[$sourceSchema]['id'],
                 $configId,
             ));
-            $this->updateConfigurationFromCache($configData, $sourceWorkspaceId, $destComponentsApi);
+            $this->updateConfiguration($configData, $this->migratedWorkspaces[$sourceSchema], $destComponentsApi);
             return;
         }
 
-        $keyPair = $this->generateKeyPair();
+        $publicKey = $this->generatePublicKey();
 
-        /** @var array{id: int, connection: array{host: string, user: string, schema: string, warehouse: string, database: string, role?: string|null}} $newWorkspace */
-        $newWorkspace = $destWorkspaces->createWorkspace([
-            'readOnlyStorageAccess' => true,
-            'backend' => 'snowflake',
-            'loginType' => WorkspaceLoginType::SNOWFLAKE_SERVICE_KEYPAIR,
-            'publicKey' => $keyPair['publicKey'],
-        ]);
-
-        $encryptedPrivateKey = $this->encryptionClient->encryptPlainTextForConfiguration(
-            $keyPair['privateKey'],
-            $this->projectId,
+        /** @var array{id: int, connection: array<string, mixed>} $newWorkspace */
+        $newWorkspace = $destComponentsApi->createConfigurationWorkspace(
             Config::DATA_GATEWAY_COMPONENT,
             $configId,
+            [
+                'publicKey' => $publicKey,
+                'backend' => 'snowflake',
+                'loginType' => WorkspaceLoginType::SNOWFLAKE_PERSON_KEYPAIR,
+            ],
         );
 
-        if ($sourceWorkspaceId !== null) {
-            $this->migratedWorkspaces[$sourceWorkspaceId] = [
-                'workspaceId' => $newWorkspace['id'],
-                'host' => $newWorkspace['connection']['host'],
-                'user' => $newWorkspace['connection']['user'],
-                'schema' => $newWorkspace['connection']['schema'],
-                'warehouse' => $newWorkspace['connection']['warehouse'],
-                'database' => $newWorkspace['connection']['database'],
-                'role' => $newWorkspace['connection']['role'] ?? null,
-                'encryptedPrivateKey' => $encryptedPrivateKey,
-            ];
+        // Cache the workspace for potential reuse by other configs with same schema
+        if ($sourceSchema !== null) {
+            $this->migratedWorkspaces[$sourceSchema] = $newWorkspace;
         }
 
-        $this->updateConfiguration($configData, $newWorkspace, $encryptedPrivateKey, $destComponentsApi);
+        $this->updateConfiguration($configData, $newWorkspace, $destComponentsApi);
 
         $this->logger->info(sprintf(
             'Data Gateway config "%s" migrated to workspace %d',
@@ -160,72 +129,19 @@ class DataGatewayMigrator
      *     name: string,
      *     configuration: array{parameters?: array{db?: array<string, mixed>}}
      * } $configData
-     */
-    private function updateConfigurationFromCache(
-        array $configData,
-        int $sourceWorkspaceId,
-        Components $destComponentsApi,
-    ): void {
-        $cached = $this->migratedWorkspaces[$sourceWorkspaceId];
-
-        $oldDb = $this->removeEncryptedKeys($configData['configuration']['parameters']['db'] ?? []);
-        $configData['configuration']['parameters']['db'] = array_merge($oldDb, [
-            'host' => $cached['host'],
-            'user' => $cached['user'],
-            'schema' => $cached['schema'],
-            'warehouse' => $cached['warehouse'],
-            'database' => $cached['database'],
-            'workspaceId' => $cached['workspaceId'],
-            'role' => $cached['role'],
-            'loginType' => 'snowflake-service-keypair',
-            '#privateKey' => $cached['encryptedPrivateKey'],
-        ]);
-
-        $destComponentsApi->updateConfiguration(
-            (new Configuration())
-                ->setComponentId(Config::DATA_GATEWAY_COMPONENT)
-                ->setConfigurationId($configData['id'])
-                ->setName($configData['name'])
-                ->setConfiguration($configData['configuration']),
-        );
-    }
-
-    /**
-     * @param array{
-     *     id: string,
-     *     name: string,
-     *     configuration: array{parameters?: array{db?: array<string, mixed>}}
-     * } $configData
-     * @param array{
-     *     id: int,
-     *     connection: array{
-     *         host: string,
-     *         user: string,
-     *         schema: string,
-     *         warehouse: string,
-     *         database: string,
-     *         role?: string|null
-     *     }
-     * } $newWorkspace
+     * @param array{id: int, connection: array<string, mixed>} $workspace
      */
     private function updateConfiguration(
         array $configData,
-        array $newWorkspace,
-        string $encryptedPrivateKey,
+        array $workspace,
         Components $destComponentsApi,
     ): void {
         $oldDb = $this->removeEncryptedKeys($configData['configuration']['parameters']['db'] ?? []);
-        $configData['configuration']['parameters']['db'] = array_merge($oldDb, [
-            'host' => $newWorkspace['connection']['host'],
-            'user' => $newWorkspace['connection']['user'],
-            'schema' => $newWorkspace['connection']['schema'],
-            'warehouse' => $newWorkspace['connection']['warehouse'],
-            'database' => $newWorkspace['connection']['database'],
-            'workspaceId' => $newWorkspace['id'],
-            'role' => $newWorkspace['connection']['role'] ?? null,
-            'loginType' => 'snowflake-service-keypair',
-            '#privateKey' => $encryptedPrivateKey,
-        ]);
+        $configData['configuration']['parameters']['db'] = array_merge(
+            $oldDb,
+            $workspace['connection'],
+            ['workspaceId' => $workspace['id']],
+        );
 
         $destComponentsApi->updateConfiguration(
             (new Configuration())
@@ -254,34 +170,23 @@ class DataGatewayMigrator
         return $result;
     }
 
-    /**
-     * @return array{privateKey: string, publicKey: string}
-     */
-    private function generateKeyPair(): array
+    private function generatePublicKey(): string
     {
         $config = [
             'private_key_bits' => 2048,
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
         ];
+
         $keyPair = openssl_pkey_new($config);
         if ($keyPair === false) {
             throw new UserException('Failed to generate RSA key pair');
         }
 
-        $privateKeyPem = null;
-        openssl_pkey_export($keyPair, $privateKeyPem);
-        if (!is_string($privateKeyPem)) {
-            throw new UserException('Failed to export private key');
-        }
-
         $details = openssl_pkey_get_details($keyPair);
         if ($details === false || !isset($details['key']) || !is_string($details['key'])) {
-            throw new UserException('Failed to get key pair details');
+            throw new UserException('Failed to get key details');
         }
 
-        return [
-            'privateKey' => $privateKeyPem,
-            'publicKey' => $details['key'],
-        ];
+        return $details['key'];
     }
 }

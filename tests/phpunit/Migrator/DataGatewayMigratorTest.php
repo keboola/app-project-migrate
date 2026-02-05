@@ -6,7 +6,6 @@ namespace Keboola\AppProjectMigrate\Tests\Migrator;
 
 use Keboola\AppProjectMigrate\Config;
 use Keboola\AppProjectMigrate\Migrator\DataGatewayMigrator;
-use Keboola\EncryptionApiClient\Encryption;
 use Keboola\StorageApi\Client as StorageClient;
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
@@ -25,21 +24,7 @@ class DataGatewayMigratorTest extends TestCase
         /** @var StorageClient&MockObject $storageClientMock */
         $storageClientMock = $this->createMock(StorageClient::class);
         $storageClientMock->method('apiGet')->willReturnCallback($apiGetCallback);
-        $storageClientMock->method('verifyToken')->willReturn(['owner' => ['id' => 123]]);
         return $storageClientMock;
-    }
-
-    /**
-     * @return Encryption&MockObject
-     */
-    private function createEncryptionClientMock(): Encryption
-    {
-        /** @var Encryption&MockObject $encryptionClientMock */
-        $encryptionClientMock = $this->createMock(Encryption::class);
-        $encryptionClientMock
-            ->method('encryptPlainTextForConfiguration')
-            ->willReturn('KBC::SecureKV::encrypted-private-key');
-        return $encryptionClientMock;
     }
 
     public function testNoDataGatewayConfigurations(): void
@@ -54,12 +39,7 @@ class DataGatewayMigratorTest extends TestCase
             return [];
         });
 
-        $migrator = new DataGatewayMigrator(
-            $storageClientMock,
-            $logger,
-            false,
-            $this->createEncryptionClientMock(),
-        );
+        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
         $migrator->migrate();
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
@@ -84,12 +64,7 @@ class DataGatewayMigratorTest extends TestCase
             return [];
         });
 
-        $migrator = new DataGatewayMigrator(
-            $storageClientMock,
-            $logger,
-            false,
-            $this->createEncryptionClientMock(),
-        );
+        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
         $migrator->migrate();
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
@@ -119,12 +94,7 @@ class DataGatewayMigratorTest extends TestCase
         // In dry-run mode, no workspace should be created
         $storageClientMock->expects(self::never())->method('apiPostJson');
 
-        $migrator = new DataGatewayMigrator(
-            $storageClientMock,
-            $logger,
-            true,
-            $this->createEncryptionClientMock(),
-        );
+        $migrator = new DataGatewayMigrator($storageClientMock, $logger, true);
         $migrator->migrate();
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
@@ -144,7 +114,7 @@ class DataGatewayMigratorTest extends TestCase
             'configuration' => [
                 'parameters' => [
                     'db' => [
-                        'workspaceId' => 100,
+                        'schema' => 'OLD_SCHEMA',
                         'host' => 'old-host.snowflake.com',
                         'user' => 'OLD_USER',
                     ],
@@ -187,7 +157,8 @@ class DataGatewayMigratorTest extends TestCase
             ->method('apiPostJson')
             ->willReturnCallback(
                 function (string $url) use ($newWorkspaceData): array {
-                    if ($url === 'workspaces') {
+                    // createConfigurationWorkspace uses apiPostJson
+                    if (str_contains($url, 'workspaces')) {
                         return $newWorkspaceData;
                     }
                     return [];
@@ -203,12 +174,7 @@ class DataGatewayMigratorTest extends TestCase
                 return [];
             });
 
-        $migrator = new DataGatewayMigrator(
-            $storageClientMock,
-            $logger,
-            false,
-            $this->createEncryptionClientMock(),
-        );
+        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
         $migrator->migrate();
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
@@ -230,26 +196,21 @@ class DataGatewayMigratorTest extends TestCase
         self::assertSame('NEW_WAREHOUSE', $db['warehouse']);
         self::assertSame('NEW_DATABASE', $db['database']);
         self::assertSame(200, $db['workspaceId']);
-        self::assertSame('snowflake-service-keypair', $db['loginType']);
-        self::assertArrayHasKey('#privateKey', $db);
-        self::assertIsString($db['#privateKey']);
-        // The key should be encrypted now
-        self::assertStringStartsWith('KBC::', $db['#privateKey']);
     }
 
-    public function testMigrateMultipleConfigurationsWithSharedWorkspace(): void
+    public function testMigrateMultipleConfigurationsWithSharedSchema(): void
     {
         $logsHandler = new TestHandler();
         $logger = new Logger('tests', [$logsHandler]);
 
-        $sharedWorkspaceId = 100;
+        $sharedSchema = 'SHARED_SCHEMA';
 
         $configData1 = [
             'id' => 'config-1',
             'name' => 'Data Gateway 1',
             'configuration' => [
                 'parameters' => [
-                    'db' => ['workspaceId' => $sharedWorkspaceId],
+                    'db' => ['schema' => $sharedSchema],
                 ],
             ],
         ];
@@ -259,7 +220,7 @@ class DataGatewayMigratorTest extends TestCase
             'name' => 'Data Gateway 2',
             'configuration' => [
                 'parameters' => [
-                    'db' => ['workspaceId' => $sharedWorkspaceId], // Same workspace
+                    'db' => ['schema' => $sharedSchema], // Same schema
                 ],
             ],
         ];
@@ -304,7 +265,7 @@ class DataGatewayMigratorTest extends TestCase
         $storageClientMock
             ->method('apiPostJson')
             ->willReturnCallback(function (string $url) use ($newWorkspaceData, &$workspaceCreateCount): array {
-                if ($url === 'workspaces') {
+                if (str_contains($url, 'workspaces')) {
                     $workspaceCreateCount++;
                     return $newWorkspaceData;
                 }
@@ -313,15 +274,10 @@ class DataGatewayMigratorTest extends TestCase
 
         $storageClientMock->method('apiPutJson')->willReturn([]);
 
-        $migrator = new DataGatewayMigrator(
-            $storageClientMock,
-            $logger,
-            false,
-            $this->createEncryptionClientMock(),
-        );
+        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
         $migrator->migrate();
 
-        // Only one workspace should be created (second config reuses the first)
+        // Only one workspace should be created (second config reuses the first by schema)
         self::assertSame(1, $workspaceCreateCount);
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
@@ -329,19 +285,19 @@ class DataGatewayMigratorTest extends TestCase
         self::assertContains('Reusing already migrated workspace 200 for config "config-2"', $messages);
     }
 
-    public function testMigrateConfigurationWithoutWorkspaceId(): void
+    public function testMigrateConfigurationWithoutSchema(): void
     {
         $logsHandler = new TestHandler();
         $logger = new Logger('tests', [$logsHandler]);
 
         $configData = [
             'id' => 'config-1',
-            'name' => 'Data Gateway without workspace',
+            'name' => 'Data Gateway without schema',
             'configuration' => [
                 'parameters' => [
                     'db' => [
                         'host' => 'some-host.snowflake.com',
-                        // No workspaceId
+                        // No schema
                     ],
                 ],
             ],
@@ -379,7 +335,7 @@ class DataGatewayMigratorTest extends TestCase
         $storageClientMock
             ->method('apiPostJson')
             ->willReturnCallback(function (string $url) use ($newWorkspaceData): array {
-                if ($url === 'workspaces') {
+                if (str_contains($url, 'workspaces')) {
                     return $newWorkspaceData;
                 }
                 return [];
@@ -387,12 +343,7 @@ class DataGatewayMigratorTest extends TestCase
 
         $storageClientMock->method('apiPutJson')->willReturn([]);
 
-        $migrator = new DataGatewayMigrator(
-            $storageClientMock,
-            $logger,
-            false,
-            $this->createEncryptionClientMock(),
-        );
+        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
         $migrator->migrate();
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
@@ -400,7 +351,7 @@ class DataGatewayMigratorTest extends TestCase
         self::assertContains('Data Gateway config "config-1" migrated to workspace 200', $messages);
     }
 
-    public function testMigrateMultipleConfigurationsWithDifferentWorkspaces(): void
+    public function testMigrateMultipleConfigurationsWithDifferentSchemas(): void
     {
         $logsHandler = new TestHandler();
         $logger = new Logger('tests', [$logsHandler]);
@@ -410,7 +361,7 @@ class DataGatewayMigratorTest extends TestCase
             'name' => 'Data Gateway 1',
             'configuration' => [
                 'parameters' => [
-                    'db' => ['workspaceId' => 100],
+                    'db' => ['schema' => 'SCHEMA_1'],
                 ],
             ],
         ];
@@ -420,7 +371,7 @@ class DataGatewayMigratorTest extends TestCase
             'name' => 'Data Gateway 2',
             'configuration' => [
                 'parameters' => [
-                    'db' => ['workspaceId' => 101], // Different workspace
+                    'db' => ['schema' => 'SCHEMA_2'], // Different schema
                 ],
             ],
         ];
@@ -453,7 +404,7 @@ class DataGatewayMigratorTest extends TestCase
         $storageClientMock
             ->method('apiPostJson')
             ->willReturnCallback(function (string $url) use (&$workspaceCreateCount): array {
-                if ($url === 'workspaces') {
+                if (str_contains($url, 'workspaces')) {
                     $workspaceCreateCount++;
                     return [
                         'id' => 200 + $workspaceCreateCount,
@@ -472,15 +423,10 @@ class DataGatewayMigratorTest extends TestCase
 
         $storageClientMock->method('apiPutJson')->willReturn([]);
 
-        $migrator = new DataGatewayMigrator(
-            $storageClientMock,
-            $logger,
-            false,
-            $this->createEncryptionClientMock(),
-        );
+        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
         $migrator->migrate();
 
-        // Two workspaces should be created (different source workspaceIds)
+        // Two workspaces should be created (different schemas)
         self::assertSame(2, $workspaceCreateCount);
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
