@@ -37,12 +37,13 @@ class DataGatewayMigrator
         private readonly StorageClient $destStorageClient,
         private readonly LoggerInterface $logger,
         private readonly bool $dryRun = false,
+        ?Encryption $encryptionClient = null,
     ) {
         /** @var array{owner: array{id: int}} $tokenInfo */
         $tokenInfo = $this->destStorageClient->verifyToken();
         $this->projectId = (string) $tokenInfo['owner']['id'];
 
-        $this->encryptionClient = new Encryption(
+        $this->encryptionClient = $encryptionClient ?? new Encryption(
             $this->destStorageClient->getTokenString(),
             ['url' => $this->destStorageClient->getServiceUrl('encryption')],
         );

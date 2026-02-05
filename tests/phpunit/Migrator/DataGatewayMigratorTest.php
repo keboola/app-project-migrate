@@ -6,6 +6,7 @@ namespace Keboola\AppProjectMigrate\Tests\Migrator;
 
 use Keboola\AppProjectMigrate\Config;
 use Keboola\AppProjectMigrate\Migrator\DataGatewayMigrator;
+use Keboola\EncryptionApiClient\Encryption;
 use Keboola\StorageApi\Client as StorageClient;
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
@@ -15,23 +16,50 @@ use PHPUnit\Framework\TestCase;
 
 class DataGatewayMigratorTest extends TestCase
 {
+    /**
+     * @param callable(string): array $apiGetCallback
+     * @return StorageClient&MockObject
+     */
+    private function createStorageClientMock(callable $apiGetCallback): StorageClient
+    {
+        /** @var StorageClient&MockObject $storageClientMock */
+        $storageClientMock = $this->createMock(StorageClient::class);
+        $storageClientMock->method('apiGet')->willReturnCallback($apiGetCallback);
+        $storageClientMock->method('verifyToken')->willReturn(['owner' => ['id' => 123]]);
+        return $storageClientMock;
+    }
+
+    /**
+     * @return Encryption&MockObject
+     */
+    private function createEncryptionClientMock(): Encryption
+    {
+        /** @var Encryption&MockObject $encryptionClientMock */
+        $encryptionClientMock = $this->createMock(Encryption::class);
+        $encryptionClientMock
+            ->method('encryptPlainTextForConfiguration')
+            ->willReturn('KBC::SecureKV::encrypted-private-key');
+        return $encryptionClientMock;
+    }
+
     public function testNoDataGatewayConfigurations(): void
     {
         $logsHandler = new TestHandler();
         $logger = new Logger('tests', [$logsHandler]);
 
-        /** @var StorageClient&MockObject $storageClientMock */
-        $storageClientMock = $this->createMock(StorageClient::class);
-        $storageClientMock
-            ->method('apiGet')
-            ->willReturnCallback(function (string $url): array {
-                if (str_contains($url, 'components?')) {
-                    return []; // No components
-                }
-                return [];
-            });
+        $storageClientMock = $this->createStorageClientMock(function (string $url): array {
+            if (str_contains($url, 'components?')) {
+                return []; // No components
+            }
+            return [];
+        });
 
-        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
+        $migrator = new DataGatewayMigrator(
+            $storageClientMock,
+            $logger,
+            false,
+            $this->createEncryptionClientMock(),
+        );
         $migrator->migrate();
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
@@ -44,23 +72,24 @@ class DataGatewayMigratorTest extends TestCase
         $logsHandler = new TestHandler();
         $logger = new Logger('tests', [$logsHandler]);
 
-        /** @var StorageClient&MockObject $storageClientMock */
-        $storageClientMock = $this->createMock(StorageClient::class);
-        $storageClientMock
-            ->method('apiGet')
-            ->willReturnCallback(function (string $url): array {
-                if (str_contains($url, 'components?')) {
-                    return [
-                        [
-                            'id' => Config::DATA_GATEWAY_COMPONENT,
-                            'configurations' => [], // Empty configurations
-                        ],
-                    ];
-                }
-                return [];
-            });
+        $storageClientMock = $this->createStorageClientMock(function (string $url): array {
+            if (str_contains($url, 'components?')) {
+                return [
+                    [
+                        'id' => Config::DATA_GATEWAY_COMPONENT,
+                        'configurations' => [], // Empty configurations
+                    ],
+                ];
+            }
+            return [];
+        });
 
-        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
+        $migrator = new DataGatewayMigrator(
+            $storageClientMock,
+            $logger,
+            false,
+            $this->createEncryptionClientMock(),
+        );
         $migrator->migrate();
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
@@ -72,29 +101,30 @@ class DataGatewayMigratorTest extends TestCase
         $logsHandler = new TestHandler();
         $logger = new Logger('tests', [$logsHandler]);
 
-        /** @var StorageClient&MockObject $storageClientMock */
-        $storageClientMock = $this->createMock(StorageClient::class);
-        $storageClientMock
-            ->method('apiGet')
-            ->willReturnCallback(function (string $url): array {
-                if (str_contains($url, 'components?')) {
-                    return [
-                        [
-                            'id' => Config::DATA_GATEWAY_COMPONENT,
-                            'configurations' => [
-                                ['id' => 'config-1'],
-                                ['id' => 'config-2'],
-                            ],
+        $storageClientMock = $this->createStorageClientMock(function (string $url): array {
+            if (str_contains($url, 'components?')) {
+                return [
+                    [
+                        'id' => Config::DATA_GATEWAY_COMPONENT,
+                        'configurations' => [
+                            ['id' => 'config-1'],
+                            ['id' => 'config-2'],
                         ],
-                    ];
-                }
-                return [];
-            });
+                    ],
+                ];
+            }
+            return [];
+        });
 
         // In dry-run mode, no workspace should be created
         $storageClientMock->expects(self::never())->method('apiPostJson');
 
-        $migrator = new DataGatewayMigrator($storageClientMock, $logger, dryRun: true);
+        $migrator = new DataGatewayMigrator(
+            $storageClientMock,
+            $logger,
+            true,
+            $this->createEncryptionClientMock(),
+        );
         $migrator->migrate();
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
@@ -136,26 +166,22 @@ class DataGatewayMigratorTest extends TestCase
 
         $updatedConfiguration = null;
 
-        /** @var StorageClient&MockObject $storageClientMock */
-        $storageClientMock = $this->createMock(StorageClient::class);
-        $storageClientMock
-            ->method('apiGet')
-            ->willReturnCallback(function (string $url) use ($configData): array {
-                if (str_contains($url, 'components?')) {
-                    return [
-                        [
-                            'id' => Config::DATA_GATEWAY_COMPONENT,
-                            'configurations' => [
-                                ['id' => 'config-1'],
-                            ],
+        $storageClientMock = $this->createStorageClientMock(function (string $url) use ($configData): array {
+            if (str_contains($url, 'components?')) {
+                return [
+                    [
+                        'id' => Config::DATA_GATEWAY_COMPONENT,
+                        'configurations' => [
+                            ['id' => 'config-1'],
                         ],
-                    ];
-                }
-                if (str_contains($url, 'configs/config-1')) {
-                    return $configData;
-                }
-                return [];
-            });
+                    ],
+                ];
+            }
+            if (str_contains($url, 'configs/config-1')) {
+                return $configData;
+            }
+            return [];
+        });
 
         $storageClientMock
             ->method('apiPostJson')
@@ -163,9 +189,6 @@ class DataGatewayMigratorTest extends TestCase
                 function (string $url) use ($newWorkspaceData): array {
                     if ($url === 'workspaces') {
                         return $newWorkspaceData;
-                    }
-                    if (str_contains($url, 'public-key')) {
-                        return [];
                     }
                     return [];
                 },
@@ -180,7 +203,12 @@ class DataGatewayMigratorTest extends TestCase
                 return [];
             });
 
-        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
+        $migrator = new DataGatewayMigrator(
+            $storageClientMock,
+            $logger,
+            false,
+            $this->createEncryptionClientMock(),
+        );
         $migrator->migrate();
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
@@ -205,7 +233,8 @@ class DataGatewayMigratorTest extends TestCase
         self::assertSame('snowflake-service-keypair', $db['loginType']);
         self::assertArrayHasKey('#privateKey', $db);
         self::assertIsString($db['#privateKey']);
-        self::assertStringStartsWith('-----BEGIN PRIVATE KEY-----', $db['#privateKey']);
+        // The key should be encrypted now
+        self::assertStringStartsWith('KBC::', $db['#privateKey']);
     }
 
     public function testMigrateMultipleConfigurationsWithSharedWorkspace(): void
@@ -249,11 +278,8 @@ class DataGatewayMigratorTest extends TestCase
 
         $workspaceCreateCount = 0;
 
-        /** @var StorageClient&MockObject $storageClientMock */
-        $storageClientMock = $this->createMock(StorageClient::class);
-        $storageClientMock
-            ->method('apiGet')
-            ->willReturnCallback(function (string $url) use ($configData1, $configData2): array {
+        $storageClientMock = $this->createStorageClientMock(
+            function (string $url) use ($configData1, $configData2): array {
                 if (str_contains($url, 'components?')) {
                     return [
                         [
@@ -272,7 +298,8 @@ class DataGatewayMigratorTest extends TestCase
                     return $configData2;
                 }
                 return [];
-            });
+            },
+        );
 
         $storageClientMock
             ->method('apiPostJson')
@@ -286,7 +313,12 @@ class DataGatewayMigratorTest extends TestCase
 
         $storageClientMock->method('apiPutJson')->willReturn([]);
 
-        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
+        $migrator = new DataGatewayMigrator(
+            $storageClientMock,
+            $logger,
+            false,
+            $this->createEncryptionClientMock(),
+        );
         $migrator->migrate();
 
         // Only one workspace should be created (second config reuses the first)
@@ -327,26 +359,22 @@ class DataGatewayMigratorTest extends TestCase
             ],
         ];
 
-        /** @var StorageClient&MockObject $storageClientMock */
-        $storageClientMock = $this->createMock(StorageClient::class);
-        $storageClientMock
-            ->method('apiGet')
-            ->willReturnCallback(function (string $url) use ($configData): array {
-                if (str_contains($url, 'components?')) {
-                    return [
-                        [
-                            'id' => Config::DATA_GATEWAY_COMPONENT,
-                            'configurations' => [
-                                ['id' => 'config-1'],
-                            ],
+        $storageClientMock = $this->createStorageClientMock(function (string $url) use ($configData): array {
+            if (str_contains($url, 'components?')) {
+                return [
+                    [
+                        'id' => Config::DATA_GATEWAY_COMPONENT,
+                        'configurations' => [
+                            ['id' => 'config-1'],
                         ],
-                    ];
-                }
-                if (str_contains($url, 'configs/config-1')) {
-                    return $configData;
-                }
-                return [];
-            });
+                    ],
+                ];
+            }
+            if (str_contains($url, 'configs/config-1')) {
+                return $configData;
+            }
+            return [];
+        });
 
         $storageClientMock
             ->method('apiPostJson')
@@ -359,7 +387,12 @@ class DataGatewayMigratorTest extends TestCase
 
         $storageClientMock->method('apiPutJson')->willReturn([]);
 
-        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
+        $migrator = new DataGatewayMigrator(
+            $storageClientMock,
+            $logger,
+            false,
+            $this->createEncryptionClientMock(),
+        );
         $migrator->migrate();
 
         $messages = array_map(fn(LogRecord $r) => $r->message, $logsHandler->getRecords());
@@ -394,11 +427,8 @@ class DataGatewayMigratorTest extends TestCase
 
         $workspaceCreateCount = 0;
 
-        /** @var StorageClient&MockObject $storageClientMock */
-        $storageClientMock = $this->createMock(StorageClient::class);
-        $storageClientMock
-            ->method('apiGet')
-            ->willReturnCallback(function (string $url) use ($configData1, $configData2): array {
+        $storageClientMock = $this->createStorageClientMock(
+            function (string $url) use ($configData1, $configData2): array {
                 if (str_contains($url, 'components?')) {
                     return [
                         [
@@ -417,7 +447,8 @@ class DataGatewayMigratorTest extends TestCase
                     return $configData2;
                 }
                 return [];
-            });
+            },
+        );
 
         $storageClientMock
             ->method('apiPostJson')
@@ -441,7 +472,12 @@ class DataGatewayMigratorTest extends TestCase
 
         $storageClientMock->method('apiPutJson')->willReturn([]);
 
-        $migrator = new DataGatewayMigrator($storageClientMock, $logger);
+        $migrator = new DataGatewayMigrator(
+            $storageClientMock,
+            $logger,
+            false,
+            $this->createEncryptionClientMock(),
+        );
         $migrator->migrate();
 
         // Two workspaces should be created (different source workspaceIds)

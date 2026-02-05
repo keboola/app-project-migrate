@@ -679,6 +679,9 @@ class MigrateTest extends TestCase
                 return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
             })
         ;
+        $destClientMock->method('verifyToken')->willReturn(['owner' => ['id' => 123]]);
+        $destClientMock->method('getTokenString')->willReturn('test-token');
+        $destClientMock->method('getServiceUrl')->willReturn('https://encryption.keboola.com');
 
         /** @var Migrations&MockObject $migrationsClientMock */
         $migrationsClientMock = $this->createMock(Migrations::class);
@@ -1094,6 +1097,9 @@ class MigrateTest extends TestCase
                 return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
             })
         ;
+        $destClientMock->method('verifyToken')->willReturn(['owner' => ['id' => 123]]);
+        $destClientMock->method('getTokenString')->willReturn('test-token');
+        $destClientMock->method('getServiceUrl')->willReturn('https://encryption.keboola.com');
 
         /** @var Migrations&MockObject $migrationsClientMock */
         $migrationsClientMock = $this->createMock(Migrations::class);
@@ -2268,6 +2274,18 @@ class MigrateTest extends TestCase
                 }
                 return null;
             });
+        // Mock verifyToken for DataGatewayMigrator
+        $destClientMock
+            ->method('verifyToken')
+            ->willReturn(['owner' => ['id' => 123]]);
+        // Mock getTokenString for DataGatewayMigrator
+        $destClientMock
+            ->method('getTokenString')
+            ->willReturn('test-token');
+        // Mock getServiceUrl for DataGatewayMigrator
+        $destClientMock
+            ->method('getServiceUrl')
+            ->willReturn('https://encryption.keboola.com');
         return $destClientMock;
     }
 }
