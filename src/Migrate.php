@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate;
 
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
+use Keboola\AppProjectMigrate\Migrator\DataGatewayMigrator;
 use Keboola\Component\UserException;
 use Keboola\EncryptionApiClient\Exception\ClientException as EncryptionClientException;
 use Keboola\EncryptionApiClient\Migrations as MigrationsClient;
@@ -71,6 +72,15 @@ class Migrate
                 // We want to migrate Snowflake writers only if we are not migrating secrets, because when migrating
                 // secrets, Snowflake writers will be migrated by the encryption-api.
                 $this->migrateSnowflakeWriters();
+            }
+
+            if ($this->config->shouldMigrateDataGateway()) {
+                $dataGatewayMigrator = new DataGatewayMigrator(
+                    $this->destProjectStorageClient,
+                    $this->logger,
+                    $this->config->isDryRun(),
+                );
+                $dataGatewayMigrator->migrate();
             }
         } catch (EncryptionClientException $e) {
             if ($e->getCode() >= 400 && $e->getCode() < 500) {

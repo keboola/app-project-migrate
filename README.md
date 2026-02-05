@@ -19,6 +19,7 @@ Migration steps performed by the application:
 - Migrate GoodData writers https://github.com/keboola/app-gooddata-writer-migrate
 - Migrate Snowflake writers https://github.com/keboola/app-snowflake-writer-migrate
 - Migrate Orchestrators https://github.com/keboola/app-orchestrator-migrate
+- Migrate Data Gateway configurations (creates new workspaces with keypair authentication)
 
 
 ## Usage
@@ -58,6 +59,7 @@ curl -X POST \
       "migrateBuckets": true,
       "migrateTables": true,
       "migrateProjectMetadata": true,
+      "migrateDataGateway": true,
       "skipRegionValidation": true,
       "checkEmptyProject": true,
       "isSourceByodb": false,
@@ -89,6 +91,7 @@ The request contains the following parameters:
 - `migrateProjectMetadata`: Enables migration of project metadata
 - `checkEmptyProject`: Check if the destination project is empty before migration
 - `skipRegionValidation`: Skips validation of regions during migration
+- `migrateDataGateway`: Enables migration of Data Gateway configurations (default: true). Creates new READER workspaces with keypair authentication. **Note:** Data from original workspaces is NOT migrated - users must load data manually.
 - `isSourceByodb`: Whether the source project is a BYODB project (default: false)
 - `sourceByodb`: Source BYODB identifier (required when `isSourceByodb` is true)
 - `includeWorkspaceSchemas`: Array of workspace schema names to include in migration (default: [])
@@ -135,6 +138,12 @@ What is **not** executed during dry-run mode?
   - [write data](https://github.com/keboola/app-project-migrate-tables-data/blob/88625047c4e6974fc556a2ff0eabdbfbf16b2c51/src/Strategy/SapiMigrate.php#L96) into destination tables
 - database mode:
   - [replicate tables](https://github.com/keboola/app-project-migrate-tables-data/blob/88625047c4e6974fc556a2ff0eabdbfbf16b2c51/src/Strategy/DatabaseMigrate.php#L109)
+
+#### Migrate Data Gateway
+
+- create new READER workspace with keypair authentication
+- update configuration with new workspace credentials
+- **Note:** Workspace data is NOT migrated
 
 ## Development
  
