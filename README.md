@@ -60,6 +60,9 @@ curl -X POST \
       "migrateProjectMetadata": true,
       "skipRegionValidation": true,
       "checkEmptyProject": true,
+      "isSourceByodb": false,
+      "includeWorkspaceSchemas": [],
+      "preserveTimestamp": false,
       "#sourceManageToken": "SOURCE_MANAGE_API_TOKEN"
     }
   }
@@ -86,6 +89,21 @@ The request contains the following parameters:
 - `migrateProjectMetadata`: Enables migration of project metadata
 - `checkEmptyProject`: Check if the destination project is empty before migration
 - `skipRegionValidation`: Skips validation of regions during migration
+- `isSourceByodb`: Whether the source project is a BYODB project (default: false)
+- `sourceByodb`: Source BYODB identifier (required when `isSourceByodb` is true)
+- `includeWorkspaceSchemas`: Array of workspace schema names to include in migration (default: [])
+- `preserveTimestamp`: Preserve original table timestamps during data migration (default: false)
+- `componentsDevTag`: Object with dev branch tags for migration components:
+  - `backup`: Dev tag for the backup component
+  - `restore`: Dev tag for the restore component
+  - `tablesData`: Dev tag for the tables data migration component
+- `db`: Database connection object for direct database migration (required when `dataMode` is `database`):
+  - `host`: Snowflake host (required)
+  - `username`: Database username (required)
+  - `#password`: Database password (one of `#password` or `#privateKey` is required)
+  - `#privateKey`: Private key for authentication (one of `#password` or `#privateKey` is required)
+  - `warehouse`: Snowflake warehouse name (required)
+  - `warehouse_size`: Warehouse size - `SMALL`, `MEDIUM`, or `LARGE` (default: `SMALL`)
 
 #### Dry-run mode
 

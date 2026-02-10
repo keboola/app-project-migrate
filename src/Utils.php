@@ -6,9 +6,7 @@ namespace Keboola\AppProjectMigrate;
 
 use Keboola\Component\UserException;
 use Keboola\StorageApi\Client;
-use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\Components;
-use Keboola\Syrup\Client as SyrupClient;
 use Symfony\Component\Validator\Constraints\Url;
 use Symfony\Component\Validator\Validation;
 
@@ -42,6 +40,7 @@ class Utils
     public static function checkMigrationApps(Client $sourceProjectClient, Client $destinationProjectClient): void
     {
         // Check app in the source project
+        /** @var array{components: array<int, array{id: string}>} $sourceApplications */
         $sourceApplications = $sourceProjectClient->apiGet('');
         $listSourceApplication = array_map(fn(array $v) => $v['id'], $sourceApplications['components']);
 
@@ -51,17 +50,17 @@ class Utils
         if ($missingSourceApp) {
             throw new UserException(sprintf(
                 'Missing "%s" application in the source project.',
-                implode(', ', $missingSourceApp)
+                implode(', ', $missingSourceApp),
             ));
         }
 
         // Check app in the destination project
+        /** @var array{components: array<int, array{id: string}>} $destinationApplications */
         $destinationApplications = $destinationProjectClient->apiGet('');
         $listDestinationApplication = array_map(fn(array $v) => $v['id'], $destinationApplications['components']);
 
         $requiredDestinationApp = [
             Config::PROJECT_RESTORE_COMPONENT,
-            Config::ORCHESTRATOR_MIGRATE_COMPONENT,
             Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
         ];
 
@@ -69,7 +68,7 @@ class Utils
         if ($missingDestinationApp) {
             throw new UserException(sprintf(
                 'Missing "%s" application in the destination project.',
-                implode(', ', $missingDestinationApp)
+                implode(', ', $missingDestinationApp),
             ));
         }
     }

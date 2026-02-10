@@ -31,13 +31,16 @@ class AfterMigration
 
     protected function checkTables(): void
     {
+        /** @var array<int, array{id: string, name: string}> $buckets */
         $buckets = $this->destProjectClient->listBuckets();
 
         $isInvalid = false;
         foreach ($buckets as $bucket) {
+            /** @var array<int, array{id: string, name: string, rowsCount: int}> $tables */
             $tables = $this->destProjectClient->listTables($bucket['id']);
             foreach ($tables as $table) {
                 try {
+                    /** @var array{id: string, name: string, rowsCount: int} $sourceTable */
                     $sourceTable = $this->sourceProjectClient->getTable($table['id']);
                 } catch (ClientException $e) {
                     $isInvalid = true;
@@ -52,7 +55,7 @@ class AfterMigration
                         $bucket['name'],
                         $table['name'],
                         $sourceTable['rowsCount'],
-                        $table['rowsCount']
+                        $table['rowsCount'],
                     ));
                 }
             }

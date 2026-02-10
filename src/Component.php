@@ -21,22 +21,33 @@ class Component extends BaseComponent
         $config = $this->getConfig();
         $logger = $this->getLogger();
 
-        $sourceProjectClient = $this->createStorageClient([
+        /** @var array{url: string, token: string} $sourceParams */
+        $sourceParams = [
             'url' => $config->getSourceProjectUrl(),
             'token' => $config->getSourceProjectToken(),
-        ]);
+        ];
+        $sourceProjectClient = $this->createStorageClient($sourceParams);
         try {
+            /** @var array{owner: array{name: string, id: int, features: string[]}} $sourceTokenInfo */
             $sourceTokenInfo = $sourceProjectClient->verifyToken();
         } catch (StorageClientException $e) {
             throw new UserException('Cannot authorize source project: ' . $e->getMessage(), $e->getCode(), $e);
         }
 
-        $destProjectClient = $this->createStorageClient([
-            'url' => getenv('KBC_URL'),
-            'token' => getenv('KBC_TOKEN'),
-        ]);
+        $kbcUrl = getenv('KBC_URL');
+        $kbcToken = getenv('KBC_TOKEN');
+        if ($kbcUrl === false || $kbcToken === false) {
+            throw new UserException('KBC_URL and KBC_TOKEN environment variables must be set.');
+        }
+        /** @var array{url: string, token: string} $destParams */
+        $destParams = [
+            'url' => $kbcUrl,
+            'token' => $kbcToken,
+        ];
+        $destProjectClient = $this->createStorageClient($destParams);
 
         try {
+            /** @var array{owner: array{name: string, id: int, features: string[]}} $destinationTokenInfo */
             $destinationTokenInfo = $destProjectClient->verifyToken();
         } catch (StorageClientException $e) {
             throw new UserException('Cannot authorize destination project: ' . $e->getMessage(), $e->getCode(), $e);
@@ -54,8 +65,8 @@ class Component extends BaseComponent
             throw new UserException(
                 sprintf(
                     'Destination project "%s" is not empty.',
-                    $destinationTokenInfo['owner']['name']
-                )
+                    $destinationTokenInfo['owner']['name'],
+                ),
             );
         }
 
@@ -63,7 +74,7 @@ class Component extends BaseComponent
             'Restoring current project from project %s (%d) at %s',
             $sourceTokenInfo['owner']['name'],
             $sourceTokenInfo['owner']['id'],
-            $config->getSourceProjectUrl()
+            $config->getSourceProjectUrl(),
         ));
 
         $sourceJobRunner = JobRunnerFactory::create($sourceProjectClient, $logger);
@@ -89,6 +100,9 @@ class Component extends BaseComponent
         $checkerAfterMigration->check();
     }
 
+    /**
+     * @param array{url: string, token: string} $params
+     */
     private function createStorageClient(array $params): StorageClient
     {
         $client = new StorageClient($params);

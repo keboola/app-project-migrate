@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Keboola\AppProjectMigrate;
 
 use Keboola\AppProjectMigrate\JobRunner\JobRunner;
-use Keboola\AppProjectMigrate\JobRunner\SyrupJobRunner;
 use Keboola\Component\UserException;
 use Keboola\EncryptionApiClient\Exception\ClientException as EncryptionClientException;
 use Keboola\EncryptionApiClient\Migrations as MigrationsClient;
@@ -13,70 +12,14 @@ use Keboola\StorageApi\Client as StorageClient;
 use Keboola\StorageApi\Components;
 use Keboola\StorageApi\DevBranches;
 use Keboola\StorageApi\Options\Components\Configuration;
-use Keboola\Syrup\ClientException as SyrupClientException;
+use Keboola\SyncActionsClient\Model\ActionResponse;
 use Psr\Log\LoggerInterface;
 
 class Migrate
 {
     private const JOB_STATUS_SUCCESS = 'success';
-
-    private JobRunner $sourceJobRunner;
-
-    private JobRunner $destJobRunner;
-
-    private StorageClient $sourceProjectStorageClient;
-
-    private StorageClient $destProjectStorageClient;
-
-    private MigrationsClient $migrationsClient;
-
-    private string $sourceProjectUrl;
-
-    private string $sourceProjectToken;
-
-    private string $destinationProjectUrl;
-
-    private string $destinationProjectToken;
-
-    private LoggerInterface $logger;
-
-    private bool $dryRun;
-
-    private bool $directDataMigration;
-
-    private bool $migrateSecrets;
-
-    private bool $migratePermanentFiles;
-
-    private bool $migrateTriggers;
-
-    private bool $migrateNotifications;
-
-    private bool $migrateBuckets;
-
-    private bool $migrateTables;
-
-    private bool $migrateProjectMetadata;
-
-    private bool $migrateStructureOnly;
-
-    private bool $skipRegionValidation;
-
-    private bool $isSourceByodb;
-
-    private bool $checkEmptyProject;
-
-    private string $sourceByodb;
-
-    private array $includeWorkspaceSchemas;
-
-    private bool $preserveTimestamp;
-
-    private ?string $appBackupTag = null;
-
-    private ?string $appRestoreTag = null;
-
-    private ?string $appTablesDataTag = null;
+    /** @var array<string, array{host: string, username: string, "#password"?: string, "#privateKey"?: string, warehouse: string, warehouse_size?: 'SMALL'|'MEDIUM'|'LARGE'}> */
+    private array $migratedSnowflakeWorkspaces = [];
 
     public const OBSOLETE_COMPONENTS = [
         'orchestrator',
@@ -90,86 +33,46 @@ class Migrate
         'keboola.wr-db-snowflake-gcs-s3', // gcp with s3
     ];
 
-    private string $migrateDataMode;
-
-    private array $db;
-
-    private array $migratedSnowflakeWorkspaces = [];
-
     public function __construct(
-        Config $config,
-        JobRunner $sourceJobRunner,
-        JobRunner $destJobRunner,
-        StorageClient $sourceProjectStorageClient,
-        StorageClient $destProjectStorageClient,
-        MigrationsClient $migrationsClient,
-        string $destinationProjectUrl,
-        string $destinationProjectToken,
-        LoggerInterface $logger
+        readonly Config $config,
+        readonly JobRunner $sourceJobRunner,
+        readonly JobRunner $destJobRunner,
+        readonly StorageClient $sourceProjectStorageClient,
+        readonly StorageClient $destProjectStorageClient,
+        readonly MigrationsClient $migrationsClient,
+        readonly string $destinationProjectUrl,
+        readonly string $destinationProjectToken,
+        readonly LoggerInterface $logger,
     ) {
-        $this->sourceJobRunner = $sourceJobRunner;
-        $this->destJobRunner = $destJobRunner;
-        $this->sourceProjectStorageClient = $sourceProjectStorageClient;
-        $this->destProjectStorageClient = $destProjectStorageClient;
-        $this->migrationsClient = $migrationsClient;
-        $this->sourceProjectUrl = $config->getSourceProjectUrl();
-        $this->sourceProjectToken = $config->getSourceProjectToken();
-        $this->destinationProjectUrl = $destinationProjectUrl;
-        $this->destinationProjectToken = $destinationProjectToken;
-        $this->dryRun = $config->isDryRun();
-        $this->directDataMigration = $config->directDataMigration();
-        $this->migrateSecrets = $config->shouldMigrateSecrets();
-        $this->migratePermanentFiles = $config->shouldMigratePermanentFiles();
-        $this->migrateTriggers = $config->shouldMigrateTriggers();
-        $this->migrateNotifications = $config->shouldMigrateNotifications();
-        $this->migrateStructureOnly = $config->shouldMigrateStructureOnly();
-        $this->migrateBuckets = $config->shouldMigrateBuckets();
-        $this->migrateTables = $config->shouldMigrateTables();
-        $this->migrateProjectMetadata = $config->shouldMigrateProjectMetadata();
-        $this->skipRegionValidation = $config->shouldSkipRegionValidation();
-        $this->isSourceByodb = $config->isSourceByodb();
-        $this->sourceByodb = $config->getSourceByodb();
-        $this->includeWorkspaceSchemas = $config->getIncludeWorkspaceSchemas();
-        $this->preserveTimestamp = $config->preserveTimestamp();
-        $this->checkEmptyProject = $config->checkEmptyProject();
-        $this->logger = $logger;
-        $this->migrateDataMode = $config->getMigrateDataMode();
-        $this->db = $config->getDb();
-        $this->appBackupTag = $config->getAppBackupTag();
-        $this->appRestoreTag = $config->getAppRestoreTag();
-        $this->appTablesDataTag = $config->getAppTablesDataTag();
     }
 
     public function run(): void
     {
         try {
-            $backupId = (string) $this->sourceProjectStorageClient->generateId();
+            $backupId = $this->sourceProjectStorageClient->generateId();
             $this->backupSourceProject($backupId);
-            $restoreCredentials = $this->generateBackupCredentials($backupId);
 
+            $restoreCredentials = $this->generateBackupCredentials($backupId);
             $this->restoreDestinationProject($restoreCredentials);
 
-            if ($this->migrateSecrets) {
+            if ($this->config->shouldMigrateSecrets()) {
                 $this->migrateSecrets();
             }
 
-            if ($this->migrateBuckets &&
-                $this->migrateTables &&
-                $this->directDataMigration &&
-                !$this->migrateStructureOnly
+            if ($this->config->shouldMigrateBuckets() &&
+                $this->config->shouldMigrateTables() &&
+                $this->config->directDataMigration() &&
+                !$this->config->shouldMigrateStructureOnly()
             ) {
                 $this->migrateDataOfTablesDirectly();
             }
 
-            if (!$this->migrateSecrets) {
+            if (!$this->config->shouldMigrateSecrets()) {
                 // We want to migrate Snowflake writers only if we are not migrating secrets, because when migrating
                 // secrets, Snowflake writers will be migrated by the encryption-api.
                 $this->migrateSnowflakeWriters();
             }
-            if ($this->sourceJobRunner instanceof SyrupJobRunner) {
-                $this->migrateOrchestrations();
-            }
-        } catch (SyrupClientException|EncryptionClientException $e) {
+        } catch (EncryptionClientException $e) {
             if ($e->getCode() >= 400 && $e->getCode() < 500) {
                 throw new UserException($e->getMessage(), $e->getCode(), $e);
             }
@@ -177,7 +80,7 @@ class Migrate
         }
     }
 
-    private function generateBackupCredentials(string $backupId): array
+    private function generateBackupCredentials(string $backupId): ActionResponse
     {
         $this->logger->info('Creating backup credentials');
 
@@ -187,10 +90,10 @@ class Migrate
             [
                 'parameters' => [
                     'backupId' => $backupId,
-                    'skipRegionValidation' => $this->skipRegionValidation,
+                    'skipRegionValidation' => $this->config->shouldSkipRegionValidation(),
                 ],
             ],
-            $this->appBackupTag,
+            $this->config->getAppBackupTag(),
         );
     }
 
@@ -203,33 +106,37 @@ class Migrate
             [
                 'parameters' => [
                     'backupId' => $backupId,
-                    'exportStructureOnly' => $this->directDataMigration || $this->migrateStructureOnly,
-                    'skipRegionValidation' => $this->skipRegionValidation,
+                    'exportStructureOnly' => $this->config->directDataMigration() ||
+                        $this->config->shouldMigrateStructureOnly(),
+                    'skipRegionValidation' => $this->config->shouldSkipRegionValidation(),
                 ],
             ],
-            $this->appBackupTag,
+            $this->config->getAppBackupTag(),
         );
-        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
-            throw new UserException('Project snapshot create error: ' . $job['result']['message']);
+        if ($job->status !== self::JOB_STATUS_SUCCESS) {
+            /** @var array{message: string} $result */
+            $result = $job->result;
+            throw new UserException('Project snapshot create error: ' . $result['message']);
         }
         $this->logger->info('Source project snapshot created');
     }
 
-    private function restoreDestinationProject(array $restoreCredentials): void
+    private function restoreDestinationProject(ActionResponse $restoreCredentials): void
     {
         $this->logger->info('Restoring current project from snapshot');
 
         $configData = $this->getRestoreConfigData($restoreCredentials);
-        $configData['parameters']['dryRun'] = $this->dryRun;
 
         $job = $this->destJobRunner->runJob(
             Config::PROJECT_RESTORE_COMPONENT,
             $configData,
-            $this->appRestoreTag,
+            $this->config->getAppRestoreTag(),
         );
 
-        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
-            throw new UserException('Project restore error: ' . $job['result']['message']);
+        if ($job->status !== self::JOB_STATUS_SUCCESS) {
+            /** @var array{message: string} $result */
+            $result = $job->result;
+            throw new UserException('Project restore error: ' . $result['message']);
         }
         $this->logger->info('Current project restored');
     }
@@ -240,7 +147,15 @@ class Migrate
 
         $sourceDevBranches = new DevBranches($this->sourceProjectStorageClient);
         $sourceBranches = $sourceDevBranches->listBranches();
-        $defaultSourceBranch = current(array_filter($sourceBranches, fn($b) => $b['isDefault'] === true));
+        /** @var array{id: string, isDefault: bool}|false $defaultSourceBranch */
+        $defaultSourceBranch = current(array_filter($sourceBranches, function ($b) {
+            /** @var array{isDefault: bool} $b */
+            return $b['isDefault'] === true;
+        }));
+
+        if ($defaultSourceBranch === false) {
+            throw new UserException('No default branch found in source project');
+        }
 
         $sourceComponentsApi = new Components($this->sourceProjectStorageClient);
         $components = $sourceComponentsApi->listComponents();
@@ -250,19 +165,21 @@ class Migrate
         }
 
         foreach ($components as $component) {
+            /** @var array{id: string, configurations: array} $component */
             if (in_array($component['id'], self::OBSOLETE_COMPONENTS, true)) {
                 $this->logger->info(
                     sprintf('Components "%s" is obsolete, skipping migration...', $component['id']),
-                    ['secrets']
+                    ['secrets'],
                 );
                 continue;
             }
 
             foreach ($component['configurations'] as $config) {
+                /** @var array{id: string} $config */
                 $this->logger->info(
                     sprintf(
                         '%sMigrating configuration "%s" of component "%s"',
-                        $this->dryRun ? '[dry-run] ' : '',
+                        $this->config->isDryRun() ? '[dry-run] ' : '',
                         $config['id'],
                         $component['id'],
                     ),
@@ -272,13 +189,13 @@ class Migrate
                 try {
                     $response = $this->migrationsClient
                         ->migrateConfiguration(
-                            $this->sourceProjectToken,
+                            $this->config->getSourceProjectToken(),
                             Utils::getStackFromProjectUrl($this->destinationProjectUrl),
                             $this->destinationProjectToken,
                             $component['id'],
                             $config['id'],
-                            (string) $defaultSourceBranch['id'],
-                            $this->dryRun
+                            $defaultSourceBranch['id'],
+                            $this->config->isDryRun(),
                         );
                 } catch (EncryptionClientException $e) {
                     $this->logger->error(
@@ -286,7 +203,7 @@ class Migrate
                             'Migrating configuration "%s" of component "%s" failed: %s',
                             $config['id'],
                             $component['id'],
-                            $e->getMessage()
+                            $e->getMessage(),
                         ),
                         [
                             'exception' => $e,
@@ -296,25 +213,25 @@ class Migrate
                 }
 
                 if (in_array($component['id'], self::SNOWFLAKE_WRITER_COMPONENT_IDS, true)) {
+                    /** @var array{data: array{componentId: string, configId: string}} $response */
                     $this->preserveProperSnowflakeWorkspace(
                         $component['id'],
                         $config['id'],
                         $response['data']['componentId'],
-                        $response['data']['configId']
+                        $response['data']['configId'],
                     );
                 }
 
+                /** @var array{message: string, warnings?: array<string>} $response */
                 $message = $response['message'];
-                if ($this->dryRun) {
+                if ($this->config->isDryRun()) {
                     $message = '[dry-run] ' . $message;
                 }
 
                 $this->logger->info($message, ['secrets']);
 
-                if (isset($response['warnings']) && is_array($response['warnings'])) {
-                    foreach ($response['warnings'] as $warning) {
-                        $this->logger->warning($warning, ['secrets']);
-                    }
+                foreach ($response['warnings'] ?? [] as $warning) {
+                    $this->logger->warning($warning, ['secrets']);
                 }
             }
         }
@@ -325,18 +242,21 @@ class Migrate
         $this->logger->info('Migrate data of tables directly.');
 
         $parameters = [
-            'mode' => $this->migrateDataMode,
-            'sourceKbcUrl' => $this->sourceProjectUrl,
-            '#sourceKbcToken' => $this->sourceProjectToken,
-            'dryRun' => $this->dryRun,
-            'isSourceByodb' => $this->isSourceByodb,
-            'sourceByodb' => $this->sourceByodb,
-            'includeWorkspaceSchemas' => $this->includeWorkspaceSchemas,
-            'preserveTimestamp' => $this->preserveTimestamp,
+            'mode' => $this->config->getMigrateDataMode(),
+            'sourceKbcUrl' => $this->config->getSourceProjectUrl(),
+            '#sourceKbcToken' => $this->config->getSourceProjectToken(),
+            'dryRun' => $this->config->isDryRun(),
+            'isSourceByodb' => $this->config->isSourceByodb(),
+            'sourceByodb' => $this->config->getSourceByodb(),
+            'includeWorkspaceSchemas' => $this->config->getIncludeWorkspaceSchemas(),
+            'preserveTimestamp' => $this->config->preserveTimestamp(),
         ];
 
-        if ($this->migrateDataMode === 'database' && !empty($this->db)) {
-            $parameters['db'] = $this->db;
+        if ($this->config->getMigrateDataMode() === 'database') {
+            $db = $this->config->getDb();
+            if (isset($db['host'])) {
+                $parameters['db'] = $db;
+            }
         }
 
         $this->destJobRunner->runJob(
@@ -344,30 +264,10 @@ class Migrate
             [
                 'parameters' => $parameters,
             ],
-            $this->appTablesDataTag,
+            $this->config->getAppTablesDataTag(),
         );
 
         $this->logger->info('Data of tables has been migrated.');
-    }
-
-    private function migrateOrchestrations(): void
-    {
-        $this->logger->info('Migrating orchestrations');
-
-        $job = $this->destJobRunner->runJob(
-            Config::ORCHESTRATOR_MIGRATE_COMPONENT,
-            [
-                'parameters' => [
-                    'sourceKbcUrl' => $this->sourceProjectUrl,
-                    '#sourceKbcToken' => $this->sourceProjectToken,
-                ],
-            ]
-        );
-
-        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
-            throw new UserException('Orchestrations migration error: ' . $job['result']['message']);
-        }
-        $this->logger->info('Orchestrations migrated');
     }
 
     private function migrateSnowflakeWriters(): void
@@ -377,95 +277,216 @@ class Migrate
             Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
             [
                 'parameters' => [
-                    'sourceKbcUrl' => $this->sourceProjectUrl,
-                    '#sourceKbcToken' => $this->sourceProjectToken,
-                    'dryRun' => $this->dryRun,
+                    'sourceKbcUrl' => $this->config->getSourceProjectUrl(),
+                    '#sourceKbcToken' => $this->config->getSourceProjectToken(),
+                    'dryRun' => $this->config->isDryRun(),
                 ],
             ],
         );
 
-        if ($job['status'] !== self::JOB_STATUS_SUCCESS) {
-            throw new UserException('Snowflake writers migration error: ' . $job['result']['message']);
+        if ($job->status !== self::JOB_STATUS_SUCCESS) {
+            /** @var array{message: string} $result */
+            $result = $job->result;
+            throw new UserException('Snowflake writers migration error: ' . $result['message']);
         }
         $this->logger->info('Snowflake writers migrated');
     }
 
-    private function getRestoreConfigData(array $restoreCredentials): array
+    /**
+     * @return array{
+     *     parameters: array{
+     *          s3?: array{
+     *              backupUri: string,
+     *              accessKeyId: string,
+     *              "#secretAccessKey": string,
+     *              "#sessionToken": string
+     *          },
+     *          abs?: array{
+     *              container: string,
+     *              "#connectionString": string
+     *          },
+     *          gcs?: array{
+     *              projectId: string,
+     *              bucket: string,
+     *              backupUri: string,
+     *              credentials: array{
+     *                  "#accessToken": string,
+     *                  expiresIn: int,
+     *                  tokenType: string
+     *              },
+     *          },
+     *          useDefaultBackend: bool,
+     *          restoreConfigs: bool,
+     *          restorePermanentFiles: bool,
+     *          restoreTriggers: bool,
+     *          restoreNotifications: bool,
+     *          restoreBuckets: bool,
+     *          restoreTables: bool,
+     *          restoreProjectMetadata: bool,
+     *          checkEmptyProject: bool
+     *     }
+     * }
+     */
+    private function getRestoreConfigData(ActionResponse $restoreCredentials): array
     {
+        $json = json_encode($restoreCredentials->data);
+        assert(is_string($json));
+        /** @var array{backupUri: string, container?: string, projectId?: string, bucket?: string, credentials: array{accessKeyId?: string, secretAccessKey?: string, sessionToken?: string, connectionString?: string, accessToken?: string, expiresIn?: int, tokenType?: string}} $restoreData */
+        $restoreData = json_decode($json, true);
+        $backendConfig = $this->getBackendConfig($restoreData);
+        $commonParameters = $this->getCommonRestoreParameters();
+
+        /** @var array{
+         *      s3?: array{
+         *          backupUri: string,
+         *          accessKeyId: string,
+         *          "#secretAccessKey": string,
+         *          "#sessionToken": string
+         *      },
+         *      abs?: array{
+         *          container: string,
+         *          "#connectionString": string
+         *      },
+         *      gcs?: array{
+         *          projectId: string,
+         *          bucket: string,
+         *          backupUri: string,
+         *          credentials: array{"#accessToken": string, expiresIn: int, tokenType: string}
+         *      },
+         *      useDefaultBackend: bool,
+         *      restoreConfigs: bool,
+         *      restorePermanentFiles: bool,
+         *      restoreTriggers: bool,
+         *      restoreNotifications: bool,
+         *      restoreBuckets: bool,
+         *      restoreTables: bool,
+         *      restoreProjectMetadata: bool,
+         *      checkEmptyProject: bool
+         * } $mergedParameters
+        **/
+        $mergedParameters = array_merge($backendConfig, $commonParameters);
+
+        return [
+            'parameters' => $mergedParameters,
+        ];
+    }
+
+    /**
+     * @param array{
+     *     backupUri?: string,
+     *     container?: string,
+     *     projectId?: string,
+     *     bucket?: string,
+     *     credentials: array{
+     *         accessKeyId?: string,
+     *         secretAccessKey?: string,
+     *         sessionToken?: string,
+     *         connectionString?: string,
+     *         accessToken?: string,
+     *         expiresIn?: int,
+     *         tokenType?: string
+     *     }
+     * } $restoreCredentials
+     * @return array{
+     *     s3?: array{
+     *         backupUri: string,
+     *         accessKeyId: string,
+     *         '#secretAccessKey': string,
+     *         '#sessionToken': string
+     *     },
+     *     abs?: array{container: string, '#connectionString': string},
+     *     gcs?: array{
+     *         projectId: string,
+     *         bucket: string,
+     *         backupUri: string,
+     *         credentials: array{'#accessToken': string, expiresIn: int, tokenType: string}
+     *     }
+     * }
+     */
+    private function getBackendConfig(array $restoreCredentials): array
+    {
+        /** @var array{backupUri: string, container?: string, projectId?: string, bucket?: string, credentials: array{accessKeyId?: string, secretAccessKey?: string, sessionToken?: string, connectionString?: string, accessToken?: string, expiresIn?: int, tokenType?: string}} $restoreCredentials */
         if (isset($restoreCredentials['credentials']['secretAccessKey'])) {
+            /** @var array{backupUri: string, credentials: array{accessKeyId: string, secretAccessKey: string, sessionToken: string}} $restoreCredentials */
             return [
-                'parameters' => [
-                    's3' => [
-                        'backupUri' => $restoreCredentials['backupUri'],
-                        'accessKeyId' => $restoreCredentials['credentials']['accessKeyId'],
-                        '#secretAccessKey' => $restoreCredentials['credentials']['secretAccessKey'],
-                        '#sessionToken' => $restoreCredentials['credentials']['sessionToken'],
-                    ],
-                    'useDefaultBackend' => true,
-                    'restoreConfigs' => $this->migrateSecrets === false,
-                    'restorePermanentFiles' => $this->migratePermanentFiles,
-                    'restoreTriggers' => $this->migrateTriggers,
-                    'restoreNotifications' => $this->migrateNotifications,
-                    'restoreBuckets' => $this->migrateBuckets,
-                    'restoreTables' => $this->migrateTables,
-                    'restoreProjectMetadata' => $this->migrateProjectMetadata,
-                    'checkEmptyProject' => $this->checkEmptyProject,
+                's3' => [
+                    'backupUri' => $restoreCredentials['backupUri'],
+                    'accessKeyId' => $restoreCredentials['credentials']['accessKeyId'],
+                    '#secretAccessKey' => $restoreCredentials['credentials']['secretAccessKey'],
+                    '#sessionToken' => $restoreCredentials['credentials']['sessionToken'],
                 ],
             ];
-        } elseif (isset($restoreCredentials['credentials']['connectionString'])) {
-            return [
-                'parameters' => [
-                    'abs' => [
-                        'container' => $restoreCredentials['container'],
-                        '#connectionString' => $restoreCredentials['credentials']['connectionString'],
-                    ],
-                    'useDefaultBackend' => true,
-                    'restoreConfigs' => $this->migrateSecrets === false,
-                    'restorePermanentFiles' => $this->migratePermanentFiles,
-                    'restoreTriggers' => $this->migrateTriggers,
-                    'restoreNotifications' => $this->migrateNotifications,
-                    'restoreBuckets' => $this->migrateBuckets,
-                    'restoreTables' => $this->migrateTables,
-                    'restoreProjectMetadata' => $this->migrateProjectMetadata,
-                    'checkEmptyProject' => $this->checkEmptyProject,
-                ],
-            ];
-        } elseif (isset($restoreCredentials['credentials']['accessToken'])) {
-            return [
-                'parameters' => [
-                    'gcs' => [
-                        'projectId' => $restoreCredentials['projectId'],
-                        'bucket' => $restoreCredentials['bucket'],
-                        'backupUri' => $restoreCredentials['backupUri'],
-                        'credentials' => [
-                            '#accessToken' => $restoreCredentials['credentials']['accessToken'],
-                            'expiresIn' => $restoreCredentials['credentials']['expiresIn'],
-                            'tokenType' => $restoreCredentials['credentials']['tokenType'],
-                        ],
-                    ],
-                    'useDefaultBackend' => true,
-                    'restoreConfigs' => $this->migrateSecrets === false,
-                    'restorePermanentFiles' => $this->migratePermanentFiles,
-                    'restoreTriggers' => $this->migrateTriggers,
-                    'restoreNotifications' => $this->migrateNotifications,
-                    'restoreBuckets' => $this->migrateBuckets,
-                    'restoreTables' => $this->migrateTables,
-                    'restoreProjectMetadata' => $this->migrateProjectMetadata,
-                    'checkEmptyProject' => $this->checkEmptyProject,
-                ],
-            ];
-        } else {
-            throw new UserException('Unrecognized restore credentials.');
         }
+
+        if (isset($restoreCredentials['credentials']['connectionString'])) {
+            /** @var array{
+             * container: string,
+             * credentials: array{connectionString: string}
+             * } $restoreCredentials */
+            return [
+                'abs' => [
+                    'container' => $restoreCredentials['container'],
+                    '#connectionString' => $restoreCredentials['credentials']['connectionString'],
+                ],
+            ];
+        }
+
+        if (isset($restoreCredentials['credentials']['accessToken'])) {
+            /** @var array{projectId: string, bucket: string, backupUri: string, credentials: array{accessToken: string, expiresIn: int, tokenType: string}} $restoreCredentials */
+            return [
+                'gcs' => [
+                    'projectId' => $restoreCredentials['projectId'],
+                    'bucket' => $restoreCredentials['bucket'],
+                    'backupUri' => $restoreCredentials['backupUri'],
+                    'credentials' => [
+                        '#accessToken' => $restoreCredentials['credentials']['accessToken'],
+                        'expiresIn' => $restoreCredentials['credentials']['expiresIn'],
+                        'tokenType' => $restoreCredentials['credentials']['tokenType'],
+                    ],
+                ],
+            ];
+        }
+
+        throw new UserException('Unrecognized restore credentials.');
+    }
+
+    /**
+     * @return array{
+     *     dryRun: bool,
+     *     useDefaultBackend: bool,
+     *     restoreConfigs: bool,
+     *     restorePermanentFiles: bool,
+     *     restoreTriggers: bool,
+     *     restoreNotifications: bool,
+     *     restoreBuckets: bool,
+     *     restoreTables: bool,
+     *     restoreProjectMetadata: bool,
+     *     checkEmptyProject: bool
+     * }
+     */
+    private function getCommonRestoreParameters(): array
+    {
+        return [
+            'dryRun' => $this->config->isDryRun(),
+            'useDefaultBackend' => true,
+            'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
+            'restorePermanentFiles' => $this->config->shouldMigratePermanentFiles(),
+            'restoreTriggers' => $this->config->shouldMigrateTriggers(),
+            'restoreNotifications' => $this->config->shouldMigrateNotifications(),
+            'restoreBuckets' => $this->config->shouldMigrateBuckets(),
+            'restoreTables' => $this->config->shouldMigrateTables(),
+            'restoreProjectMetadata' => $this->config->shouldMigrateProjectMetadata(),
+            'checkEmptyProject' => $this->config->checkEmptyProject(),
+        ];
     }
 
     private function preserveProperSnowflakeWorkspace(
         string $sourceComponentId,
         string $sourceConfigurationId,
         string $destinationComponentId,
-        string $destinationConfigurationId
+        string $destinationConfigurationId,
     ): void {
-        if ($this->dryRun) {
+        if ($this->config->isDryRun()) {
             return;
         }
         $sourceComponentsApi = new Components($this->sourceProjectStorageClient);
@@ -476,6 +497,7 @@ class Migrate
         $destinationConfigurationData = (array) $destinationComponentsApi
             ->getConfiguration($destinationComponentId, $destinationConfigurationId);
 
+        /** @var array{configuration: array{parameters: array{db: array{user?: string}}}} $sourceConfigurationData */
         $snowflakeUser = $sourceConfigurationData['configuration']['parameters']['db']['user'] ?? null;
         if ($snowflakeUser === null) {
             $this->logger->info(
@@ -484,7 +506,7 @@ class Migrate
                     $sourceConfigurationId,
                     $sourceComponentId,
                 ),
-                ['secrets']
+                ['secrets'],
             );
             return;
         }
@@ -493,6 +515,7 @@ class Migrate
 
         if ($migratedWorkspaceParameters) {
             // Use the existing Snowflake workspace from a previous configuration that has the same source workspace
+            /** @var array{configuration: array{parameters: array{db: array}}, name: string, description: string, isDisabled: bool} $destinationConfigurationData */
             $destinationConfigurationData['configuration']['parameters']['db'] = $migratedWorkspaceParameters;
 
             $destinationConfiguration = (new Configuration())
@@ -505,6 +528,7 @@ class Migrate
 
             $destinationComponentsApi->updateConfiguration($destinationConfiguration);
 
+            /** @var array{user: string} $migratedWorkspaceParameters */
             $this->logger->info(
                 sprintf(
                     "Used existing Snowflake workspace '%s' for configuration with ID '%s' (%s).",
@@ -512,12 +536,14 @@ class Migrate
                     $destinationConfigurationId,
                     $destinationComponentId,
                 ),
-                ['secrets']
+                ['secrets'],
             );
             return;
         }
 
         // Store Snowflake workspace for next configurations
+        /** @var array{configuration: array{parameters: array{db: array}}} $destinationConfigurationData */
+        /** @var array{host: string, username: string, "#password"?: string, "#privateKey"?: string, warehouse: string, warehouse_size?: 'SMALL'|'MEDIUM'|'LARGE'} $workspaceParameters */
         $workspaceParameters = $destinationConfigurationData['configuration']['parameters']['db'];
         $this->migratedSnowflakeWorkspaces[$snowflakeUser] = $workspaceParameters;
     }

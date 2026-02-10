@@ -13,8 +13,6 @@ class ConfigDefinition extends BaseConfigDefinition
     protected function getParametersDefinition(): ArrayNodeDefinition
     {
         $parametersNode = parent::getParametersDefinition();
-        // @formatter:off
-        /** @noinspection NullPointerExceptionInspection */
         $parametersNode
             ->children()
                 ->scalarNode('sourceKbcUrl')
@@ -47,7 +45,7 @@ class ConfigDefinition extends BaseConfigDefinition
                     ->children()
                         ->scalarNode('backup')->end()
                         ->scalarNode('restore')->end()
-                        ->scalarNode('tables-data')->end()
+                        ->scalarNode('tablesData')->end()
                     ->end()
                 ->end()
                 ->arrayNode('db')
@@ -83,8 +81,7 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->ifTrue(fn($values) => $values['dataMode'] === 'sapi' && isset($values['db']))
                 ->thenInvalid('Parameter "db" is allowed only when "dataMode" is set to "database".')
             ->end()
-        ;
-        // @formatter:on
+        ->end();
         return $parametersNode;
     }
 }
