@@ -261,8 +261,7 @@ class MigrateTest extends TestCase
             ->willReturn('123')
         ;
 
-        /** @var StorageClient&MockObject $destClientMock */
-        $destClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createDestClientMock();
 
         /** @var Migrations&MockObject $migrationsClientMock */
         $migrationsClientMock = $this->createMock(Migrations::class);
@@ -411,8 +410,7 @@ class MigrateTest extends TestCase
             ->willReturn('123')
         ;
 
-        /** @var StorageClient&MockObject $destClientMock */
-        $destClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createDestClientMock();
 
         /** @var Migrations&MockObject $migrationsClientMock */
         $migrationsClientMock = $this->createMock(Migrations::class);
@@ -672,6 +670,10 @@ class MigrateTest extends TestCase
             ->method('apiGet')
             ->willReturnCallback(function ($url) use ($testConfigurations): ?array {
                 /** @var string $url */
+                // Return empty array for components endpoint (used by DataGatewayMigrator)
+                if (str_starts_with($url, 'components?') || str_starts_with($url, 'branch/default/components?')) {
+                    return [];
+                }
                 preg_match('~components/([^/]+)/configs/([^/]+)~', $url, $matches);
                 [, , $configId] = $matches + [null, null, null];
                 return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
@@ -884,7 +886,7 @@ class MigrateTest extends TestCase
             ->willReturn('https://encryption.keboola.com')
         ;
 
-        $destClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createDestClientMock();
 
         $encryptionApiException = new EncryptionClientException('Something went wrong');
 
@@ -1083,6 +1085,10 @@ class MigrateTest extends TestCase
             ->method('apiGet')
             ->willReturnCallback(function ($url) use ($testConfigurations): ?array {
                 /** @var string $url */
+                // Return empty array for components endpoint (used by DataGatewayMigrator)
+                if (str_starts_with($url, 'components?') || str_starts_with($url, 'branch/default/components?')) {
+                    return [];
+                }
                 preg_match('~components/([^/]+)/configs/([^/]+)~', $url, $matches);
                 [, , $configId] = $matches + [null, null, null];
                 return current(array_filter($testConfigurations, fn ($c) => $c['id'] === $configId)) ?: null;
@@ -1168,7 +1174,7 @@ class MigrateTest extends TestCase
         $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
         $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
         $sourceClientMock = $this->createMock(StorageClient::class);
-        $destClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createDestClientMock();
         $migrationsClientMock = $this->createMock(Migrations::class);
 
         // generate credentials
@@ -1226,7 +1232,7 @@ class MigrateTest extends TestCase
         $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
         $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
         $sourceClientMock = $this->createMock(StorageClient::class);
-        $destClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createDestClientMock();
         $migrationsClientMock = $this->createMock(Migrations::class);
 
         $this->mockAddMethodGenerateS3ReadCredentials($sourceJobRunnerMock);
@@ -1463,7 +1469,7 @@ class MigrateTest extends TestCase
                 ],
             ]);
 
-        $destClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createDestClientMock();
 
         $migrationsClientMock = $this->createMock(Migrations::class);
         $migrationsClientMock
@@ -1769,8 +1775,7 @@ class MigrateTest extends TestCase
         $sourceClientMock->method('apiGet')->willReturn([]);
         $sourceClientMock->method('getServiceUrl')->willReturn('https://encryption.keboola.com');
 
-        /** @var StorageClient&MockObject $destClientMock */
-        $destClientMock = $this->createMock(StorageClient::class);
+        $destClientMock = $this->createDestClientMock();
         /** @var Migrations&MockObject $migrationsClientMock */
         $migrationsClientMock = $this->createMock(Migrations::class);
 
@@ -1787,6 +1792,107 @@ class MigrateTest extends TestCase
         );
 
         $migrate->run();
+    }
+
+    public function testMigrateDataGatewayDisabled(): void
+    {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        $this->mockAddMethodGenerateAbsReadCredentials($sourceJobRunnerMock);
+        $this->mockAddMethodBackupProject(
+            $sourceJobRunnerMock,
+            [
+                'id' => '222',
+                'status' => 'success',
+            ],
+            false,
+        );
+
+        $destJobRunnerMock->method('runJob')
+            ->willReturn(Job::fromApiResponse([
+                'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
+                'status' => 'success',
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'migrateDataGateway' => false,
+                    'directDataMigration' => false,
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $logsHandler = new TestHandler();
+        $logger = new Logger('tests', [$logsHandler]);
+
+        /** @var StorageClient&MockObject $sourceClientMock */
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock->method('generateId')->willReturn('123');
+
+        $destClientMock = $this->createDestClientMock();
+
+        /** @var Migrations&MockObject $migrationsClientMock */
+        $migrationsClientMock = $this->createMock(Migrations::class);
+
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            $logger,
+        );
+
+        $migrate->run();
+
+        // Verify that Data Gateway migration was NOT called
+        $dataGatewayLogs = array_filter(
+            $logsHandler->getRecords(),
+            fn(LogRecord $record) => str_contains($record->message, 'Data Gateway'),
+        );
+        self::assertCount(0, $dataGatewayLogs, 'Data Gateway migration should not be called');
     }
 
     public function successMigrateDataProvider(): Generator
@@ -2144,5 +2250,24 @@ class MigrateTest extends TestCase
         $result = json_decode($json, false);
         assert($result instanceof stdClass);
         return $result;
+    }
+
+    /**
+     * @return StorageClient&MockObject
+     */
+    private function createDestClientMock(): StorageClient
+    {
+        /** @var StorageClient&MockObject $destClientMock */
+        $destClientMock = $this->createMock(StorageClient::class);
+        $destClientMock
+            ->method('apiGet')
+            ->willReturnCallback(function (string $url) {
+                // Return empty array for components endpoint (used by DataGatewayMigrator)
+                if (str_starts_with($url, 'components?') || str_starts_with($url, 'branch/default/components?')) {
+                    return [];
+                }
+                return null;
+            });
+        return $destClientMock;
     }
 }

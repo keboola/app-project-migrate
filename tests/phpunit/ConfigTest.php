@@ -504,8 +504,6 @@ class ConfigTest extends TestCase
 
     public function testGetSourceManageTokenDefaultValue(): void
     {
-        $this->expectException(TypeError::class);
-
         $config = new Config(
             [
                 'parameters' => [
@@ -516,9 +514,7 @@ class ConfigTest extends TestCase
             new ConfigDefinition(),
         );
 
-        // getSourceManageToken catches InvalidArgumentException, but getStringValue throws TypeError
-        // when value is null (from defaultNull()). This is a known limitation.
-        $config->getSourceManageToken();
+        self::assertNull($config->getSourceManageToken());
     }
 
     /**

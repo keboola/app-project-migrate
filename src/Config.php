@@ -13,6 +13,7 @@ class Config extends BaseConfig
     public const PROJECT_RESTORE_COMPONENT = 'keboola.project-restore';
     public const SNOWFLAKE_WRITER_MIGRATE_COMPONENT = 'keboola.app-snowflake-writer-migrate';
     public const DATA_OF_TABLES_MIGRATE_COMPONENT = 'keboola.app-project-migrate-large-tables';
+    public const DATA_GATEWAY_COMPONENT = 'keboola.app-data-gateway';
 
     public function getSourceProjectUrl(): string
     {
@@ -41,11 +42,9 @@ class Config extends BaseConfig
 
     public function getSourceManageToken(): ?string
     {
-        try {
-            return $this->getStringValue(['parameters', '#sourceManageToken']);
-        } catch (InvalidArgumentException) {
-            return null;
-        }
+        /** @var string|null $value */
+        $value = $this->getValue(['parameters', '#sourceManageToken']);
+        return is_string($value) ? $value : null;
     }
 
     public function getMigrateDataMode(): string
@@ -91,6 +90,11 @@ class Config extends BaseConfig
     public function shouldSkipRegionValidation(): bool
     {
         return $this->getBoolValue(['parameters', 'skipRegionValidation']);
+    }
+
+    public function shouldMigrateDataGateway(): bool
+    {
+        return $this->getBoolValue(['parameters', 'migrateDataGateway'], true);
     }
 
     public function shouldMigrateBuckets(): bool
