@@ -174,6 +174,9 @@ class Migrate
             return;
         }
 
+        $migrateComponents = $this->config->getMigrateComponents();
+        $migrateConfigurations = $this->config->getMigrateConfigurations();
+
         foreach ($components as $component) {
             /** @var array{id: string, configurations: array} $component */
             if (in_array($component['id'], self::OBSOLETE_COMPONENTS, true)) {
@@ -183,9 +186,27 @@ class Migrate
                 );
                 continue;
             }
+            if ($migrateComponents && !in_array($component['id'], $migrateComponents, true)) {
+                $this->logger->info(
+                    sprintf('Component "%s" is not in the migrateComponents list, skipping...', $component['id']),
+                    ['secrets'],
+                );
+                continue;
+            }
 
             foreach ($component['configurations'] as $config) {
                 /** @var array{id: string} $config */
+                if ($migrateConfigurations && !in_array($config['id'], $migrateConfigurations, true)) {
+                    $this->logger->info(
+                        sprintf(
+                            'Configuration "%s" of component "%s" not in migrateConfigurations, skipping...',
+                            $config['id'],
+                            $component['id'],
+                        ),
+                        ['secrets'],
+                    );
+                    continue;
+                }
                 $this->logger->info(
                     sprintf(
                         '%sMigrating configuration "%s" of component "%s"',
