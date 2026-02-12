@@ -31,6 +31,7 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->booleanNode('migrateNotifications')->defaultTrue()->end()
                 ->booleanNode('migrateStructureOnly')->defaultFalse()->end()
                 ->booleanNode('migrateSecrets')->defaultFalse()->end()
+                ->arrayNode('migrateComponents')->prototype('scalar')->end()->end()
                 ->booleanNode('migrateBuckets')->defaultTrue()->end()
                 ->booleanNode('migrateTables')->defaultTrue()->end()
                 ->booleanNode('migrateProjectMetadata')->defaultTrue()->end()

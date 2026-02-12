@@ -133,6 +133,16 @@ class Config extends BaseConfig
         return $this->getBoolValue(['parameters', 'preserveTimestamp']);
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public function getMigrateComponents(): array
+    {
+        /** @var array<int, string> $value */
+        $value = $this->getArrayValue(['parameters', 'migrateComponents'], []);
+        return $value;
+    }
+
     public function checkEmptyProject(): bool
     {
         return $this->getBoolValue(['parameters', 'checkEmptyProject']);

@@ -164,11 +164,20 @@ class Migrate
             return;
         }
 
+        $migrateComponents = $this->config->getMigrateComponents();
+
         foreach ($components as $component) {
             /** @var array{id: string, configurations: array} $component */
             if (in_array($component['id'], self::OBSOLETE_COMPONENTS, true)) {
                 $this->logger->info(
                     sprintf('Components "%s" is obsolete, skipping migration...', $component['id']),
+                    ['secrets'],
+                );
+                continue;
+            }
+            if ($migrateComponents && !in_array($component['id'], $migrateComponents, true)) {
+                $this->logger->info(
+                    sprintf('Component "%s" is not in the migrateComponents list, skipping...', $component['id']),
                     ['secrets'],
                 );
                 continue;
