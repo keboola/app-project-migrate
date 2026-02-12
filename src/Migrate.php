@@ -165,6 +165,7 @@ class Migrate
         }
 
         $migrateComponents = $this->config->getMigrateComponents();
+        $migrateConfigurations = $this->config->getMigrateConfigurations();
 
         foreach ($components as $component) {
             /** @var array{id: string, configurations: array} $component */
@@ -185,6 +186,17 @@ class Migrate
 
             foreach ($component['configurations'] as $config) {
                 /** @var array{id: string} $config */
+                if ($migrateConfigurations && !in_array($config['id'], $migrateConfigurations, true)) {
+                    $this->logger->info(
+                        sprintf(
+                            'Configuration "%s" of component "%s" not in migrateConfigurations, skipping...',
+                            $config['id'],
+                            $component['id'],
+                        ),
+                        ['secrets'],
+                    );
+                    continue;
+                }
                 $this->logger->info(
                     sprintf(
                         '%sMigrating configuration "%s" of component "%s"',

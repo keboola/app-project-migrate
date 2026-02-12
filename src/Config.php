@@ -143,6 +143,16 @@ class Config extends BaseConfig
         return $value;
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public function getMigrateConfigurations(): array
+    {
+        /** @var array<int, string> $value */
+        $value = $this->getArrayValue(['parameters', 'migrateConfigurations'], []);
+        return $value;
+    }
+
     public function checkEmptyProject(): bool
     {
         return $this->getBoolValue(['parameters', 'checkEmptyProject']);
