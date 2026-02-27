@@ -72,7 +72,7 @@ class AfterMigration
             if ($this->migrateStructureOnly) {
                 $this->logger->warning(
                     'Post migration check found row count mismatches.'
-                    . ' This is expected when running with migrateStructureOnly=true.'
+                    . ' This is expected when running with migrateStructureOnly=true.',
                 );
                 return;
             }
