@@ -144,20 +144,17 @@ class Config extends BaseConfig
 
     public function getTableParallelism(): int
     {
-        $value = $this->getValue(['parameters', 'tableParallelism'], 5);
-        return is_int($value) ? $value : 5;
+        return $this->getIntValue(['parameters', 'tableParallelism'], 5);
     }
 
     public function getGcsLargeTableParallelChunks(): int
     {
-        $value = $this->getValue(['parameters', 'gcsLargeTable', 'parallelChunks'], 3);
-        return is_int($value) ? $value : 3;
+        return $this->getIntValue(['parameters', 'gcsLargeTable', 'parallelChunks'], 3);
     }
 
     public function getGcsLargeTableChunkSize(): int
     {
-        $value = $this->getValue(['parameters', 'gcsLargeTable', 'chunkSize'], 150);
-        return is_int($value) ? $value : 150;
+        return $this->getIntValue(['parameters', 'gcsLargeTable', 'chunkSize'], 150);
     }
 
     public function checkEmptyProject(): bool
