@@ -137,6 +137,29 @@ class Config extends BaseConfig
         return $this->getBoolValue(['parameters', 'preserveTimestamp']);
     }
 
+    public function isForcePrimaryKeyNotNull(): bool
+    {
+        return $this->getBoolValue(['parameters', 'forcePrimaryKeyNotNull']);
+    }
+
+    public function getTableParallelism(): ?int
+    {
+        $value = $this->getValue(['parameters', 'tableParallelism']);
+        return is_int($value) ? $value : null;
+    }
+
+    public function getGcsLargeTableParallelChunks(): int
+    {
+        $value = $this->getValue(['parameters', 'gcsLargeTable', 'parallelChunks'], 3);
+        return is_int($value) ? $value : 3;
+    }
+
+    public function getGcsLargeTableChunkSize(): int
+    {
+        $value = $this->getValue(['parameters', 'gcsLargeTable', 'chunkSize'], 150);
+        return is_int($value) ? $value : 150;
+    }
+
     public function checkEmptyProject(): bool
     {
         return $this->getBoolValue(['parameters', 'checkEmptyProject']);

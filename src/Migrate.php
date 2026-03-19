@@ -260,6 +260,11 @@ class Migrate
             'sourceByodb' => $this->config->getSourceByodb(),
             'includeWorkspaceSchemas' => $this->config->getIncludeWorkspaceSchemas(),
             'preserveTimestamp' => $this->config->preserveTimestamp(),
+            'forcePrimaryKeyNotNull' => $this->config->isForcePrimaryKeyNotNull(),
+            'gcsLargeTable' => [
+                'parallelChunks' => $this->config->getGcsLargeTableParallelChunks(),
+                'chunkSize' => $this->config->getGcsLargeTableChunkSize(),
+            ],
         ];
 
         if ($this->config->getMigrateDataMode() === 'database') {
@@ -471,12 +476,14 @@ class Migrate
      *     restoreBuckets: bool,
      *     restoreTables: bool,
      *     restoreProjectMetadata: bool,
-     *     checkEmptyProject: bool
+     *     checkEmptyProject: bool,
+     *     forcePrimaryKeyNotNull: bool,
+     *     tableParallelism?: int
      * }
      */
     private function getCommonRestoreParameters(): array
     {
-        return [
+        $params = [
             'dryRun' => $this->config->isDryRun(),
             'useDefaultBackend' => true,
             'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
@@ -487,7 +494,15 @@ class Migrate
             'restoreTables' => $this->config->shouldMigrateTables(),
             'restoreProjectMetadata' => $this->config->shouldMigrateProjectMetadata(),
             'checkEmptyProject' => $this->config->checkEmptyProject(),
+            'forcePrimaryKeyNotNull' => $this->config->isForcePrimaryKeyNotNull(),
         ];
+
+        $tableParallelism = $this->config->getTableParallelism();
+        if ($tableParallelism !== null) {
+            $params['tableParallelism'] = $tableParallelism;
+        }
+
+        return $params;
     }
 
     private function preserveProperSnowflakeWorkspace(

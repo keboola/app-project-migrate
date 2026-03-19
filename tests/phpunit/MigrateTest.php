@@ -106,6 +106,7 @@ class MigrateTest extends TestCase
                             'restoreTables' => $restoreTables,
                             'restoreProjectMetadata' => $restoreProjectMetadata,
                             'checkEmptyProject' => true,
+                            'forcePrimaryKeyNotNull' => false,
                         ],
                     ),
                 ],
@@ -126,6 +127,11 @@ class MigrateTest extends TestCase
                         'sourceByodb' => '',
                         'includeWorkspaceSchemas' => [],
                         'preserveTimestamp' => false,
+                        'forcePrimaryKeyNotNull' => false,
+                        'gcsLargeTable' => [
+                            'parallelChunks' => 3,
+                            'chunkSize' => 150,
+                        ],
                     ],
                 ],
             ];

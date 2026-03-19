@@ -502,6 +502,67 @@ class ConfigTest extends TestCase
         self::assertEquals('', $config->getSourceByodb());
     }
 
+    public function testNewParametersDefaultValues(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        self::assertFalse($config->isForcePrimaryKeyNotNull());
+        self::assertNull($config->getTableParallelism());
+        self::assertSame(3, $config->getGcsLargeTableParallelChunks());
+        self::assertSame(150, $config->getGcsLargeTableChunkSize());
+    }
+
+    public function testNewParametersCustomValues(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'forcePrimaryKeyNotNull' => true,
+                    'tableParallelism' => 5,
+                    'gcsLargeTable' => [
+                        'parallelChunks' => 10,
+                        'chunkSize' => 200,
+                    ],
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        self::assertTrue($config->isForcePrimaryKeyNotNull());
+        self::assertSame(5, $config->getTableParallelism());
+        self::assertSame(10, $config->getGcsLargeTableParallelChunks());
+        self::assertSame(200, $config->getGcsLargeTableChunkSize());
+    }
+
+    public function testGcsLargeTableParallelChunksMaxValidation(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage('gcsLargeTable.parallelChunks max is 20.');
+
+        new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'gcsLargeTable' => [
+                        'parallelChunks' => 21,
+                    ],
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+    }
+
     public function testGetSourceManageTokenDefaultValue(): void
     {
         $config = new Config(
