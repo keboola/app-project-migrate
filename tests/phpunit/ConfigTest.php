@@ -60,6 +60,36 @@ class ConfigTest extends TestCase
             ],
             'Parameter "db" is allowed only when "dataMode" is set to "database".',
         ];
+
+        yield 'tableParallelism zero' => [
+            ['tableParallelism' => 0],
+            'tableParallelism must be at least 1.',
+        ];
+
+        yield 'tableParallelism negative' => [
+            ['tableParallelism' => -1],
+            'tableParallelism must be at least 1.',
+        ];
+
+        yield 'gcsLargeTable.parallelChunks zero' => [
+            ['gcsLargeTable' => ['parallelChunks' => 0]],
+            'gcsLargeTable.parallelChunks must be at least 1.',
+        ];
+
+        yield 'gcsLargeTable.parallelChunks above max' => [
+            ['gcsLargeTable' => ['parallelChunks' => 21]],
+            'gcsLargeTable.parallelChunks max is 20.',
+        ];
+
+        yield 'gcsLargeTable.chunkSize zero' => [
+            ['gcsLargeTable' => ['chunkSize' => 0]],
+            'gcsLargeTable.chunkSize must be at least 1.',
+        ];
+
+        yield 'gcsLargeTable.chunkSize negative' => [
+            ['gcsLargeTable' => ['chunkSize' => -1]],
+            'gcsLargeTable.chunkSize must be at least 1.',
+        ];
     }
 
     public function testMigrateSecretsConfigValid(): void
@@ -500,6 +530,48 @@ class ConfigTest extends TestCase
         );
 
         self::assertEquals('', $config->getSourceByodb());
+    }
+
+    public function testNewParametersDefaultValues(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        self::assertFalse($config->isForcePrimaryKeyNotNull());
+        self::assertSame(5, $config->getTableParallelism()); // default value
+        self::assertSame(3, $config->getGcsLargeTableParallelChunks());
+        self::assertSame(150, $config->getGcsLargeTableChunkSize());
+    }
+
+    public function testNewParametersCustomValues(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'forcePrimaryKeyNotNull' => true,
+                    'tableParallelism' => 10,
+                    'gcsLargeTable' => [
+                        'parallelChunks' => 10,
+                        'chunkSize' => 200,
+                    ],
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        self::assertTrue($config->isForcePrimaryKeyNotNull());
+        self::assertSame(10, $config->getTableParallelism());
+        self::assertSame(10, $config->getGcsLargeTableParallelChunks());
+        self::assertSame(200, $config->getGcsLargeTableChunkSize());
     }
 
     public function testGetSourceManageTokenDefaultValue(): void

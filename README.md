@@ -96,6 +96,11 @@ The request contains the following parameters:
 - `sourceByodb`: Source BYODB identifier (required when `isSourceByodb` is true)
 - `includeWorkspaceSchemas`: Array of workspace schema names to include in migration (default: [])
 - `preserveTimestamp`: Preserve original table timestamps during data migration (default: false)
+- `forcePrimaryKeyNotNull`: When true, forces primary key columns to be NOT NULL during migration (default: false). Propagated to both `app-project-restore` and `app-project-migrate-large-tables`.
+- `tableParallelism`: Number of tables to migrate in parallel during restore (default: `5`). Propagated to `app-project-restore`.
+- `gcsLargeTable`: Configuration for GCS large table migration (propagated to `app-project-migrate-large-tables`):
+  - `parallelChunks`: Number of parallel chunks to use during GCS table migration (default: `3`, max: `20`)
+  - `chunkSize`: Size of each chunk in MB during GCS table migration (default: `150`)
 - `componentsDevTag`: Object with dev branch tags for migration components:
   - `backup`: Dev tag for the backup component
   - `restore`: Dev tag for the restore component
