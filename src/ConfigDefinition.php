@@ -43,11 +43,25 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->arrayNode('includeWorkspaceSchemas')->prototype('scalar')->end()->end()
                 ->booleanNode('preserveTimestamp')->defaultFalse()->end()
                 ->booleanNode('forcePrimaryKeyNotNull')->defaultFalse()->end()
-                ->integerNode('tableParallelism')->defaultValue(5)->end()
+                ->integerNode('tableParallelism')->defaultValue(5)
+                    ->validate()->always(function ($v) {
+                        if ($v < 1) {
+                            throw new InvalidConfigurationException(
+                                'tableParallelism must be at least 1.',
+                            );
+                        }
+                        return $v;
+                    })->end()
+                ->end()
                 ->arrayNode('gcsLargeTable')
                     ->children()
                         ->integerNode('parallelChunks')->defaultValue(3)
                             ->validate()->always(function ($v) {
+                                if ($v < 1) {
+                                    throw new InvalidConfigurationException(
+                                        'gcsLargeTable.parallelChunks must be at least 1.',
+                                    );
+                                }
                                 if ($v > 20) {
                                     throw new InvalidConfigurationException(
                                         'gcsLargeTable.parallelChunks max is 20.',
@@ -56,7 +70,16 @@ class ConfigDefinition extends BaseConfigDefinition
                                 return $v;
                             })->end()
                         ->end()
-                        ->integerNode('chunkSize')->defaultValue(150)->end()
+                        ->integerNode('chunkSize')->defaultValue(150)
+                            ->validate()->always(function ($v) {
+                                if ($v < 1) {
+                                    throw new InvalidConfigurationException(
+                                        'gcsLargeTable.chunkSize must be at least 1.',
+                                    );
+                                }
+                                return $v;
+                            })->end()
+                        ->end()
                     ->end()
                 ->end()
                 ->arrayNode('componentsDevTag')

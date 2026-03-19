@@ -60,6 +60,36 @@ class ConfigTest extends TestCase
             ],
             'Parameter "db" is allowed only when "dataMode" is set to "database".',
         ];
+
+        yield 'tableParallelism zero' => [
+            ['tableParallelism' => 0],
+            'tableParallelism must be at least 1.',
+        ];
+
+        yield 'tableParallelism negative' => [
+            ['tableParallelism' => -1],
+            'tableParallelism must be at least 1.',
+        ];
+
+        yield 'gcsLargeTable.parallelChunks zero' => [
+            ['gcsLargeTable' => ['parallelChunks' => 0]],
+            'gcsLargeTable.parallelChunks must be at least 1.',
+        ];
+
+        yield 'gcsLargeTable.parallelChunks above max' => [
+            ['gcsLargeTable' => ['parallelChunks' => 21]],
+            'gcsLargeTable.parallelChunks max is 20.',
+        ];
+
+        yield 'gcsLargeTable.chunkSize zero' => [
+            ['gcsLargeTable' => ['chunkSize' => 0]],
+            'gcsLargeTable.chunkSize must be at least 1.',
+        ];
+
+        yield 'gcsLargeTable.chunkSize negative' => [
+            ['gcsLargeTable' => ['chunkSize' => -1]],
+            'gcsLargeTable.chunkSize must be at least 1.',
+        ];
     }
 
     public function testMigrateSecretsConfigValid(): void
@@ -542,25 +572,6 @@ class ConfigTest extends TestCase
         self::assertSame(10, $config->getTableParallelism());
         self::assertSame(10, $config->getGcsLargeTableParallelChunks());
         self::assertSame(200, $config->getGcsLargeTableChunkSize());
-    }
-
-    public function testGcsLargeTableParallelChunksMaxValidation(): void
-    {
-        $this->expectException(InvalidConfigurationException::class);
-        $this->expectExceptionMessage('gcsLargeTable.parallelChunks max is 20.');
-
-        new Config(
-            [
-                'parameters' => [
-                    'sourceKbcUrl' => 'https://connection.keboola.com',
-                    '#sourceKbcToken' => 'token',
-                    'gcsLargeTable' => [
-                        'parallelChunks' => 21,
-                    ],
-                ],
-            ],
-            new ConfigDefinition(),
-        );
     }
 
     public function testGetSourceManageTokenDefaultValue(): void

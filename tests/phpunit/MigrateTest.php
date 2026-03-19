@@ -291,6 +291,175 @@ class MigrateTest extends TestCase
         $migrate->run();
     }
 
+    public function testMigrateCustomNewParametersPropagated(): void
+    {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        $this->mockAddMethodGenerateAbsReadCredentials($sourceJobRunnerMock);
+        $this->mockAddMethodBackupProject(
+            $sourceJobRunnerMock,
+            ['id' => '222', 'status' => 'success'],
+            true,
+        );
+
+        $sourceProjectUrl = 'https://connection.keboola.com';
+        $sourceProjectToken = 'xyz';
+
+        $absCredentials = [
+            'abs' => [
+                'container' => 'abcdefgh',
+                '#connectionString' => 'https://testConnectionString',
+            ],
+        ];
+
+        $destinationMockJobs = [
+            [
+                Config::PROJECT_RESTORE_COMPONENT,
+                [
+                    'parameters' => array_merge(
+                        $absCredentials,
+                        [
+                            'useDefaultBackend' => true,
+                            'restoreConfigs' => true,
+                            'dryRun' => false,
+                            'restorePermanentFiles' => true,
+                            'restoreTriggers' => true,
+                            'restoreNotifications' => true,
+                            'restoreBuckets' => true,
+                            'restoreTables' => true,
+                            'restoreProjectMetadata' => true,
+                            'checkEmptyProject' => true,
+                            'forcePrimaryKeyNotNull' => true,
+                            'tableParallelism' => 8,
+                        ],
+                    ),
+                ],
+            ],
+            [
+                Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
+                [
+                    'parameters' => [
+                        'mode' => 'sapi',
+                        'sourceKbcUrl' => $sourceProjectUrl,
+                        '#sourceKbcToken' => $sourceProjectToken,
+                        'dryRun' => false,
+                        'isSourceByodb' => false,
+                        'sourceByodb' => '',
+                        'includeWorkspaceSchemas' => [],
+                        'preserveTimestamp' => false,
+                        'forcePrimaryKeyNotNull' => true,
+                        'gcsLargeTable' => [
+                            'parallelChunks' => 10,
+                            'chunkSize' => 200,
+                        ],
+                    ],
+                ],
+            ],
+            [
+                Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT,
+                [
+                    'parameters' => [
+                        'sourceKbcUrl' => $sourceProjectUrl,
+                        '#sourceKbcToken' => $sourceProjectToken,
+                        'dryRun' => false,
+                    ],
+                ],
+            ],
+        ];
+
+        $destJobRunnerMock->expects($this->exactly(3))
+            ->method('runJob')
+            ->withConsecutive(...$destinationMockJobs)
+            ->willReturn(Job::fromApiResponse([
+                'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
+                'status' => 'success',
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => $sourceProjectUrl,
+                    '#sourceKbcToken' => $sourceProjectToken,
+                    'migrateSecrets' => false,
+                    'directDataMigration' => true,
+                    'forcePrimaryKeyNotNull' => true,
+                    'tableParallelism' => 8,
+                    'gcsLargeTable' => [
+                        'parallelChunks' => 10,
+                        'chunkSize' => 200,
+                    ],
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        /** @var StorageClient&MockObject $sourceClientMock */
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock
+            ->method('apiGet')
+            ->willReturnMap([
+                ['dev-branches/', null, [], [['id' => '123', 'name' => 'default', 'isDefault' => true]]],
+                ['branch/default/components?include=', null, [], []],
+            ]);
+        $sourceClientMock->method('getServiceUrl')->with('encryption')->willReturn('https://encryption.keboola.com');
+        $sourceClientMock->method('generateId')->willReturn('123');
+
+        $destClientMock = $this->createDestClientMock();
+
+        /** @var Migrations&MockObject $migrationsClientMock */
+        $migrationsClientMock = $this->createMock(Migrations::class);
+        $migrationsClientMock->expects(self::never())->method('migrateConfiguration');
+
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            new NullLogger(),
+        );
+
+        $migrate->run();
+    }
+
     public function testMigrateSecretsSuccess(): void
     {
         /** @var JobRunner&MockObject $sourceJobRunnerMock */
