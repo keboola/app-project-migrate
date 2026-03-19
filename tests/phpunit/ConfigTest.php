@@ -515,7 +515,7 @@ class ConfigTest extends TestCase
         );
 
         self::assertFalse($config->isForcePrimaryKeyNotNull());
-        self::assertNull($config->getTableParallelism());
+        self::assertSame(5, $config->getTableParallelism());
         self::assertSame(3, $config->getGcsLargeTableParallelChunks());
         self::assertSame(150, $config->getGcsLargeTableChunkSize());
     }

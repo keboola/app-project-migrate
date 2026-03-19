@@ -43,7 +43,7 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->arrayNode('includeWorkspaceSchemas')->prototype('scalar')->end()->end()
                 ->booleanNode('preserveTimestamp')->defaultFalse()->end()
                 ->booleanNode('forcePrimaryKeyNotNull')->defaultFalse()->end()
-                ->integerNode('tableParallelism')->defaultNull()->end()
+                ->integerNode('tableParallelism')->defaultValue(5)->end()
                 ->arrayNode('gcsLargeTable')
                     ->children()
                         ->integerNode('parallelChunks')->defaultValue(3)

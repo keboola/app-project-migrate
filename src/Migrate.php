@@ -478,12 +478,12 @@ class Migrate
      *     restoreProjectMetadata: bool,
      *     checkEmptyProject: bool,
      *     forcePrimaryKeyNotNull: bool,
-     *     tableParallelism?: int
+     *     tableParallelism: int
      * }
      */
     private function getCommonRestoreParameters(): array
     {
-        $params = [
+        return [
             'dryRun' => $this->config->isDryRun(),
             'useDefaultBackend' => true,
             'restoreConfigs' => $this->config->shouldMigrateSecrets() === false,
@@ -495,14 +495,8 @@ class Migrate
             'restoreProjectMetadata' => $this->config->shouldMigrateProjectMetadata(),
             'checkEmptyProject' => $this->config->checkEmptyProject(),
             'forcePrimaryKeyNotNull' => $this->config->isForcePrimaryKeyNotNull(),
+            'tableParallelism' => $this->config->getTableParallelism(),
         ];
-
-        $tableParallelism = $this->config->getTableParallelism();
-        if ($tableParallelism !== null) {
-            $params['tableParallelism'] = $tableParallelism;
-        }
-
-        return $params;
     }
 
     private function preserveProperSnowflakeWorkspace(

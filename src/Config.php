@@ -142,10 +142,10 @@ class Config extends BaseConfig
         return $this->getBoolValue(['parameters', 'forcePrimaryKeyNotNull']);
     }
 
-    public function getTableParallelism(): ?int
+    public function getTableParallelism(): int
     {
-        $value = $this->getValue(['parameters', 'tableParallelism']);
-        return is_int($value) ? $value : null;
+        $value = $this->getValue(['parameters', 'tableParallelism'], 5);
+        return is_int($value) ? $value : 5;
     }
 
     public function getGcsLargeTableParallelChunks(): int

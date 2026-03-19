@@ -107,6 +107,7 @@ class MigrateTest extends TestCase
                             'restoreProjectMetadata' => $restoreProjectMetadata,
                             'checkEmptyProject' => true,
                             'forcePrimaryKeyNotNull' => false,
+                            'tableParallelism' => 5,
                         ],
                     ),
                 ],
