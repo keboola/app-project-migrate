@@ -515,7 +515,7 @@ class ConfigTest extends TestCase
         );
 
         self::assertFalse($config->isForcePrimaryKeyNotNull());
-        self::assertSame(5, $config->getTableParallelism());
+        self::assertSame(5, $config->getTableParallelism()); // default value
         self::assertSame(3, $config->getGcsLargeTableParallelChunks());
         self::assertSame(150, $config->getGcsLargeTableChunkSize());
     }
@@ -528,7 +528,7 @@ class ConfigTest extends TestCase
                     'sourceKbcUrl' => 'https://connection.keboola.com',
                     '#sourceKbcToken' => 'token',
                     'forcePrimaryKeyNotNull' => true,
-                    'tableParallelism' => 5,
+                    'tableParallelism' => 10,
                     'gcsLargeTable' => [
                         'parallelChunks' => 10,
                         'chunkSize' => 200,
@@ -539,7 +539,7 @@ class ConfigTest extends TestCase
         );
 
         self::assertTrue($config->isForcePrimaryKeyNotNull());
-        self::assertSame(5, $config->getTableParallelism());
+        self::assertSame(10, $config->getTableParallelism());
         self::assertSame(10, $config->getGcsLargeTableParallelChunks());
         self::assertSame(200, $config->getGcsLargeTableChunkSize());
     }
