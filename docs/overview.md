@@ -40,8 +40,8 @@ See `architecture.md` for details on each phase.
 | `src/Config.php` | Configuration getters |
 | `src/ConfigDefinition.php` | Parameter validation |
 | `src/JobRunner/` | Job execution via Queue API v2 |
-| `src/DataGatewayMigrator.php` | Phase 7 |
-| `src/AfterMigration.php` | Phase 8 |
+| `src/Migrator/DataGatewayMigrator.php` | Phase 7 |
+| `src/Checker/AfterMigration.php` | Phase 8 |
 
 ## Related repositories
 

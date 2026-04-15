@@ -4,6 +4,7 @@
 
 | Parameter | Description |
 |---|---|
+| `sourceKbcUrl` | URL of the source stack (required by configuration validation; defaults to `https://connection.keboola.com`) |
 | `#sourceKbcToken` | Storage token of the source Keboola project |
 
 `#sourceManageToken` is additionally required if `migrateSecrets: true`.
@@ -57,20 +58,20 @@ Applies only to sliced tables larger than 50 GB on GCP stacks.
 | Parameter | Default | Limits | Description |
 |---|---|---|---|
 | `gcsLargeTable.parallelChunks` | `3` | 1–20 | Number of parallel worker processes |
-| `gcsLargeTable.chunkSize` | `150` | min 1 | Number of GCS slices per chunk |
+| `gcsLargeTable.chunkSize` | `150` | min 1 | Size of each chunk in MB |
 
 ## Database mode (`dataMode: database`)
 
-Required if `dataMode: database`. Forbidden if `dataMode: sapi`.
+Available only if `dataMode: database`. The `db` object is optional and is only needed for BYODB or other cases where the default Snowflake connection details must be overridden. Do not provide `db` when `dataMode: sapi`.
 
 | Parameter | Description |
 |---|---|
-| `db.host` | Snowflake host |
-| `db.username` | Snowflake username |
-| `db.#password` | Password (one of `#password` or `#privateKey` is required) |
-| `db.#privateKey` | Private key for key-pair authentication |
-| `db.warehouse` | Snowflake warehouse name |
-| `db.warehouse_size` | `SMALL` (default) / `MEDIUM` / `LARGE` |
+| `db.host` | Snowflake host override |
+| `db.username` | Snowflake username override |
+| `db.#password` | Password override (one of `#password` or `#privateKey` is required when providing `db`) |
+| `db.#privateKey` | Private key override for key-pair authentication |
+| `db.warehouse` | Snowflake warehouse name override |
+| `db.warehouse_size` | Warehouse size override: `SMALL` (default) / `MEDIUM` / `LARGE` |
 
 | Parameter | Default | Description |
 |---|---|---|
