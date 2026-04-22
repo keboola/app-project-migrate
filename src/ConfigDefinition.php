@@ -36,6 +36,7 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->booleanNode('migrateProjectMetadata')->defaultTrue()->end()
                 ->booleanNode('skipRegionValidation')->defaultFalse()->end()
                 ->booleanNode('migrateDataGateway')->defaultTrue()->end()
+                ->booleanNode('migrateSnowflakeWriters')->defaultTrue()->end()
                 ->booleanNode('checkEmptyProject')->defaultTrue()->end()
                 ->enumNode('dataMode')->values(['sapi', 'database'])->defaultValue('sapi')->end()
                 ->booleanNode('isSourceByodb')->defaultFalse()->end()

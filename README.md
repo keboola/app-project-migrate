@@ -92,6 +92,7 @@ The request contains the following parameters:
 - `checkEmptyProject`: Check if the destination project is empty before migration
 - `skipRegionValidation`: Skips validation of regions during migration
 - `migrateDataGateway`: Enables migration of Data Gateway configurations (default: true). Creates new READER workspaces with keypair authentication. **Note:** Data from original workspaces is NOT migrated - users must load data manually.
+- `migrateSnowflakeWriters`: Enables migration of Snowflake writers via `keboola.app-snowflake-writer-migrate` (default: true). When `false`, the dedicated writer migration child job is skipped entirely. Has no effect when `migrateSecrets=true`, because in that path writers are migrated by encryption-api regardless of this flag.
 - `isSourceByodb`: Whether the source project is a BYODB project (default: false)
 - `sourceByodb`: Source BYODB identifier (required when `isSourceByodb` is true)
 - `includeWorkspaceSchemas`: Array of workspace schema names to include in migration (default: [])

@@ -2071,6 +2071,113 @@ class MigrateTest extends TestCase
         self::assertCount(0, $dataGatewayLogs, 'Data Gateway migration should not be called');
     }
 
+    public function testMigrateSnowflakeWritersDisabled(): void
+    {
+        /** @var JobRunner&MockObject $sourceJobRunnerMock */
+        $sourceJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+        /** @var JobRunner&MockObject $destJobRunnerMock */
+        $destJobRunnerMock = $this->createMock(QueueV2JobRunner::class);
+
+        $this->mockAddMethodGenerateAbsReadCredentials($sourceJobRunnerMock);
+        $this->mockAddMethodBackupProject(
+            $sourceJobRunnerMock,
+            [
+                'id' => '222',
+                'status' => 'success',
+            ],
+            false,
+        );
+
+        // Destination only runs the restore job; the Snowflake writer migrate job
+        // must NOT be invoked when migrateSnowflakeWriters is false.
+        $destJobRunnerMock->expects(self::once())
+            ->method('runJob')
+            ->with(
+                self::logicalNot(self::equalTo(Config::SNOWFLAKE_WRITER_MIGRATE_COMPONENT)),
+            )
+            ->willReturn(Job::fromApiResponse([
+                'id' => '222',
+                'runId' => 'run-123',
+                'parentRunId' => 'parent-123',
+                'project' => ['id' => '123'],
+                'token' => ['id' => 'token-123', 'description' => null],
+                'status' => 'success',
+                'desiredStatus' => 'processing',
+                'mode' => 'run',
+                'component' => 'test-component',
+                'config' => null,
+                'configData' => null,
+                'configRowIds' => null,
+                'tag' => null,
+                'createdTime' => '2024-01-01T00:00:00+00:00',
+                'startTime' => '2024-01-01T00:00:00+00:00',
+                'endTime' => '2024-01-01T00:00:00+00:00',
+                'durationSeconds' => null,
+                'result' => null,
+                'usageData' => null,
+                'isFinished' => true,
+                'url' => 'https://example.com',
+                'branchId' => null,
+                'variableValuesId' => null,
+                'variableValuesData' => [],
+                'backend' => [],
+                'executor' => null,
+                'metrics' => null,
+                'behavior' => [],
+                'parallelism' => null,
+                'type' => 'container',
+                'orchestrationJobId' => null,
+                'orchestrationTaskId' => null,
+                'onlyOrchestrationTaskIds' => null,
+                'previousJobId' => null,
+            ]));
+
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'migrateSnowflakeWriters' => false,
+                    'migrateDataGateway' => false,
+                    'directDataMigration' => false,
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        $logsHandler = new TestHandler();
+        $logger = new Logger('tests', [$logsHandler]);
+
+        /** @var StorageClient&MockObject $sourceClientMock */
+        $sourceClientMock = $this->createMock(StorageClient::class);
+        $sourceClientMock->method('generateId')->willReturn('123');
+
+        $destClientMock = $this->createDestClientMock();
+
+        /** @var Migrations&MockObject $migrationsClientMock */
+        $migrationsClientMock = $this->createMock(Migrations::class);
+
+        $migrate = new Migrate(
+            $config,
+            $sourceJobRunnerMock,
+            $destJobRunnerMock,
+            $sourceClientMock,
+            $destClientMock,
+            $migrationsClientMock,
+            'https://dest-stack/',
+            'dest-token',
+            $logger,
+        );
+
+        $migrate->run();
+
+        $snowflakeWriterLogs = array_filter(
+            $logsHandler->getRecords(),
+            fn(LogRecord $record) => str_contains($record->message, 'Snowflake writers'),
+        );
+        self::assertCount(0, $snowflakeWriterLogs, 'Snowflake writers migration should not be called');
+    }
+
     public function successMigrateDataProvider(): Generator
     {
         yield 'migrate-S3-syrup' => [

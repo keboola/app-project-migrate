@@ -68,7 +68,7 @@ class Migrate
                 $this->migrateDataOfTablesDirectly();
             }
 
-            if (!$this->config->shouldMigrateSecrets()) {
+            if (!$this->config->shouldMigrateSecrets() && $this->config->shouldMigrateSnowflakeWriters()) {
                 // We want to migrate Snowflake writers only if we are not migrating secrets, because when migrating
                 // secrets, Snowflake writers will be migrated by the encryption-api.
                 $this->migrateSnowflakeWriters();
