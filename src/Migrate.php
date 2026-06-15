@@ -265,7 +265,14 @@ class Migrate
                 'parallelChunks' => $this->config->getGcsLargeTableParallelChunks(),
                 'chunkSize' => $this->config->getGcsLargeTableChunkSize(),
             ],
+            'replicationStrategy' => $this->config->getReplicationStrategy(),
         ];
+
+        if ($this->config->getReplicationStrategy() === 'group') {
+            $parameters['replicationGroup'] = [
+                'name' => $this->config->getReplicationGroupName(),
+            ];
+        }
 
         if ($this->config->getMigrateDataMode() === 'database') {
             $db = $this->config->getDb();
