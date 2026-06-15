@@ -101,6 +101,9 @@ The request contains the following parameters:
 - `gcsLargeTable`: Configuration for GCS large table migration (propagated to `app-project-migrate-large-tables`):
   - `parallelChunks`: Number of parallel chunks to use during GCS table migration (default: `3`, max: `20`)
   - `chunkSize`: Size of each chunk in MB during GCS table migration (default: `150`)
+- `replicationStrategy`: Snowflake replication strategy for `dataMode: database` (default: `standalone`). `standalone` creates and drops its own replica per run; `group` reuses a pre-created shared Replication Group. Propagated to `app-project-migrate-large-tables`.
+- `replicationGroup`: Replication group settings (used only when `replicationStrategy: group`):
+  - `name`: Name of the primary replication group (required when `replicationStrategy: group`; must match the group created manually). The shared group is NOT dropped per run — teardown is a separate manual / ops step.
 - `componentsDevTag`: Object with dev branch tags for migration components:
   - `backup`: Dev tag for the backup component
   - `restore`: Dev tag for the restore component
