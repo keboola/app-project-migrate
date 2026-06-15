@@ -82,6 +82,15 @@ class ConfigDefinition extends BaseConfigDefinition
                         ->end()
                     ->end()
                 ->end()
+                ->enumNode('replicationStrategy')
+                    ->values(['standalone', 'group'])
+                    ->defaultValue('standalone')
+                ->end()
+                ->arrayNode('replicationGroup')
+                    ->children()
+                        ->scalarNode('name')->end()
+                    ->end()
+                ->end()
                 ->arrayNode('componentsDevTag')
                     ->children()
                         ->scalarNode('backup')->end()
@@ -121,6 +130,13 @@ class ConfigDefinition extends BaseConfigDefinition
             ->validate()
                 ->ifTrue(fn($values) => $values['dataMode'] === 'sapi' && isset($values['db']))
                 ->thenInvalid('Parameter "db" is allowed only when "dataMode" is set to "database".')
+            ->end()
+            ->validate()
+                ->ifTrue(fn($values) => ($values['replicationStrategy'] ?? 'standalone') === 'group'
+                    && empty($values['replicationGroup']['name']))
+                ->thenInvalid(
+                    'Parameter "replicationGroup.name" is required when "replicationStrategy" is set to "group".',
+                )
             ->end()
         ->end();
         return $parametersNode;

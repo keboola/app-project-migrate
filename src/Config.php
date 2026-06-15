@@ -157,6 +157,22 @@ class Config extends BaseConfig
         return $this->getIntValue(['parameters', 'gcsLargeTable', 'chunkSize'], 150);
     }
 
+    public function getReplicationStrategy(): string
+    {
+        return $this->getStringValue(['parameters', 'replicationStrategy'], 'standalone');
+    }
+
+    public function getReplicationGroupName(): ?string
+    {
+        try {
+            /** @var string|null $value */
+            $value = $this->getValue(['parameters', 'replicationGroup', 'name']);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
     public function checkEmptyProject(): bool
     {
         return $this->getBoolValue(['parameters', 'checkEmptyProject']);
