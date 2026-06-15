@@ -165,16 +165,14 @@ class Config extends BaseConfig
     public function getReplicationGroupName(): ?string
     {
         try {
+            // Non-empty validation lives in ConfigDefinition; here we only read the value
+            // (it is absent in standalone mode, where getValue() throws).
             /** @var string|null $value */
             $value = $this->getValue(['parameters', 'replicationGroup', 'name']);
         } catch (InvalidArgumentException) {
             return null;
         }
-        if (!is_string($value)) {
-            return null;
-        }
-        $value = trim($value);
-        return $value !== '' ? $value : null;
+        return is_string($value) ? $value : null;
     }
 
     public function checkEmptyProject(): bool
