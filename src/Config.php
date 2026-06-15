@@ -170,7 +170,11 @@ class Config extends BaseConfig
         } catch (InvalidArgumentException) {
             return null;
         }
-        return is_string($value) && $value !== '' ? $value : null;
+        if (!is_string($value)) {
+            return null;
+        }
+        $value = trim($value);
+        return $value !== '' ? $value : null;
     }
 
     public function checkEmptyProject(): bool

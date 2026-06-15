@@ -132,8 +132,13 @@ class ConfigDefinition extends BaseConfigDefinition
                 ->thenInvalid('Parameter "db" is allowed only when "dataMode" is set to "database".')
             ->end()
             ->validate()
-                ->ifTrue(fn($values) => ($values['replicationStrategy'] ?? 'standalone') === 'group'
-                    && empty($values['replicationGroup']['name']))
+                ->ifTrue(function ($values): bool {
+                    if (($values['replicationStrategy'] ?? 'standalone') !== 'group') {
+                        return false;
+                    }
+                    $name = $values['replicationGroup']['name'] ?? null;
+                    return !is_string($name) || trim($name) === '';
+                })
                 ->thenInvalid(
                     'Parameter "replicationGroup.name" is required when "replicationStrategy" is set to "group".',
                 )

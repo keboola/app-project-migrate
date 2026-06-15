@@ -104,6 +104,14 @@ class ConfigTest extends TestCase
             'Parameter "replicationGroup.name" is required when "replicationStrategy" is set to "group".',
         ];
 
+        yield 'replicationStrategy group with whitespace-only group name' => [
+            [
+                'replicationStrategy' => 'group',
+                'replicationGroup' => ['name' => '   '],
+            ],
+            'Parameter "replicationGroup.name" is required when "replicationStrategy" is set to "group".',
+        ];
+
         yield 'invalid replicationStrategy value' => [
             ['replicationStrategy' => 'invalid'],
             'The value "invalid" is not allowed for path "root.parameters.replicationStrategy"',
