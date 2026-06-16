@@ -172,7 +172,6 @@ class MigrateTest extends TestCase
                             'parallelChunks' => 3,
                             'chunkSize' => 150,
                         ],
-                        'replicationStrategy' => 'standalone',
                     ],
                 ],
             ];
@@ -395,7 +394,6 @@ class MigrateTest extends TestCase
                             'parallelChunks' => 10,
                             'chunkSize' => 200,
                         ],
-                        'replicationStrategy' => 'standalone',
                     ],
                 ],
             ],
@@ -552,7 +550,7 @@ class MigrateTest extends TestCase
                 Config::DATA_OF_TABLES_MIGRATE_COMPONENT,
                 [
                     'parameters' => [
-                        'mode' => 'sapi',
+                        'mode' => 'database',
                         'sourceKbcUrl' => $sourceProjectUrl,
                         '#sourceKbcToken' => $sourceProjectToken,
                         'dryRun' => false,
@@ -593,6 +591,7 @@ class MigrateTest extends TestCase
                     '#sourceKbcToken' => $sourceProjectToken,
                     'migrateSecrets' => false,
                     'directDataMigration' => true,
+                    'dataMode' => 'database',
                 ],
             ],
             new ConfigDefinition(),

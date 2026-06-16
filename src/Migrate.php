@@ -265,16 +265,18 @@ class Migrate
                 'parallelChunks' => $this->config->getGcsLargeTableParallelChunks(),
                 'chunkSize' => $this->config->getGcsLargeTableChunkSize(),
             ],
-            'replicationStrategy' => $this->config->getReplicationStrategy(),
         ];
 
-        if ($this->config->getReplicationStrategy() === 'group') {
-            $parameters['replicationGroup'] = [
-                'name' => $this->config->getReplicationGroupName(),
-            ];
-        }
-
+        // Replication is a database-mode concept (Snowflake replica); not applicable in sapi mode.
         if ($this->config->getMigrateDataMode() === 'database') {
+            $parameters['replicationStrategy'] = $this->config->getReplicationStrategy();
+
+            if ($this->config->getReplicationStrategy() === 'group') {
+                $parameters['replicationGroup'] = [
+                    'name' => $this->config->getReplicationGroupName(),
+                ];
+            }
+
             $db = $this->config->getDb();
             if (isset($db['host'])) {
                 $parameters['db'] = $db;
