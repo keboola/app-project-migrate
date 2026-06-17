@@ -90,6 +90,32 @@ class ConfigTest extends TestCase
             ['gcsLargeTable' => ['chunkSize' => -1]],
             'gcsLargeTable.chunkSize must be at least 1.',
         ];
+
+        yield 'replicationStrategy group without group name' => [
+            ['replicationStrategy' => 'group'],
+            'Parameter "replicationGroup.name" is required when "replicationStrategy" is set to "group".',
+        ];
+
+        yield 'replicationStrategy group with empty group name' => [
+            [
+                'replicationStrategy' => 'group',
+                'replicationGroup' => ['name' => ''],
+            ],
+            'Parameter "replicationGroup.name" is required when "replicationStrategy" is set to "group".',
+        ];
+
+        yield 'replicationStrategy group with whitespace-only group name' => [
+            [
+                'replicationStrategy' => 'group',
+                'replicationGroup' => ['name' => '   '],
+            ],
+            'Parameter "replicationGroup.name" is required when "replicationStrategy" is set to "group".',
+        ];
+
+        yield 'invalid replicationStrategy value' => [
+            ['replicationStrategy' => 'invalid'],
+            'The value "invalid" is not allowed for path "root.parameters.replicationStrategy"',
+        ];
     }
 
     public function testMigrateSecretsConfigValid(): void
@@ -572,6 +598,76 @@ class ConfigTest extends TestCase
         self::assertSame(10, $config->getTableParallelism());
         self::assertSame(10, $config->getGcsLargeTableParallelChunks());
         self::assertSame(200, $config->getGcsLargeTableChunkSize());
+    }
+
+    public function testReplicationStrategyDefaultValue(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        self::assertSame('standalone', $config->getReplicationStrategy());
+        self::assertNull($config->getReplicationGroupName());
+    }
+
+    public function testReplicationGroupCustomValues(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'replicationStrategy' => 'group',
+                    'replicationGroup' => [
+                        'name' => 'MIGRATE_RG_1234',
+                    ],
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        self::assertSame('group', $config->getReplicationStrategy());
+        self::assertSame('MIGRATE_RG_1234', $config->getReplicationGroupName());
+    }
+
+    public function testReplicationGroupValidConfig(): void
+    {
+        self::expectNotToPerformAssertions();
+
+        new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'replicationStrategy' => 'group',
+                    'replicationGroup' => ['name' => 'MIGRATE_RG_1234'],
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+    }
+
+    public function testReplicationStrategyStandaloneIgnoresGroupName(): void
+    {
+        $config = new Config(
+            [
+                'parameters' => [
+                    'sourceKbcUrl' => 'https://connection.keboola.com',
+                    '#sourceKbcToken' => 'token',
+                    'replicationStrategy' => 'standalone',
+                ],
+            ],
+            new ConfigDefinition(),
+        );
+
+        self::assertSame('standalone', $config->getReplicationStrategy());
+        self::assertNull($config->getReplicationGroupName());
     }
 
     public function testGetSourceManageTokenDefaultValue(): void

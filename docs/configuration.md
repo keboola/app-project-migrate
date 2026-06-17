@@ -60,6 +60,22 @@ Applies only to sliced tables larger than 50 GB on GCP stacks.
 | `gcsLargeTable.parallelChunks` | `3` | 1–20 | Number of parallel worker processes |
 | `gcsLargeTable.chunkSize` | `150` | min 1 | Size of each chunk in MB |
 
+## Snowflake replication strategy
+
+Applies only to `dataMode: database`. Selects how the destination Snowflake replica is provisioned
+during Phase 5 (`keboola.app-project-migrate-large-tables`).
+
+| Parameter | Default | Values | Description |
+|---|---|---|---|
+| `replicationStrategy` | `standalone` | `standalone` / `group` | `standalone` creates and drops its own replica per run. `group` reuses a pre-created shared **Replication Group**. |
+| `replicationGroup.name` | – | – | Name of the primary replication group. **Required when `replicationStrategy: group`.** Must match the group created manually during the ops step. |
+
+**Drop behavior:**
+- `standalone` — the per-project run tears down its own replica (component default `replica.drop = true`).
+- `group` — the shared replication group is NOT dropped per run (component default `replica.drop = false`). Group teardown (`DROP REPLICATION GROUP`) is a separate manual / ops step.
+
+Creating the primary replication group on the source is a manual / ops step performed before running the orchestrator. The orchestrator passes no `replica` flags; it relies on the component's `replica.*` defaults.
+
 ## Database mode (`dataMode: database`)
 
 Available only if `dataMode: database`. The `db` object is optional and is only needed for BYODB or other cases where the default Snowflake connection details must be overridden. Do not provide `db` when `dataMode: sapi`.
