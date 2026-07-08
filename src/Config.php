@@ -97,6 +97,11 @@ class Config extends BaseConfig
         return $this->getBoolValue(['parameters', 'migrateDataGateway'], true);
     }
 
+    public function shouldMigrateSnowflakeWriters(): bool
+    {
+        return $this->getBoolValue(['parameters', 'migrateSnowflakeWriters'], true);
+    }
+
     public function shouldMigrateBuckets(): bool
     {
         return $this->getBoolValue(['parameters', 'migrateBuckets']);
