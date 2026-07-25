@@ -96,7 +96,12 @@ class Component extends BaseComponent
         );
         $migrate->run();
 
-        $checkerAfterMigration = new AfterMigration($sourceProjectClient, $destProjectClient, $logger);
+        $checkerAfterMigration = new AfterMigration(
+            $sourceProjectClient,
+            $destProjectClient,
+            $logger,
+            $config->shouldMigrateStructureOnly(),
+        );
         $checkerAfterMigration->check();
     }
 

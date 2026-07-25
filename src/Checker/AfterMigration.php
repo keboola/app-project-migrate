@@ -17,11 +17,18 @@ class AfterMigration
 
     private LoggerInterface $logger;
 
-    public function __construct(Client $sourceProjectClient, Client $destProjectClient, LoggerInterface $logger)
-    {
+    private bool $migrateStructureOnly;
+
+    public function __construct(
+        Client $sourceProjectClient,
+        Client $destProjectClient,
+        LoggerInterface $logger,
+        bool $migrateStructureOnly = false,
+    ) {
         $this->sourceProjectClient = $sourceProjectClient;
         $this->destProjectClient = $destProjectClient;
         $this->logger = $logger;
+        $this->migrateStructureOnly = $migrateStructureOnly;
     }
 
     public function check(): void
@@ -62,6 +69,13 @@ class AfterMigration
         }
 
         if ($isInvalid) {
+            if ($this->migrateStructureOnly) {
+                $this->logger->warning(
+                    'Post migration check found row count mismatches.'
+                    . ' This is expected when running with migrateStructureOnly=true.',
+                );
+                return;
+            }
             throw new UserException('Failed post migration check.');
         }
     }
