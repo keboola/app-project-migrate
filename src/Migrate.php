@@ -54,7 +54,13 @@ class Migrate
             $this->backupSourceProject($backupId);
 
             $restoreCredentials = $this->generateBackupCredentials($backupId);
-            $this->restoreDestinationProject($restoreCredentials);
+            $restoreError = null;
+            try {
+                $this->restoreDestinationProject($restoreCredentials);
+            } catch (UserException $e) {
+                $restoreError = $e;
+                $this->logger->warning('Project restore error: ' . $e->getMessage());
+            }
 
             if ($this->config->shouldMigrateSecrets()) {
                 $this->migrateSecrets();
@@ -81,6 +87,10 @@ class Migrate
                     $this->config->isDryRun(),
                 );
                 $dataGatewayMigrator->migrate();
+            }
+
+            if ($restoreError !== null) {
+                throw $restoreError;
             }
         } catch (EncryptionClientException $e) {
             if ($e->getCode() >= 400 && $e->getCode() < 500) {
